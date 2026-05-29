@@ -151,3 +151,24 @@ Then from **Windows**:
 ```powershell
 ssh -i C:\Users\Julian\Documents\Programming\beelink-cleanup\beelink s4il0r@blackpearl "sudo podman info"
 ```
+---
+
+## 8. Always-on (no sleep / hibernate)
+
+Staging box must stay awake. Run once as root (included in `setup-blackpearl-access.sh`):
+
+```bash
+bash /root/setup/disable-sleep.sh
+```
+
+This masks `sleep.target`, `suspend.target`, `hibernate.target`, `hybrid-sleep.target` and sets `/etc/systemd/logind.conf.d/nosleep.conf` (`IdleAction=ignore`, lid switch ignored).
+
+Verify:
+
+```bash
+systemctl status sleep.target
+cat /etc/systemd/logind.conf.d/nosleep.conf
+```
+
+Optional (manual): `apt purge systemd-sleep` only if you understand the impact on your kernel/firmware.
+

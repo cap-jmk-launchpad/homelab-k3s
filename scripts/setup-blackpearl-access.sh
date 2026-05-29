@@ -100,9 +100,12 @@ install -d -o "$STAGING_USER" -g "$STAGING_USER" \
 echo "== podman rootless hint =="
 loginctl enable-linger "$STAGING_USER" 2>/dev/null || true
 
+echo "== always-on (no sleep/hibernate) =="
+bash "${SCRIPT_DIR}/disable-sleep.sh"
+
 echo ""
 echo "Done. From your PC:"
-echo "  ssh -i beelink ${STAGING_USER}@${HOSTNAME}"
+echo "  ssh -i blackpearl ${STAGING_USER}@${HOSTNAME}"
 echo "  ssh ${STAGING_USER}@${HOSTNAME} 'sudo whoami'   # should print root without password prompt"
 echo ""
 echo "Reboot to verify autologin on physical console (tty1)."
