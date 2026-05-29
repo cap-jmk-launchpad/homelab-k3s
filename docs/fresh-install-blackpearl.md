@@ -104,6 +104,22 @@ Full runbook: `majico.xyz/deploy/staging/README.md` and [blackpearl-staging.md](
 
 ---
 
+## SSH access model
+
+| Account | Access |
+|---------|--------|
+| `s4il0r` | Key-only SSH + **NOPASSWD sudo** (automation) |
+| `root` | Key-only SSH (`PermitRootLogin prohibit-password`) — same pubkey as `s4il0r` |
+| Password auth | **Disabled** globally |
+
+Pubkey file: `scripts/blackpearl.pub` (install to both `s4il0r` and `root` `authorized_keys`).
+
+Run full prep:
+
+```bash
+sudo bash /root/setup/apply-server-prep.sh
+```
+
 ## Security model (homelab staging)
 
 | Choice | Rationale |
@@ -171,4 +187,3 @@ cat /etc/systemd/logind.conf.d/nosleep.conf
 ```
 
 Optional (manual): `apt purge systemd-sleep` only if you understand the impact on your kernel/firmware.
-
