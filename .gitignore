@@ -1,0 +1,11 @@
+# Secrets and local paths — never commit
+.env
+.env.local
+.env.cursor-cloud
+beelink
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
