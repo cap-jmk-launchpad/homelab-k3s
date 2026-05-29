@@ -36,4 +36,7 @@ All majico staging config is in **majico.xyz**:
 
 ## Deploy
 
-`majico.xyz/deploy/staging/README.md`
+**Authoritative runbook:** majico.xyz repo ? `deploy/staging/docs/blackpearl-k8s-lis.md` (k3s + li-httpd on blackpearl).
+
+Legacy compose: `majico.xyz/deploy/staging/README.md`
+
