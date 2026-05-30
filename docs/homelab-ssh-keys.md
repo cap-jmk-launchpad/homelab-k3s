@@ -29,7 +29,9 @@ Blackpearl keeps a copy at `~/.ssh/homelab` for worker onboarding scripts.
 |------|-----|--------|
 | blackpearl | 192.168.10.41 | k3s server |
 | engine | 192.168.10.32 | k3s agent, GPU |
-| desktop | 192.168.10.31 | next — WSL or native Linux |
+| desktop | 192.168.10.31 | k3s agent (Ubuntu WSL2), SSH port **2222** |
 | raspberries | TBD | after desktop |
+
+See [desktop-k3s-worker.md](desktop-k3s-worker.md) for WSL setup and firewall note.
 
 Open **6443/tcp** on blackpearl UFW for agents (`sudo ufw allow 6443/tcp`).
