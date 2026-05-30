@@ -1,0 +1,10 @@
+# Raspberry Pi worker "deck" (192.168.10.26, arm64).
+# Supabase stays on blackpearl; apps run on deck with a hostPath checkout.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../
+patches:
+  - path: configmap-patch.yaml
+  - path: dashboard-patch.yaml
+  - path: async-swarm-patch.yaml

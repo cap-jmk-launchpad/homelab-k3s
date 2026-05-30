@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agents-async-swarm
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: deck
+      containers:
+        - name: async-swarm
+          command:
+            - bash
+            - -lc
+            - |
+              set -euo pipefail
+              cd /li/li-cursor-agents
+              if [[ ! -f dist/cli/async-swarm.js ]]; then
+                echo "==> first boot: npm ci + build (run prepare-deck.sh to avoid this on the Pi)"
+                apt-get update -qq && apt-get install -y -qq curl git python3 ca-certificates >/dev/null
+                npm ci
+                npm run build
+              fi
+              exec node dist/cli/async-swarm.js start
+          resources:
+            requests:
+              cpu: 300m
+              memory: 512Mi
+            limits:
+              memory: 2560Mi
+          volumeMounts:
+            - name: li-repo
+              mountPath: /li
+      volumes:
+        - name: li-repo
+          hostPath:
+            path: /home/s4il0r/li-langverse
+            type: DirectoryOrCreate

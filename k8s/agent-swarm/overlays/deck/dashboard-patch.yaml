@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agents-dashboard
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: deck
+      containers:
+        - name: dashboard
+          command:
+            - bash
+            - -lc
+            - |
+              set -euo pipefail
+              cd /li/li-cursor-agents
+              if [[ ! -f dist/cli/serve-dashboard.js ]]; then
+                echo "==> first boot: npm ci + build (run prepare-deck.sh to avoid this on the Pi)"
+                apt-get update -qq && apt-get install -y -qq curl git python3 ca-certificates >/dev/null
+                npm ci
+                npm run build
+              fi
+              exec node dist/cli/serve-dashboard.js --port "${LI_AGENT_DASHBOARD_PORT}"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 384Mi
+            limits:
+              memory: 1536Mi
+          volumeMounts:
+            - name: li-repo
+              mountPath: /li
+      volumes:
+        - name: li-repo
+          hostPath:
+            path: /home/s4il0r/li-langverse
+            type: DirectoryOrCreate

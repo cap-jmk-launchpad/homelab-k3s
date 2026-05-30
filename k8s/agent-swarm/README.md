@@ -12,6 +12,15 @@ Source repo: `li/li-cursor-agents` (sibling of `benchmarks`, `lic`, `li-local-ci
 
 Homelab manifests live here; application code stays in the **li** monorepo checkout on the node.
 
+### Raspberry Pi **deck**
+
+Use the **deck** overlay (arm64, lower memory, DB still on blackpearl):
+
+- Guide: [overlays/deck/README.md](./overlays/deck/README.md)
+- Prepare Pi: `./scripts/k8s-agent-swarm-prepare-deck.sh`
+- Deploy: `./scripts/k8s-agent-swarm-apply-deck.sh`
+- UI: `http://192.168.10.26:30477/`
+
 ## Prerequisites
 
 1. **k3s cluster** with `kubectl` working (see [docs/homelab-monitoring.md](../../docs/homelab-monitoring.md) — control plane on **blackpearl** `192.168.10.41`).

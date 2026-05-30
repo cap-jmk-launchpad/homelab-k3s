@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-swarm-config
+data:
+  LI_HOST_ROOT: "/home/s4il0r/li-langverse"
+  # PostgREST on blackpearl — do not run Supabase Docker on the Pi.
+  SUPABASE_URL: "http://192.168.10.41:54321"
+  LI_SDK_MAX_CONCURRENT: "2"
+  LI_SWARM_MAX_PARALLEL: "2"
