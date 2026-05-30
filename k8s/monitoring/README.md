@@ -41,3 +41,11 @@ Uses k3s default in `kube-system`. See [metrics-server-k3s-patch.md](./metrics-s
 
 Docs: [../../docs/homelab-monitoring.md](../../docs/homelab-monitoring.md)
 
+
+## Grafana dashboards (sidecar)
+
+`ash
+bash ../../scripts/homelab-deploy-dashboards.sh
+`
+
+ConfigMaps need label `grafana_dashboard=1` in `monitoring` namespace.

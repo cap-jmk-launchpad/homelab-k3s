@@ -1,0 +1,724 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Cluster totals",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 * (1 - sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))",
+          "legendFormat": "memory %",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory used %",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "decimals": 1,
+          "unit": "decgbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(sum(node_memory_MemTotal_bytes) - sum(node_memory_MemAvailable_bytes)) / 1024^3",
+          "legendFormat": "used",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory used GB",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "decimals": 1,
+          "unit": "decgbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(node_memory_MemTotal_bytes) / 1024^3",
+          "legendFormat": "total",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory total GB",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))",
+          "legendFormat": "cpu %",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU usage % (cluster)",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 95 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 1 },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg(DCGM_FI_DEV_GPU_UTIL)",
+          "legendFormat": "gpu avg",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU util avg %",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "decimals": 0,
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 1 },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "count(DCGM_FI_DEV_GPU_UTIL)",
+          "legendFormat": "gpus",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU count",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "decimals": 0,
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 18, "y": 1 },
+      "id": 7,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "count(node_memory_MemTotal_bytes)",
+          "legendFormat": "nodes",
+          "refId": "A"
+        }
+      ],
+      "title": "Nodes reporting",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "title": "Per-node memory",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 },
+      "id": 10,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "legendFormat": "{{node}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory used % by node",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 102,
+      "title": "Per-node CPU",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
+      "id": 11,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "legendFormat": "{{node}}",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU usage % by node",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "id": 103,
+      "title": "Network per node",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" },
+          "unit": "bps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "id": 12,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(sum by (instance) (rate(node_network_receive_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*|docker.*|br-.*\"}[5m])) * 8) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "legendFormat": "{{node}} RX",
+          "refId": "A"
+        }
+      ],
+      "title": "Network RX (bits/s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" },
+          "unit": "bps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "id": 13,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(sum by (instance) (rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*|docker.*|br-.*\"}[5m])) * 8) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "legendFormat": "{{node}} TX",
+          "refId": "A"
+        }
+      ],
+      "title": "Network TX (bits/s)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "id": 104,
+      "title": "GPU per node (DCGM)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" },
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 33 },
+      "id": 14,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "DCGM_FI_DEV_GPU_UTIL",
+          "legendFormat": "{{node}} {{modelName}}",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU utilization %",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" },
+          "unit": "decmbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 33 },
+      "id": 15,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "DCGM_FI_DEV_FB_USED / 1024 / 1024",
+          "legendFormat": "{{node}} VRAM MB",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU VRAM used (MB)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 33 },
+      "id": 16,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "DCGM_FI_DEV_GPU_TEMP",
+          "legendFormat": "{{node}} temp",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU temperature",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 },
+      "id": 105,
+      "title": "Current snapshot (all nodes)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "CPU %" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 1 },
+              { "id": "custom.cellOptions", "value": { "type": "color-background", "mode": "gradient" } },
+              { "id": "max", "value": 100 },
+              { "id": "min", "value": 0 },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 60 }, { "color": "red", "value": 85 }] } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Mem %" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 1 },
+              { "id": "custom.cellOptions", "value": { "type": "color-background", "mode": "gradient" } },
+              { "id": "max", "value": 100 },
+              { "id": "min", "value": 0 },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }] } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Mem used GB" },
+            "properties": [{ "id": "unit", "value": "decgbytes" }, { "id": "decimals", "value": 1 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Mem total GB" },
+            "properties": [{ "id": "unit", "value": "decgbytes" }, { "id": "decimals", "value": 1 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Net RX" },
+            "properties": [{ "id": "unit", "value": "bps" }, { "id": "decimals", "value": 0 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Net TX" },
+            "properties": [{ "id": "unit", "value": "bps" }, { "id": "decimals", "value": 0 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "GPU util %" },
+            "properties": [{ "id": "unit", "value": "percent" }, { "id": "decimals", "value": 0 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "GPU mem MB" },
+            "properties": [{ "id": "unit", "value": "decmbytes" }, { "id": "decimals", "value": 0 }]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 42 },
+      "id": 20,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": false, "displayName": "node" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_node_info",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "nodes"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "cpu"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "mempct"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "memused"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(node_memory_MemTotal_bytes / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "memtotal"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(sum by (instance) (rate(node_network_receive_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*|docker.*|br-.*\"}[5m])) * 8) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "rx"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(sum by (instance) (rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|cali.*|flannel.*|docker.*|br-.*\"}[5m])) * 8) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "tx"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "DCGM_FI_DEV_GPU_UTIL",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "gpuutil"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "DCGM_FI_DEV_FB_USED / 1024 / 1024",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "gpumem"
+        }
+      ],
+      "title": "Node snapshot",
+      "transformations": [
+        { "id": "seriesToColumns", "options": { "byField": "node" } },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true,
+              "Time 5": true,
+              "Time 6": true,
+              "Time 7": true,
+              "Time 8": true,
+              "Value #nodes": true,
+              "__name__": true,
+              "container": true,
+              "endpoint": true,
+              "instance": true,
+              "internal_ip": true,
+              "job": true,
+              "kernel_version": true,
+              "kubelet_version": true,
+              "kubeproxy_version": true,
+              "namespace": true,
+              "os_image": true,
+              "pod": true,
+              "provider_id": true,
+              "service": true,
+              "system_uuid": true,
+              "container_runtime_version": true,
+              "modelName": true,
+              "UUID": true,
+              "device": true,
+              "gpu": true,
+              "Hostname": true,
+              "DCGM_FI_DRIVER_VERSION": true
+            },
+            "indexByName": {
+              "node": 0,
+              "Value #cpu": 1,
+              "Value #mempct": 2,
+              "Value #memused": 3,
+              "Value #memtotal": 4,
+              "Value #rx": 5,
+              "Value #tx": 6,
+              "Value #gpuutil": 7,
+              "Value #gpumem": 8
+            },
+            "renameByName": {
+              "Value #cpu": "CPU %",
+              "Value #gpumem": "GPU mem MB",
+              "Value #gpuutil": "GPU util %",
+              "Value #mempct": "Mem %",
+              "Value #memtotal": "Mem total GB",
+              "Value #memused": "Mem used GB",
+              "Value #rx": "Net RX",
+              "Value #tx": "Net TX",
+              "node": "node"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["homelab", "cluster", "node-exporter", "dcgm"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {
+    "refresh_intervals": ["1s", "2s", "5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"]
+  },
+  "timezone": "browser",
+  "title": "Homelab Cluster Resources",
+  "uid": "homelab-cluster-resources",
+  "version": 1
+}

@@ -8,7 +8,7 @@
 #     --set grafana.adminPassword='<set at deploy, not in git>'
 #
 # Retention: metrics older than 180d \(6 months\) are dropped automatically (Prometheus TSDB).
-# TSDB on engine HDD: /srv/homelab/prometheus (PV prometheus-engine-tsdb) — see docs/homelab-monitoring.md.
+# TSDB on engine HDD: /srv/homelab/prometheus (PV prometheus-engine-tsdb) � see docs/homelab-monitoring.md.
 
 fullnameOverride: prometheus-stack
 
@@ -37,6 +37,16 @@ grafana:
   enabled: true
   # Set at deploy time: --set grafana.adminPassword='...'
   adminPassword: CHANGE_ME_DEPLOY_TIME
+  grafana.ini:
+    dashboards:
+      default_refresh_intervals: 1s,2s,5s,10s,30s,1m,5m,15m,30m,1h
+      min_refresh_interval: 1s
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
   service:
     type: NodePort
     nodePort: 30300
@@ -62,6 +72,8 @@ prometheus:
     retention: 180d
     retentionSize: 200GB
     scrapeInterval: 30s
+    externalLabels:
+      cluster: homelab
     nodeSelector:
       kubernetes.io/hostname: engine
     resources:
@@ -79,7 +91,6 @@ prometheus:
           resources:
             requests:
               storage: 250Gi
-    # Scrape ServiceMonitors in monitoring (e.g. dcgm-exporter)
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
     podMonitorSelectorNilUsesHelmValues: false
@@ -109,7 +120,6 @@ kube-state-metrics:
       operator: Exists
       effect: NoSchedule
 
-# DaemonSet on all nodes (including arm64 Pis) — lightweight
 prometheus-node-exporter:
   enabled: true
   hostRootFsMount:
@@ -117,7 +127,6 @@ prometheus-node-exporter:
   tolerations:
     - operator: Exists
 
-# Avoid scheduling core stack on arm64 workers
 kubeControllerManager:
   enabled: false
 kubeEtcd:

@@ -26,6 +26,47 @@ Manifests: [k8s/monitoring/](../k8s/monitoring/), GPU: [k8s/gpu/](../k8s/gpu/).
 
 Default dashboards: Kubernetes / Node Exporter / Prometheus.
 
+### Cluster resources dashboard (all nodes)
+
+Provisioned from git via ConfigMap sidecar (`grafana_dashboard=1`):
+
+- **URL:** `http://192.168.10.41:30300/d/homelab-cluster-resources/homelab-cluster-resources`
+- **UID:** `homelab-cluster-resources`
+- **Refresh:** default **10s** (Grafana 13 `min_refresh_interval` floor); dashboard timepicker lists **1s**, **2s**, **5s** plus global options **5s–1d** in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml)
+
+| Row | Metrics source |
+|-----|----------------|
+| Cluster totals | `node_memory_*`, `node_cpu_seconds_total`, `DCGM_FI_DEV_GPU_UTIL` |
+| Per-node memory / CPU | node-exporter + `kube_node_info` join for k8s node names |
+| Network RX/TX | `node_network_*` excluding CNI/veth/docker bridges |
+| GPU | DCGM on `engine` + `desktop` (`node` label from ServiceMonitor) |
+| Snapshot table | Instant queries merged by `node` |
+
+Uses **MemAvailable** (not MemFree) for accurate memory %. Does not rely on upstream kube dashboard `$cluster` variable.
+
+Deploy / update:
+
+```bash
+bash scripts/homelab-deploy-dashboards.sh
+# After values change (refresh intervals):
+helm upgrade prometheus-stack prometheus-community/kube-prometheus-stack \
+  -n monitoring -f k8s/monitoring/kube-prometheus-stack-values.yaml \
+  --reuse-values
+```
+
+Nodes missing from panels (e.g. **desktop** until firewall/DCGM fixed) simply omit series; the dashboard still works for scraped nodes.
+
+### Upstream “Kubernetes / Compute Resources / Cluster” dashboard
+
+URL: `/d/efa86fd1d0c121a26444b636a3f509a8/kubernetes-compute-resources-cluster`
+
+| Issue | Root cause | Fix applied |
+|-------|------------|-------------|
+| Empty **`$cluster`** dropdown (`var-cluster=` in URL) | Prometheus had no `cluster` external label; kube-state-metrics metrics lack `cluster` | `prometheus.prometheusSpec.externalLabels.cluster: homelab` in values |
+| Memory % low / inconsistent with homelab dashboard | node-exporter on **desktop** not scraped (4/5 nodes); upstream mixes node-exporter util with kube-state allocatable | Use **Homelab Cluster Resources** above for accurate node-exporter totals; open **9100/tcp** + **10250/tcp** on desktop Windows host ([windows-firewall-homelab-desktop.ps1](../scripts/windows-firewall-homelab-desktop.ps1)) |
+
+After Helm upgrade, pick **`homelab`** in the `$cluster` dropdown (or wait for new samples with the label).
+
 ### GPU dashboard (per-node + cluster)
 
 Import [k8s/monitoring/homelab-gpu-dashboard.json](../k8s/monitoring/homelab-gpu-dashboard.json):
