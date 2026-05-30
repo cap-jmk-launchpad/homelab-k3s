@@ -1,0 +1,85 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Cluster GPU utilization (all nodes)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(DCGM_FI_DEV_GPU_UTIL)",
+          "legendFormat": "sum util %"
+        },
+        {
+          "expr": "avg(DCGM_FI_DEV_GPU_UTIL)",
+          "legendFormat": "avg util %"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } }
+    },
+    {
+      "title": "Per-node GPU utilization",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "DCGM_FI_DEV_GPU_UTIL",
+          "legendFormat": "{{node}} {{modelName}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } }
+    },
+    {
+      "title": "Engine — GPU util / memory / temp",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "DCGM_FI_DEV_GPU_UTIL{node=\"engine\"}", "legendFormat": "util %" },
+        { "expr": "DCGM_FI_DEV_FB_USED{node=\"engine\"}", "legendFormat": "FB used MiB" },
+        { "expr": "DCGM_FI_DEV_GPU_TEMP{node=\"engine\"}", "legendFormat": "temp C" }
+      ]
+    },
+    {
+      "title": "Desktop — GPU util / memory / temp",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "DCGM_FI_DEV_GPU_UTIL{node=\"desktop\"}", "legendFormat": "util %" },
+        { "expr": "DCGM_FI_DEV_FB_USED{node=\"desktop\"}", "legendFormat": "FB used MiB" },
+        { "expr": "DCGM_FI_DEV_GPU_TEMP{node=\"desktop\"}", "legendFormat": "temp C" }
+      ],
+      "description": "Empty until desktop is labeled gpu=nvidia and DCGM pod runs."
+    },
+    {
+      "title": "DCGM scrape targets (by instance)",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count by (instance, node) (DCGM_FI_DEV_GPU_UTIL)",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["homelab", "gpu", "dcgm"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "Homelab GPUs (DCGM)",
+  "uid": "homelab-gpu-dcgm",
+  "version": 1
+}

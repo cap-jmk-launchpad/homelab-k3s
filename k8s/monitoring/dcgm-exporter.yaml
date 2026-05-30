@@ -1,5 +1,4 @@
-# NVIDIA DCGM exporter — GPU metrics on engine only (gpu=nvidia / workload=training)
-# Requires NVIDIA device plugin on the node (already on engine).
+﻿# NVIDIA DCGM exporter — GPU metrics on nodes with gpu=nvidia (engine, desktop).
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -16,6 +15,7 @@ spec:
       labels:
         app: dcgm-exporter
     spec:
+      runtimeClassName: nvidia
       hostPID: true
       nodeSelector:
         gpu: nvidia
@@ -93,3 +93,8 @@ spec:
     - port: metrics
       interval: 30s
       path: /metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod

@@ -18,6 +18,8 @@ helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-sta
   --set grafana.adminPassword='YOUR_PASSWORD'
 
 kubectl apply -f prometheus-engine-pv.yaml
+kubectl apply -f ../gpu/nvidia-runtimeclass.yaml
+kubectl apply -f ../gpu/nvidia-device-plugin.yaml
 kubectl apply -f dcgm-exporter.yaml
 ```
 
