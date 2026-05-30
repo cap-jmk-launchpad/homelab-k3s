@@ -136,5 +136,16 @@ Ensure your PC can reach `192.168.10.0/24` (VPN/LAN).
 
 On blackpearl, clone/copy `k8s/monitoring/` and `k8s/gpu/`, then run commands in [k8s/monitoring/README.md](../k8s/monitoring/README.md) and [k8s/gpu/README.md](../k8s/gpu/README.md).
 
+## Troubleshooting empty Grafana panels
+
+If dashboards show **no data** but Grafana login works:
+
+1. Confirm Prometheus pod IP is on flannel (`10.42.x`), not Podman (`10.88.x`):  
+   `kubectl get pod -n monitoring prometheus-prometheus-stack-prometheus-0 -o wide`
+2. On **engine**, run [scripts/homelab-engine-cni-fix.sh](../scripts/homelab-engine-cni-fix.sh) and recycle monitoring pods on engine.
+3. From the Grafana pod, test:  
+   `wget -qO- --timeout=5 http://prometheus-stack-prometheus.monitoring.svc:9090/-/healthy`
+4. See [homelab-ops-audit.md](./homelab-ops-audit.md) for the full ops checklist.
+
 Optional sibling repo pointer only: homelab-k3s may reference this path; live install is in **beelink-cleanup**.
 
