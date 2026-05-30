@@ -31,10 +31,11 @@ sudo ufw --force enable
 if ! sudo iptables -C INPUT -i lo -j ACCEPT 2>/dev/null; then
   sudo iptables -I INPUT 1 -i lo -j ACCEPT
 fi
-# Persist loopback accept for k3s-agent (kube-router chains follow).
-if command -v netfilter-persistent >/dev/null 2>&1; then
-  sudo netfilter-persistent save || true
+# Persist loopback accept across reboot (UFW and iptables-persistent conflict on Debian).
+if ! sudo grep -q 'ufw-before-input -i lo -j ACCEPT' /etc/ufw/before.rules 2>/dev/null; then
+  echo '-A ufw-before-input -i lo -j ACCEPT' | sudo tee -a /etc/ufw/before.rules >/dev/null
 fi
+sudo ufw reload || true
 
 echo "OK: anch0r UFW enabled"
 sudo ufw status verbose

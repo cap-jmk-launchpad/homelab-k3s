@@ -3,7 +3,7 @@
 **Date:** 2026-05-30  
 **Scope:** LAN `192.168.10.0/24` — nodes blackpearl, engine, desktop, deck, anch0r  
 **Method:** Non-destructive checks (curl, kubectl, SSH config review, TCP connect scans). No brute force, no pod deletion, no exploitation.  
-**Context:** Run after deck/anch0r Pi OS upgrades. Both nodes **Ready**, `k3s-agent` **active**. **deck** still on kernel `6.6.74+rpt-rpi-v8` (upgrade incomplete vs anch0r `6.12.25+rpt-rpi-v8`) and **cordoned** (`SchedulingDisabled`).
+**Context:** Run after deck/anch0r Pi OS upgrades. All five workers **Ready** as of 2026-05-30 follow-up. **deck** kernel upgraded to `6.12.87+rpt-rpi-v8`. **anch0r** UFW + loopback rule restored after reboot (`k3s-agent` active; LAN metrics ports open).
 
 ## Executive summary
 
@@ -233,13 +233,13 @@ Remediation applied from `beelink-cleanup` manifests and scripts. Staging and Gr
 | H-2 | blackpearl UFW: `30000`, `30080` restricted to LAN | Done |
 | M-1 | NetworkPolicies in `majico-staging` ([network-policies.yaml](../k8s/majico-staging/network-policies.yaml)) | Done |
 | M-2 | engine UFW enabled (SSH, 80/9100/10250 from LAN) | Done |
-| M-3 | anch0r UFW enabled (22, 80/443, 9100/10250 from LAN); loopback `iptables` rule for k3s | Done |
+| M-3 | anch0r UFW enabled (22, 80/443, 9100/10250 from LAN); loopback via `/etc/ufw/before.rules` + runtime `iptables -I INPUT 1 -i lo` for k3s | Done |
 | M-4 | Grafana NodePort `30300` restricted on blackpearl UFW to LAN | Done |
 | M-5 | `/tmp/monitoring-secrets.env` shredded; password documented via k8s secret in [homelab-monitoring.md](./homelab-monitoring.md) | Done |
 | L-1 | Removed `99-headless.conf.bak` on engine | Done |
 | L-2 | `kubectl uncordon deck` | Done |
-| L-3 | deck OS/kernel upgrade to match anch0r | **Pending** (manual reboot/upgrade) |
-| L-4 | desktop workstation SSH with homelab key | **Pending** (add pubkey or run firewall script on host) |
+| L-3 | deck OS/kernel upgrade to match anch0r | Done (`6.12.87+rpt-rpi-v8`; uncordoned) |
+| L-4 | desktop metrics / SSH from LAN | **Partial** — WSL SSH via blackpearl jump `:2222` works; `netsh` LAN rules applied; `kubectl top node desktop` still blocked until **elevated** [windows-firewall-homelab-desktop-hyperv.ps1](../scripts/windows-firewall-homelab-desktop-hyperv.ps1) on the Windows host |
 | L-5 | supabase-auth CrashLoopBackOff | **Not changed** (out of scope; no secret rotation) |
 
 ### Scripts and manifests added
@@ -270,3 +270,6 @@ sudo ufw allow from <VPN_CIDR> to any port 30300 proto tcp comment 'Grafana VPN'
 | `kubectl get networkpolicy -n majico-staging` | 4 policies |
 | `kubectl get node deck` unschedulable | false |
 | anch0r `k3s-agent` | active |
+| `kubectl top nodes` (5 nodes) | 4/5 (desktop pending Hyper-V firewall admin) |
+| deck `df /` after podman prune + autoremove | ~47G used (was ~71G) |
+| anch0r `df /` after autoremove | ~11G used (was ~12G) |

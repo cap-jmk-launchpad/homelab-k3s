@@ -59,6 +59,20 @@ wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/Users/Julian/Documents/Programming/be
 
 Token comes from blackpearl: `sudo cat /var/lib/rancher/k3s/server/node-token`
 
+
+## Metrics firewall (WSL mirrored)
+
+Standard Windows firewall rules are not enough for mirrored WSL. Run both scripts **elevated** on the desktop host:
+
+```powershell
+Get-Content scripts\windows-firewall-homelab-desktop.ps1 | powershell -ExecutionPolicy Bypass -Command -
+Get-Content scripts\windows-firewall-homelab-desktop-hyperv.ps1 | powershell -ExecutionPolicy Bypass -Command -
+```
+
+Without the Hyper-V script, `:9100`/`:10250` time out from the LAN and `kubectl top node desktop` stays `<unknown>`.
+
+Verify from blackpearl: `nc -zv 192.168.10.31 9100` and `kubectl top node desktop`.
+
 ## Notes
 
 - **podman-machine-default** and **docker-desktop** distros are unchanged; k3s runs only in Ubuntu-24.04.
