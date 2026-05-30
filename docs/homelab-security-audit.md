@@ -9,7 +9,7 @@
 
 The cluster core is in reasonable shape for a homelab: **anonymous Kubernetes API access is denied**, **kubelet read-only port 10255 is closed**, **embedded etcd is not exposed**, **SSH is key-only** on nodes we could inspect, and **Grafana default `admin/admin` does not work**. The main gaps are **network segmentation** (no NetworkPolicies, permissive UFW on the control plane, engine without UFW, anch0r without UFW) and **LAN-wide exposure of staging NodePorts and monitoring** on blackpearl. No committed secrets were found in git (only placeholders and docs).
 
-**Auto-fixed in this audit:** documentation only (this file). No live firewall or cluster changes were applied.
+**Auto-fixed in this audit:** documentation only (this file). Live remediation applied 2026-05-30 — see [Remediated](#remediated-2026-05-30).
 
 ---
 
@@ -220,3 +220,53 @@ curl -s -o /dev/null -w '%{http_code}\n' http://192.168.10.41:30300/api/org     
 ```
 
 Related: [homelab-monitoring.md](./homelab-monitoring.md)
+
+---
+
+## Remediated (2026-05-30)
+
+Remediation applied from `beelink-cleanup` manifests and scripts. Staging and Grafana were verified reachable from the LAN after changes.
+
+| ID | Action | Status |
+|----|--------|--------|
+| H-1 | blackpearl UFW: `6443` restricted to `192.168.10.0/24` | Done |
+| H-2 | blackpearl UFW: `30000`, `30080` restricted to LAN | Done |
+| M-1 | NetworkPolicies in `majico-staging` ([network-policies.yaml](../k8s/majico-staging/network-policies.yaml)) | Done |
+| M-2 | engine UFW enabled (SSH, 80/9100/10250 from LAN) | Done |
+| M-3 | anch0r UFW enabled (22, 80/443, 9100/10250 from LAN); loopback `iptables` rule for k3s | Done |
+| M-4 | Grafana NodePort `30300` restricted on blackpearl UFW to LAN | Done |
+| M-5 | `/tmp/monitoring-secrets.env` shredded; password documented via k8s secret in [homelab-monitoring.md](./homelab-monitoring.md) | Done |
+| L-1 | Removed `99-headless.conf.bak` on engine | Done |
+| L-2 | `kubectl uncordon deck` | Done |
+| L-3 | deck OS/kernel upgrade to match anch0r | **Pending** (manual reboot/upgrade) |
+| L-4 | desktop workstation SSH with homelab key | **Pending** (add pubkey or run firewall script on host) |
+| L-5 | supabase-auth CrashLoopBackOff | **Not changed** (out of scope; no secret rotation) |
+
+### Scripts and manifests added
+
+- [scripts/homelab-security-ufw-blackpearl.sh](../scripts/homelab-security-ufw-blackpearl.sh)
+- [scripts/homelab-security-ufw-engine.sh](../scripts/homelab-security-ufw-engine.sh)
+- [scripts/homelab-security-ufw-anch0r.sh](../scripts/homelab-security-ufw-anch0r.sh)
+- [k8s/majico-staging/network-policies.yaml](../k8s/majico-staging/network-policies.yaml)
+
+### Wider LAN / VPN access later
+
+If you need kubectl or staging NodePorts from outside `192.168.10.0/24`, add UFW rules on blackpearl, for example:
+
+```bash
+sudo ufw allow from <VPN_CIDR> to any port 6443 proto tcp comment 'k3s API VPN'
+sudo ufw allow from <VPN_CIDR> to any port 30000 proto tcp comment 'staging kong VPN'
+sudo ufw allow from <VPN_CIDR> to any port 30080 proto tcp comment 'staging app VPN'
+sudo ufw allow from <VPN_CIDR> to any port 30300 proto tcp comment 'Grafana VPN'
+```
+
+### Post-remediation verification (2026-05-30)
+
+| Check | Result |
+|-------|--------|
+| `http://192.168.10.41:30080/` | HTTP 200 |
+| `http://192.168.10.41:30000/` | HTTP 404 (Kong up) |
+| `http://192.168.10.41:30300/api/org` | HTTP 401 (auth required) |
+| `kubectl get networkpolicy -n majico-staging` | 4 policies |
+| `kubectl get node deck` unschedulable | false |
+| anch0r `k3s-agent` | active |

@@ -22,7 +22,7 @@ Manifests: [k8s/monitoring/](../k8s/monitoring/), GPU: [k8s/gpu/](../k8s/gpu/).
 - **URL:** `http://192.168.10.41:30300` (or `http://192.168.10.33:30300` via node IP)
 - **Port:** NodePort `30300`
 - **User:** `admin`
-- **Password:** set at Helm deploy (`--set grafana.adminPassword=...`). Not stored in git. On blackpearl: `cat /tmp/monitoring-secrets.env` (if still present).
+- **Password:** set at Helm deploy (`--set grafana.adminPassword=...`). Not stored in git. Retrieve from the cluster secret (on blackpearl): `kubectl get secret -n monitoring prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 -d; echo`. Store in your password manager; `/tmp/monitoring-secrets.env` was removed 2026-05-30.
 
 Default dashboards: Kubernetes / Node Exporter / Prometheus.
 

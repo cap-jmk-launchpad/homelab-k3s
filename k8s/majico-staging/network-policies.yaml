@@ -1,0 +1,64 @@
+# majico-staging: default-deny ingress with explicit allows.
+# NodePorts 30000/30080 remain reachable from LAN (192.168.10.0/24).
+# Apply: kubectl apply -f k8s/majico-staging/network-policies.yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: majico-staging
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-intra-namespace
+  namespace: majico-staging
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-lan-nodeport-kong
+  namespace: majico-staging
+spec:
+  podSelector:
+    matchLabels:
+      app: supabase-kong
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 192.168.10.0/24
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-lan-nodeport-app
+  namespace: majico-staging
+spec:
+  podSelector:
+    matchLabels:
+      app: majico-app
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 192.168.10.0/24
+      ports:
+        - protocol: TCP
+          port: 3000
