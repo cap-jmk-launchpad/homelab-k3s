@@ -18,3 +18,14 @@ Pin the deployment to the control plane so it can scrape all kubelets (avoid sch
 kubectl apply -f metrics-server-patch.json   # see metrics-server-patch.json
 kubectl apply -f metrics-server-pin-control-plane.yaml
 ```
+
+## Worker firewall (9100 / 10250)
+
+`metrics-server` and Prometheus node-exporter reach kubelets and exporters on **192.168.10.x**. Pi workers with **ufw** default-deny need:
+
+```bash
+# on each worker (anch0r, deck, …) as root
+./homelab-open-monitoring-ports.sh
+```
+
+Or apply [homelab-worker-firewall-ds.yaml](./homelab-worker-firewall-ds.yaml) once, then delete the DaemonSet. See [docs/homelab-monitoring.md](../../docs/homelab-monitoring.md).

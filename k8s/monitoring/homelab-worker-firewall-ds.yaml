@@ -1,0 +1,51 @@
+# Optional one-time-style DaemonSet: opens ufw on nodes that use ufw (typical Pi workers).
+# Apply when Prometheus node-exporter targets show "context deadline exceeded" from blackpearl.
+# Remove after success: kubectl delete -f homelab-worker-firewall-ds.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: homelab-monitoring-firewall
+  namespace: kube-system
+  labels:
+    app: homelab-monitoring-firewall
+spec:
+  selector:
+    matchLabels:
+      app: homelab-monitoring-firewall
+  template:
+    metadata:
+      labels:
+        app: homelab-monitoring-firewall
+    spec:
+      hostNetwork: true
+      hostPID: true
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: ufw
+          image: alpine:3.20
+          securityContext:
+            privileged: true
+          command:
+            - sh
+            - -ec
+            - |
+              if ! command -v nsenter >/dev/null; then
+                apk add --no-cache util-linux >/dev/null
+              fi
+              nsenter -t 1 -m -u -i -n -p -- sh -ec '
+                LAN=192.168.10.0/24
+                if command -v ufw >/dev/null 2>&1; then
+                  ufw allow from "$LAN" to any port 9100 proto tcp comment homelab-node-exporter || true
+                  ufw allow from "$LAN" to any port 10250 proto tcp comment homelab-kubelet-metrics || true
+                  echo configured-ufw
+                fi
+                if [ -x /usr/sbin/iptables ]; then
+                  for port in 9100 10250; do
+                    /usr/sbin/iptables -C INPUT -s "$LAN" -p tcp --dport "$port" -j ACCEPT 2>/dev/null \
+                      || /usr/sbin/iptables -I INPUT -s "$LAN" -p tcp --dport "$port" -j ACCEPT
+                  done
+                  echo configured-iptables
+                fi
+              '
+              sleep 86400

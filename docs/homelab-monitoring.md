@@ -29,7 +29,7 @@ Default dashboards: Kubernetes / Node Exporter / Prometheus. GPU: search Grafana
 
 In-cluster: `http://prometheus-stack-prometheus.monitoring.svc:9090` (ClusterIP). Use Grafana Explore or port-forward for ad-hoc queries.
 
-**Retention:** **10 years** maximum. TSDB size capped at 200GB (`retentionSize`); time-based cap is `retention: 10y` in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml).
+**Retention:** **180 days** (6 months). TSDB size capped at 200GB (`retentionSize`); time-based cap is `retention: 180d` in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml).
 
 **Storage (engine HDD):**
 
@@ -48,7 +48,7 @@ sudo mkdir -p /srv/homelab/prometheus
 sudo chown -R 1000:2000 /srv/homelab/prometheus
 ```
 
-Samples older than 10 years are always dropped; no data older than 10y is kept. Older samples may also be dropped when `retentionSize` is exceeded.
+Samples older than 180 days are dropped automatically. Older samples may also be dropped when `retentionSize` (200GB) is exceeded.
 
 ## GPU metrics (engine)
 
@@ -64,9 +64,61 @@ kubectl run curl-dcgm --rm -it --restart=Never -n monitoring --image=curlimages/
 
 If DCGM logs show NVML errors, confirm NVIDIA drivers and `/dev/nvidia` on **engine** (device plugin alone does not replace host drivers).
 
+## Cluster memory (Grafana / Prometheus)
+
+**Node capacity** (from `kubectl get nodes`; 5-node homelab):
+
+| Node | RAM (approx.) | LAN IP |
+|------|----------------|--------|
+| anch0r | 1.8 GiB | 192.168.10.22 |
+| deck | 7.6 GiB | 192.168.10.26 |
+| blackpearl | 12.6 GiB | 192.168.10.33 |
+| desktop (WSL) | 31 GiB | 192.168.10.31 |
+| engine | 62 GiB | 192.168.10.32 |
+| **Total** | **~115 GiB** | |
+
+Prometheus scrapes **node-exporter** on port `9100` (DaemonSet on every node). Use **cluster-wide** PromQL so Grafana shows all nodes, not a single instance:
+
+```promql
+# Total installed RAM (GiB)
+sum(node_memory_MemTotal_bytes) / 1024 / 1024 / 1024
+
+# Available RAM (GiB)
+sum(node_memory_MemAvailable_bytes) / 1024 / 1024 / 1024
+
+# Used % (cluster)
+100 * (1 - sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))
+```
+
+In **Explore** or a custom panel: `count(node_memory_MemTotal_bytes)` should equal the number of healthy exporters (4–5). If it is `1` or `2`, only blackpearl/engine were reachable — see worker firewall below.
+
+Default **Node Exporter Full** dashboards filter by `instance`; pick **All** or use the queries above for homelab totals.
+
+### Worker firewall (required for Pi nodes)
+
+Scrapes and `kubectl top` call worker **LAN IPs** (`192.168.10.x`) on ports **9100** (node-exporter) and **10250** (kubelet). Default **ufw** on Pis blocks these from the LAN; symptoms:
+
+- Prometheus: `count(node_memory_MemTotal_bytes)` ≪ node count; targets `context deadline exceeded`
+- `kubectl top`: `<unknown>` on workers while control-plane/engine work
+
+**One-time (per worker):** run [scripts/homelab-open-monitoring-ports.sh](../scripts/homelab-open-monitoring-ports.sh) as root, or apply the optional [homelab-worker-firewall-ds.yaml](../k8s/monitoring/homelab-worker-firewall-ds.yaml) then delete it:
+
+```bash
+kubectl apply -f k8s/monitoring/homelab-worker-firewall-ds.yaml
+# after all pods log configured-ufw / configured-iptables:
+kubectl delete -f k8s/monitoring/homelab-worker-firewall-ds.yaml
+```
+
+Nodes without `ufw` (e.g. **anch0r**) still need `iptables` INPUT rules for `192.168.10.0/24` → `9100`, `10250` (the DaemonSet adds these when `iptables` exists).
+
+### desktop (WSL2)
+
+- **node-exporter:** set `prometheus-node-exporter.hostRootFsMount.enabled: false` in Helm values (WSL cannot mount `/` with rshared). Pod should be `Running` on `desktop`.
+- **LAN scrape / kubelet:** WSL often blocks inbound from other LAN hosts. Allow TCP **9100** and **10250** on the Windows host for `192.168.10.0/24`, or accept missing desktop metrics in cluster sums until fixed.
+
 ## metrics-server / `kubectl top`
 
-If workers show `<unknown>`, apply the k3s kubelet TLS patch in [k8s/monitoring/metrics-server-k3s-patch.md](../k8s/monitoring/metrics-server-k3s-patch.md).
+If workers show `<unknown>`, apply the k3s kubelet TLS patch in [k8s/monitoring/metrics-server-k3s-patch.md](../k8s/monitoring/metrics-server-k3s-patch.md), then ensure worker **firewall** allows **10250** from the LAN (see above).
 
 ## Lens (workstation only)
 

@@ -1,0 +1,20 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": { "name": "nettest-engine" },
+  "spec": {
+    "restartPolicy": "Never",
+    "nodeSelector": { "kubernetes.io/hostname": "engine" },
+    "containers": [
+      {
+        "name": "curl",
+        "image": "curlimages/curl:8.5.0",
+        "command": [
+          "sh",
+          "-c",
+          "for ip in 192.168.10.31 192.168.10.32; do printf \"%s \" \"$ip\"; curl -s -m 3 -o /dev/null -w '%{http_code}\\n' http://$ip:9100/metrics; done"
+        ]
+      }
+    ]
+  }
+}

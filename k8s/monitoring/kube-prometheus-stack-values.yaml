@@ -112,6 +112,8 @@ kube-state-metrics:
 # DaemonSet on all nodes (including arm64 Pis) — lightweight
 prometheus-node-exporter:
   enabled: true
+  hostRootFsMount:
+    enabled: false
   tolerations:
     - operator: Exists
 
