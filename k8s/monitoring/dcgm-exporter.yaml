@@ -1,4 +1,4 @@
-﻿# NVIDIA DCGM exporter — GPU metrics on nodes with gpu=nvidia (engine, desktop).
+# NVIDIA DCGM exporter � GPU metrics on nodes with gpu=nvidia (engine, desktop).
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:

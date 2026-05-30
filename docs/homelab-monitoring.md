@@ -137,3 +137,4 @@ Ensure your PC can reach `192.168.10.0/24` (VPN/LAN).
 On blackpearl, clone/copy `k8s/monitoring/` and `k8s/gpu/`, then run commands in [k8s/monitoring/README.md](../k8s/monitoring/README.md) and [k8s/gpu/README.md](../k8s/gpu/README.md).
 
 Optional sibling repo pointer only: homelab-k3s may reference this path; live install is in **beelink-cleanup**.
+
