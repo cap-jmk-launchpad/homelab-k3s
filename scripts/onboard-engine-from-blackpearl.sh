@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Run on blackpearl after SSH to engine works (julian@192.168.10.32).
+# Run on blackpearl after SSH to engine works (s4il0r@192.168.10.32).
 set -euo pipefail
-ENGINE_HOST="${ENGINE_HOST:-julian@192.168.10.32}"
+ENGINE_HOST="${ENGINE_HOST:-s4il0r@192.168.10.32}"
 K3S_URL="${K3S_URL:-https://192.168.10.41:6443}"
 TOKEN="$(sudo cat /var/lib/rancher/k3s/server/node-token)"
 REPO="${REPO:-$HOME/staging/beelink-cleanup}"

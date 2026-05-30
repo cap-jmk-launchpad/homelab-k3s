@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run once ON engine (as julian) so blackpearl + your PC can SSH without password.
+# Run once ON engine (as s4il0r) so blackpearl + your PC can SSH without password.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 AUTH="$HOME/.ssh/authorized_keys"
@@ -15,4 +15,4 @@ for keyfile in "$ROOT/scripts/blackpearl.pub" "$ROOT/beelink.pub" "$ROOT/scripts
   done <"$keyfile"
 done
 echo "Keys installed in $AUTH"
-echo "Test from blackpearl: ssh julian@$(hostname -I | awk '{print $1}') hostname"
+echo "Test from blackpearl: ssh s4il0r@$(hostname -I | awk '{print $1}') hostname"

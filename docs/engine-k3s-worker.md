@@ -5,7 +5,7 @@ Engine is the **dedicated GPU box** (not the daily driver). It joins **blackpear
 | Item | Value |
 |------|--------|
 | Host | `engine` / `192.168.10.32` (Fritz!box may list `.29` / `.40` — use the one that answers SSH) |
-| User | `julian` |
+| User | `s4il0r` |
 | Cluster | `https://192.168.10.41:6443` (blackpearl) |
 | Labels | `workload=training`, `gpu=nvidia`, `machine=engine` |
 
@@ -14,8 +14,8 @@ Engine is the **dedicated GPU box** (not the daily driver). It joins **blackpear
 From your PC, copy repo to engine and run:
 
 ```powershell
-scp -r C:\Users\Julian\Documents\Programming\beelink-cleanup julian@engine:~/beelink-cleanup
-ssh julian@engine "bash ~/beelink-cleanup/scripts/setup-engine-access.sh"
+scp -r C:\Users\s4il0r\Documents\Programming\beelink-cleanup s4il0r@engine:~/beelink-cleanup
+ssh s4il0r@engine "bash ~/beelink-cleanup/scripts/setup-engine-access.sh"
 ```
 
 Or paste `scripts/blackpearl.pub` into `~/.ssh/authorized_keys` on engine.
@@ -23,7 +23,7 @@ Or paste `scripts/blackpearl.pub` into `~/.ssh/authorized_keys` on engine.
 Verify:
 
 ```powershell
-ssh -i C:\Users\Julian\Documents\Programming\beelink-cleanup\blackpearl s4il0r@192.168.10.41 "ssh julian@192.168.10.32 hostname"
+ssh -i C:\Users\s4il0r\Documents\Programming\beelink-cleanup\blackpearl s4il0r@192.168.10.41 "ssh s4il0r@192.168.10.32 hostname"
 ```
 
 ## Join cluster
