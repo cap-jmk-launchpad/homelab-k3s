@@ -1,0 +1,36 @@
+# Static PV for Prometheus TSDB on engine HDD (sda2 mounted at /).
+# Apply before helm upgrade when enabling prometheus.prometheusSpec.storageSpec.
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: prometheus-engine
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-engine-tsdb
+  labels:
+    app: prometheus
+    machine: engine
+spec:
+  capacity:
+    storage: 250Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: prometheus-engine
+  hostPath:
+    path: /srv/homelab/prometheus
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - engine

@@ -8,13 +8,14 @@ Cluster control plane: **blackpearl** (`192.168.10.41` SSH, node IP often `192.1
 |-----------|-----------|-------|
 | metrics-server | `kube-system` | k3s default; `kubectl top` |
 | kube-prometheus-stack | `monitoring` | Prometheus + Grafana + node-exporter |
-| DCGM exporter | `monitoring` | DaemonSet on `engine` (`gpu=nvidia`) |
+| NVIDIA device plugin | `kube-system` | DaemonSet on `gpu=nvidia` nodes only |
+| DCGM exporter | `monitoring` | DaemonSet on `gpu=nvidia` (engine; desktop when ready) |
 
 **Prometheus** (TSDB) runs on **engine** with persistent storage on the engine HDD. **Grafana**, **Alertmanager**, and the **prometheus-operator** stay on **blackpearl** (`kubernetes.io/hostname=blackpearl`). **node-exporter** runs on all nodes (arm64 Pis included).
 
 `majico-staging` is untouched.
 
-Manifests: [k8s/monitoring/](../k8s/monitoring/).
+Manifests: [k8s/monitoring/](../k8s/monitoring/), GPU: [k8s/gpu/](../k8s/gpu/).
 
 ## Grafana (LAN)
 
@@ -23,7 +24,27 @@ Manifests: [k8s/monitoring/](../k8s/monitoring/).
 - **User:** `admin`
 - **Password:** set at Helm deploy (`--set grafana.adminPassword=...`). Not stored in git. On blackpearl: `cat /tmp/monitoring-secrets.env` (if still present).
 
-Default dashboards: Kubernetes / Node Exporter / Prometheus. GPU: search Grafana for DCGM or add a DCGM dashboard (UID varies by exporter version).
+Default dashboards: Kubernetes / Node Exporter / Prometheus.
+
+### GPU dashboard (per-node + cluster)
+
+Import [k8s/monitoring/homelab-gpu-dashboard.json](../k8s/monitoring/homelab-gpu-dashboard.json):
+
+1. Grafana → **Dashboards** → **New** → **Import**
+2. Upload JSON or paste file contents
+3. Select Prometheus datasource (uid `prometheus` if unchanged)
+
+Dashboard **Homelab GPUs (DCGM)** (`uid: homelab-gpu-dcgm`):
+
+| Panel | PromQL idea |
+|-------|-------------|
+| Cluster utilization | `sum(DCGM_FI_DEV_GPU_UTIL)` and `avg(...)` across all DCGM targets |
+| Per-node utilization | `DCGM_FI_DEV_GPU_UTIL` — legend uses `node` label from ServiceMonitor relabel |
+| Engine / Desktop rows | `DCGM_FI_DEV_GPU_UTIL{node="engine"}` and `{node="desktop"}` |
+
+Alternative: import community dashboard **12239** (NVIDIA DCGM Exporter) and add the same cluster panels.
+
+ServiceMonitor relabels `node` and `pod` so each GPU exporter is distinct in Prometheus (`instance` = scrape address, `node` = Kubernetes node name).
 
 ## Prometheus
 
@@ -50,75 +71,49 @@ sudo chown -R 1000:2000 /srv/homelab/prometheus
 
 Samples older than 180 days are dropped automatically. Older samples may also be dropped when `retentionSize` (200GB) is exceeded.
 
-## GPU metrics (engine)
+## GPU metrics (engine + desktop)
 
-`dcgm-exporter` DaemonSet selects `gpu=nvidia` (engine). ServiceMonitor label `release: prometheus-stack` so Prometheus scrapes port `9400`.
+Nodes must be labeled `gpu=nvidia` (and optionally `workload=training`). Apply GPU stack from [k8s/gpu/README.md](../k8s/gpu/README.md):
+
+```bash
+kubectl apply -f k8s/gpu/nvidia-runtimeclass.yaml
+kubectl apply -f k8s/gpu/nvidia-device-plugin.yaml
+kubectl apply -f k8s/monitoring/dcgm-exporter.yaml
+```
 
 Verify on blackpearl:
 
 ```bash
+kubectl get nodes -o custom-columns=NAME:.metadata.name,GPU:.status.capacity.nvidia\\.com/gpu
+kubectl get pods -n kube-system -l name=nvidia-device-plugin-ds -o wide
 kubectl get pods -n monitoring -l app=dcgm-exporter -o wide
-kubectl run curl-dcgm --rm -it --restart=Never -n monitoring --image=curlimages/curl -- \
-  curl -s http://dcgm-exporter.monitoring.svc:9400/metrics | head
 ```
 
-If DCGM logs show NVML errors, confirm NVIDIA drivers and `/dev/nvidia` on **engine** (device plugin alone does not replace host drivers).
-
-## Cluster memory (Grafana / Prometheus)
-
-**Node capacity** (from `kubectl get nodes`; 5-node homelab):
-
-| Node | RAM (approx.) | LAN IP |
-|------|----------------|--------|
-| anch0r | 1.8 GiB | 192.168.10.22 |
-| deck | 7.6 GiB | 192.168.10.26 |
-| blackpearl | 12.6 GiB | 192.168.10.33 |
-| desktop (WSL) | 31 GiB | 192.168.10.31 |
-| engine | 62 GiB | 192.168.10.32 |
-| **Total** | **~115 GiB** | |
-
-Prometheus scrapes **node-exporter** on port `9100` (DaemonSet on every node). Use **cluster-wide** PromQL so Grafana shows all nodes, not a single instance:
-
-```promql
-# Total installed RAM (GiB)
-sum(node_memory_MemTotal_bytes) / 1024 / 1024 / 1024
-
-# Available RAM (GiB)
-sum(node_memory_MemAvailable_bytes) / 1024 / 1024 / 1024
-
-# Used % (cluster)
-100 * (1 - sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))
-```
-
-In **Explore** or a custom panel: `count(node_memory_MemTotal_bytes)` should equal the number of healthy exporters (4–5). If it is `1` or `2`, only blackpearl/engine were reachable — see worker firewall below.
-
-Default **Node Exporter Full** dashboards filter by `instance`; pick **All** or use the queries above for homelab totals.
-
-### Worker firewall (required for Pi nodes)
-
-Scrapes and `kubectl top` call worker **LAN IPs** (`192.168.10.x`) on ports **9100** (node-exporter) and **10250** (kubelet). Default **ufw** on Pis blocks these from the LAN; symptoms:
-
-- Prometheus: `count(node_memory_MemTotal_bytes)` ≪ node count; targets `context deadline exceeded`
-- `kubectl top`: `<unknown>` on workers while control-plane/engine work
-
-**One-time (per worker):** run [scripts/homelab-open-monitoring-ports.sh](../scripts/homelab-open-monitoring-ports.sh) as root, or apply the optional [homelab-worker-firewall-ds.yaml](../k8s/monitoring/homelab-worker-firewall-ds.yaml) then delete it:
+DCGM metric count per pod (from engine host, replace pod IP):
 
 ```bash
-kubectl apply -f k8s/monitoring/homelab-worker-firewall-ds.yaml
-# after all pods log configured-ufw / configured-iptables:
-kubectl delete -f k8s/monitoring/homelab-worker-firewall-ds.yaml
+curl -s http://<dcgm-pod-ip>:9400/metrics | grep -c DCGM_FI
 ```
 
-Nodes without `ufw` (e.g. **anch0r**) still need `iptables` INPUT rules for `192.168.10.0/24` → `9100`, `10250` (the DaemonSet adds these when `iptables` exists).
+Prometheus should show **one target per GPU node** (distinct `instance`, shared `job`, different `node` label).
 
-### desktop (WSL2)
+### Engine (`192.168.10.32`)
 
-- **node-exporter:** set `prometheus-node-exporter.hostRootFsMount.enabled: false` in Helm values (WSL cannot mount `/` with rshared). Pod should be `Running` on `desktop`.
-- **LAN scrape / kubelet:** WSL often blocks inbound from other LAN hosts. Allow TCP **9100** and **10250** on the Windows host for `192.168.10.0/24`, or accept missing desktop metrics in cluster sums until fixed.
+- Host: `nvidia-smi`, `nvidia-container-toolkit`, k3s agent imports `/etc/containerd/conf.d/99-nvidia.toml`
+- After `systemctl restart k3s-agent`, if pods fail with missing CNI plugins, run [engine-cni-opt-bin.sh](../k8s/gpu/engine-cni-opt-bin.sh) on engine
+
+### Desktop (`192.168.10.31`, WSL2 agent)
+
+**Blockers (2026-05-30):**
+
+- SSH from LAN to `192.168.10.31:2222` timed out; jump via blackpearl failed (`Permission denied (publickey)`)
+- Node not labeled `gpu=nvidia`; no `nvidia.com/gpu` capacity until WSL GPU + toolkit are configured locally
+
+When SSH works: confirm `nvidia-smi` in WSL, install toolkit, restart `k3s-agent`, label node, second DCGM pod and Prometheus target will appear.
 
 ## metrics-server / `kubectl top`
 
-If workers show `<unknown>`, apply the k3s kubelet TLS patch in [k8s/monitoring/metrics-server-k3s-patch.md](../k8s/monitoring/metrics-server-k3s-patch.md), then ensure worker **firewall** allows **10250** from the LAN (see above).
+If workers show `<unknown>`, apply the k3s kubelet TLS patch in [k8s/monitoring/metrics-server-k3s-patch.md](../k8s/monitoring/metrics-server-k3s-patch.md).
 
 ## Lens (workstation only)
 
@@ -139,6 +134,6 @@ Ensure your PC can reach `192.168.10.0/24` (VPN/LAN).
 
 ## Re-deploy from git
 
-On blackpearl, clone/copy `k8s/monitoring/` and run commands in [k8s/monitoring/README.md](../k8s/monitoring/README.md).
+On blackpearl, clone/copy `k8s/monitoring/` and `k8s/gpu/`, then run commands in [k8s/monitoring/README.md](../k8s/monitoring/README.md) and [k8s/gpu/README.md](../k8s/gpu/README.md).
 
 Optional sibling repo pointer only: homelab-k3s may reference this path; live install is in **beelink-cleanup**.
