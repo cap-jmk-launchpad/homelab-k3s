@@ -1,9 +1,30 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
+﻿apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: agent-swarm
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: agent-swarm-db-scripts
+    files:
+      - db/migrate.sh
+  - name: agent-swarm-migrations
+    files:
+      - db/migrations/20260517120000_control_plane.sql
+      - db/migrations/20260517140000_agent_run_input_trace.sql
+      - db/migrations/20260517150000_interventions_latest.sql
+      - db/migrations/20260517151000_swarm_handoffs_sessions.sql
+      - db/migrations/20260517152000_research_sessions_hypotheses.sql
+      - db/migrations/20260518170000_dashboard_query_indexes.sql
+      - db/migrations/20260518180000_db_native_control_plane.sql
+      - db/migrations/20260519100000_worker_status.sql
 resources:
   - namespace.yaml
   - configmap.yaml
+  - db/postgres-service.yaml
+  - db/postgres-statefulset.yaml
+  - db/postgrest-service.yaml
+  - db/postgrest-deployment.yaml
+  - db/migrate-job.yaml
   - dashboard-deployment.yaml
   - async-swarm-deployment.yaml
   - services.yaml

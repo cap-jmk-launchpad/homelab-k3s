@@ -19,7 +19,27 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: blackpearl
-      containers:
+
+      initContainers:
+        - name: wait-postgrest
+          image: curlimages/curl:8.5.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SUPABASE_SERVICE_ROLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agent-swarm-secrets
+                  key: SUPABASE_SERVICE_ROLE_KEY
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+                -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+                http://postgrest:54321/rest/v1/; do
+                echo "waiting for postgrest..."
+                sleep 3
+              done      containers:
         - name: async-swarm
           image: node:22-bookworm-slim
           imagePullPolicy: IfNotPresent

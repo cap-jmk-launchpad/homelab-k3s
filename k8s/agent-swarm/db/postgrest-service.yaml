@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgrest
+  labels:
+    app: postgrest
+spec:
+  ports:
+    # Match local Supabase API port convention (54321).
+    - name: http
+      port: 54321
+      targetPort: 3000
+  selector:
+    app: postgrest

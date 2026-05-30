@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agent-swarm-db-migrate
+  labels:
+    app: agent-swarm-db-migrate
+spec:
+  ttlSecondsAfterFinished: 604800
+  backoffLimit: 8
+  template:
+    metadata:
+      labels:
+        app: agent-swarm-db-migrate
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      containers:
+        - name: migrate
+          image: postgres:15-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - /scripts/migrate.sh
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              value: postgres
+            - name: PGDATABASE
+              value: postgres
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: agent-swarm-db-secrets
+                  key: POSTGRES_PASSWORD
+            - name: AUTHENTICATOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: agent-swarm-db-secrets
+                  key: AUTHENTICATOR_PASSWORD
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: migrations
+          configMap:
+            name: agent-swarm-migrations
+        - name: scripts
+          configMap:
+            name: agent-swarm-db-scripts
+            defaultMode: 0755

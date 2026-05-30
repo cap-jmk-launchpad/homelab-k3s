@@ -17,5 +17,6 @@ data:
   BENCHMARKS_ROOT: "/li/benchmarks"
   LI_LOCAL_CI_ROOT: "/li/li-local-ci"
   LI_GITHUB_ENV: "/li/.env.github"
-  # When Supabase runs on the host (recommended): LAN IP of that host + supabase api port.
-  SUPABASE_URL: "http://192.168.10.41:54321"
+  # In-cluster PostgREST (Supabase-compatible API). LAN debug: NodePort 30421
+  SUPABASE_URL: "http://postgrest:54321"
+
