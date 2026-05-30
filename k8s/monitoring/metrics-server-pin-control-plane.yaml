@@ -1,0 +1,15 @@
+# Pin metrics-server to control plane so it can reach kubelets reliably on k3s homelab.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-server
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule

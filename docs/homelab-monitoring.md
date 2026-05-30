@@ -45,7 +45,7 @@ Prepare on engine (once):
 
 ```bash
 sudo mkdir -p /srv/homelab/prometheus
-sudo chown 65534:65534 /srv/homelab/prometheus
+sudo chown -R 1000:2000 /srv/homelab/prometheus
 ```
 
 Samples older than 10 years are always dropped; no data older than 10y is kept. Older samples may also be dropped when `retentionSize` is exceeded.
