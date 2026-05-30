@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agents-dashboard
+  namespace: agent-swarm
+  labels:
+    app: agents-dashboard
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: agents-dashboard
+  template:
+    metadata:
+      labels:
+        app: agents-dashboard
+    spec:
+      # Pin to a node that has the li checkout + Docker for Supabase (see README).
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      containers:
+        - name: dashboard
+          image: node:22-bookworm-slim
+          imagePullPolicy: IfNotPresent
+          workingDir: /li/li-cursor-agents
+          command:
+            - bash
+            - -lc
+            - |
+              set -euo pipefail
+              apt-get update -qq && apt-get install -y -qq curl git python3 ca-certificates >/dev/null
+              if [[ ! -d node_modules ]]; then npm ci; fi
+              npm run build
+              exec node dist/cli/serve-dashboard.js --port "${LI_AGENT_DASHBOARD_PORT}"
+          ports:
+            - name: http
+              containerPort: 9477
+          envFrom:
+            - configMapRef:
+                name: agent-swarm-config
+            - secretRef:
+                name: agent-swarm-secrets
+                optional: true
+          env:
+            - name: AGENTS_SWARM_ROLE
+              value: dashboard
+            - name: LI_SWARM_EXTERNAL
+              value: "1"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 8
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 4Gi
+          volumeMounts:
+            - name: li-repo
+              mountPath: /li
+              readOnly: false
+      volumes:
+        - name: li-repo
+          hostPath:
+            path: /home/s4il0r/Documents/Cursor/li-langverse
+            type: Directory

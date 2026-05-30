@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agents-async-swarm
+  namespace: agent-swarm
+  labels:
+    app: agents-async-swarm
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: agents-async-swarm
+  template:
+    metadata:
+      labels:
+        app: agents-async-swarm
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      containers:
+        - name: async-swarm
+          image: node:22-bookworm-slim
+          imagePullPolicy: IfNotPresent
+          workingDir: /li/li-cursor-agents
+          command:
+            - bash
+            - -lc
+            - |
+              set -euo pipefail
+              apt-get update -qq && apt-get install -y -qq curl git python3 ca-certificates >/dev/null
+              if [[ ! -d node_modules ]]; then npm ci; fi
+              npm run build
+              exec node dist/cli/async-swarm.js start
+          envFrom:
+            - configMapRef:
+                name: agent-swarm-config
+            - secretRef:
+                name: agent-swarm-secrets
+                optional: true
+          env:
+            - name: LI_AUTO_START_ASYNC_SWARM
+              value: "1"
+            - name: LI_SWARM_DETACHED
+              value: "0"
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              memory: 8Gi
+          volumeMounts:
+            - name: li-repo
+              mountPath: /li
+              readOnly: false
+      volumes:
+        - name: li-repo
+          hostPath:
+            path: /home/s4il0r/Documents/Cursor/li-langverse
+            type: Directory
