@@ -1,0 +1,126 @@
+# Homelab values for prometheus-community/kube-prometheus-stack
+# Install / upgrade:
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm repo update
+#   helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-stack \
+#     -n monitoring --create-namespace \
+#     -f kube-prometheus-stack-values.yaml \
+#     --set grafana.adminPassword='<set at deploy, not in git>'
+#
+# Retention: metrics older than 180d (6 months) are dropped automatically (Prometheus TSDB).
+# TSDB on engine HDD: /srv/homelab/prometheus (PV prometheus-engine-tsdb) — see docs/homelab-monitoring.md.
+
+fullnameOverride: prometheus-stack
+
+defaultRules:
+  create: true
+  rules:
+    alertmanager: false
+    etcd: false
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    nodeSelector:
+      kubernetes.io/hostname: blackpearl
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+    resources:
+      requests:
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+
+grafana:
+  enabled: true
+  # Set at deploy time: --set grafana.adminPassword='...'
+  adminPassword: CHANGE_ME_DEPLOY_TIME
+  service:
+    type: NodePort
+    nodePort: 30300
+    port: 80
+  nodeSelector:
+    kubernetes.io/hostname: blackpearl
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+prometheus:
+  enabled: true
+  prometheusSpec:
+    retention: 180d
+    retentionSize: 200GB
+    scrapeInterval: 30s
+    nodeSelector:
+      kubernetes.io/hostname: engine
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 4Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: prometheus-engine
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 250Gi
+    # Scrape ServiceMonitors in monitoring (e.g. dcgm-exporter)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector: {}
+
+prometheusOperator:
+  admissionWebhooks:
+    patch:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+  nodeSelector:
+    kubernetes.io/hostname: blackpearl
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+kube-state-metrics:
+  nodeSelector:
+    kubernetes.io/hostname: blackpearl
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+# DaemonSet on all nodes (including arm64 Pis) — lightweight
+prometheus-node-exporter:
+  enabled: true
+  tolerations:
+    - operator: Exists
+
+# Avoid scheduling core stack on arm64 workers
+kubeControllerManager:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
