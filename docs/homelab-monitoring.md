@@ -9,7 +9,7 @@ Cluster control plane: **blackpearl** (`192.168.10.41` SSH, node IP often `192.1
 | metrics-server | `kube-system` | k3s default; `kubectl top` |
 | kube-prometheus-stack | `monitoring` | Prometheus + Grafana + node-exporter |
 | NVIDIA device plugin | `kube-system` | DaemonSet on `gpu=nvidia` nodes only |
-| DCGM exporter | `monitoring` | DaemonSet on `gpu=nvidia` (engine; desktop when ready) |
+| DCGM exporter | `monitoring` | DaemonSet on `gpu=nvidia` (engine + desktop) |
 
 **Prometheus** (TSDB) runs on **engine** with persistent storage on the engine HDD. **Grafana**, **Alertmanager**, and the **prometheus-operator** stay on **blackpearl** (`kubernetes.io/hostname=blackpearl`). **node-exporter** runs on all nodes (arm64 Pis included).
 
@@ -104,12 +104,12 @@ Prometheus should show **one target per GPU node** (distinct `instance`, shared 
 
 ### Desktop (`192.168.10.31`, WSL2 agent)
 
-**Blockers (2026-05-30):**
-
-- SSH from LAN to `192.168.10.31:2222` timed out; jump via blackpearl failed (`Permission denied (publickey)`)
-- Node not labeled `gpu=nvidia`; no `nvidia.com/gpu` capacity until WSL GPU + toolkit are configured locally
-
-When SSH works: confirm `nvidia-smi` in WSL, install toolkit, restart `k3s-agent`, label node, second DCGM pod and Prometheus target will appear.
+- **GPU:** NVIDIA GeForce RTX 3090 (WSL passthrough; driver via Windows)
+- **Setup:** [desktop-wsl-setup.sh](../k8s/gpu/desktop-wsl-setup.sh) — toolkit, containerd v3 drop-in, `no-cgroups` for WSL
+- **Labels:** `gpu=nvidia`, `workload=burst`
+- **SSH:** WSL port **2222**; homelab key in `authorized_keys`. From blackpearl: `ssh -p 2222 -i ~/.ssh/homelab s4il0r@192.168.10.31`
+- **Firewall:** elevated [windows-firewall-homelab-desktop.ps1](../scripts/windows-firewall-homelab-desktop.ps1) on the Windows host if LAN SSH/metrics time out
+- **Verify:** `nvidia.com/gpu: 1`, DCGM pod on `desktop`, ~48 `DCGM_FI_*` metrics per exporter (same as engine)
 
 ## metrics-server / `kubectl top`
 
