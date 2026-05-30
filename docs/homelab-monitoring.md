@@ -29,7 +29,7 @@ Default dashboards: Kubernetes / Node Exporter / Prometheus. GPU: search Grafana
 
 In-cluster: `http://prometheus-stack-prometheus.monitoring.svc:9090` (ClusterIP). Use Grafana Explore or port-forward for ad-hoc queries.
 
-**Retention:** 180 days (6 months). TSDB size capped at 200GB (`retentionSize`); time-based cap is `retention: 180d` in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml).
+**Retention:** **10 years** maximum. TSDB size capped at 200GB (`retentionSize`); time-based cap is `retention: 10y` in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml).
 
 **Storage (engine HDD):**
 
@@ -48,7 +48,7 @@ sudo mkdir -p /srv/homelab/prometheus
 sudo chown 65534:65534 /srv/homelab/prometheus
 ```
 
-Older samples are dropped automatically when retention or `retentionSize` is exceeded.
+Samples older than 10 years are always dropped; no data older than 10y is kept. Older samples may also be dropped when `retentionSize` is exceeded.
 
 ## GPU metrics (engine)
 

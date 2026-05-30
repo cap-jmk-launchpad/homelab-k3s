@@ -7,7 +7,7 @@
 #     -f kube-prometheus-stack-values.yaml \
 #     --set grafana.adminPassword='<set at deploy, not in git>'
 #
-# Retention: metrics older than 180d (6 months) are dropped automatically (Prometheus TSDB).
+# Retention: metrics older than 10y are dropped automatically (Prometheus TSDB).
 # TSDB on engine HDD: /srv/homelab/prometheus (PV prometheus-engine-tsdb) — see docs/homelab-monitoring.md.
 
 fullnameOverride: prometheus-stack
@@ -59,7 +59,7 @@ grafana:
 prometheus:
   enabled: true
   prometheusSpec:
-    retention: 180d
+    retention: 10y
     retentionSize: 200GB
     scrapeInterval: 30s
     nodeSelector:
