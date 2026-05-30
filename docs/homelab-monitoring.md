@@ -62,7 +62,7 @@ URL: `/d/efa86fd1d0c121a26444b636a3f509a8/kubernetes-compute-resources-cluster`
 
 | Issue | Root cause | Fix applied |
 |-------|------------|-------------|
-| Empty **`$cluster`** dropdown (`var-cluster=` in URL) | Prometheus had no `cluster` external label; kube-state-metrics metrics lack `cluster` | `prometheus.prometheusSpec.externalLabels.cluster: homelab` in values |
+| Empty **`$cluster`** dropdown (`var-cluster=` in URL) | Prometheus had no `cluster` label on scraped metrics | `externalLabels.cluster: homelab` plus `metricRelabelings` on node-exporter and kube-state-metrics in values |
 | Memory % low / inconsistent with homelab dashboard | node-exporter on **desktop** not scraped (4/5 nodes); upstream mixes node-exporter util with kube-state allocatable | Use **Homelab Cluster Resources** above for accurate node-exporter totals; open **9100/tcp** + **10250/tcp** on desktop Windows host ([windows-firewall-homelab-desktop.ps1](../scripts/windows-firewall-homelab-desktop.ps1)) |
 
 After Helm upgrade, pick **`homelab`** in the `$cluster` dropdown (or wait for new samples with the label).
