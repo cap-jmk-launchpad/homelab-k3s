@@ -1,8 +1,10 @@
-# Secrets and local paths — never commit
+﻿# Secrets and local paths â€” never commit
 .env
 .env.local
 .env.cursor-cloud
 .env.*
+!.env.example
+!.env.github.example
 *.pem
 *.key
 id_*
