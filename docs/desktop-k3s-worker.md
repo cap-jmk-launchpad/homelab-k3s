@@ -1,4 +1,4 @@
-﻿# Desktop k3s worker (WSL2)
+# Desktop k3s worker (WSL2)
 
 Daily-driver burst node: **Ubuntu 24.04** in WSL2, k3s agent, mirrored LAN IP.
 
@@ -40,6 +40,10 @@ When you start gaming again:
 ```
 
 Burst / multi-GPU manifests tolerate the desktop taint **and** require `burst=enabled` on the desktop node (set only by `desktop-gpu-burst-on.sh`).
+
+### Windows tray toggle
+
+On the daily-driver PC, run `scripts\desktop-gpu-tray\run.bat` for a system-tray icon (gaming vs cluster burst). See [scripts/desktop-gpu-tray/README.md](../scripts/desktop-gpu-tray/README.md).
 
 ## What was installed
 
