@@ -17,8 +17,17 @@ spec:
     spec:
       runtimeClassName: nvidia
       hostPID: true
-      nodeSelector:
-        gpu: nvidia
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: gpu
+                    operator: In
+                    values: [nvidia]
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values: [desktop]
       tolerations:
         - key: nvidia.com/gpu
           operator: Exists
@@ -60,6 +69,79 @@ spec:
         - name: dev
           hostPath:
             path: /dev
+---
+# Desktop WSL2: cross-node pod CIDR is blocked by Hyper-V firewall; expose metrics on LAN IP.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dcgm-exporter-wsl
+  namespace: monitoring
+  labels:
+    app: dcgm-exporter
+spec:
+  selector:
+    matchLabels:
+      app: dcgm-exporter
+      component: wsl-hostnet
+  template:
+    metadata:
+      labels:
+        app: dcgm-exporter
+        component: wsl-hostnet
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      runtimeClassName: nvidia
+      hostPID: true
+      nodeSelector:
+        gpu: nvidia
+        kubernetes.io/hostname: desktop
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+        - key: workload
+          operator: Equal
+          value: burst
+          effect: NoSchedule
+      containers:
+        - name: dcgm-exporter
+          image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.7-3.5.0-ubuntu22.04
+          securityContext:
+            privileged: true
+          ports:
+            - name: metrics
+              containerPort: 9400
+          env:
+            - name: DCGM_EXPORTER_LISTEN
+              value: ":9400"
+            - name: DCGM_EXPORTER_KUBERNETES
+              value: "true"
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: all
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: all
+          volumeMounts:
+            - name: pod-gpu-resources
+              readOnly: true
+              mountPath: /var/lib/kubelet/pod-resources
+            - name: nvidia-install-dir
+              mountPath: /run/nvidia
+              readOnly: true
+            - name: dev
+              mountPath: /dev
+      volumes:
+        - name: pod-gpu-resources
+          hostPath:
+            path: /var/lib/kubelet/pod-resources
+        - name: nvidia-install-dir
+          hostPath:
+            path: /run/nvidia
+            type: DirectoryOrCreate
+        - name: dev
+          hostPath:
+            path: /dev
+
 ---
 apiVersion: v1
 kind: Service

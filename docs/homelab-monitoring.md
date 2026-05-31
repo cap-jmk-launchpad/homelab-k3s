@@ -32,7 +32,7 @@ Provisioned from git via ConfigMap sidecar (`grafana_dashboard=1`):
 
 - **URL:** `http://192.168.10.41:30300/d/homelab-cluster-resources/homelab-cluster-resources`
 - **UID:** `homelab-cluster-resources`
-- **Refresh:** default **5s**; global min **1s** via `GF_DASHBOARDS_MIN_REFRESH_INTERVAL` and `[dashboards] default_refresh_intervals` in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml). Avoid `[unified_alerting] min_refresh_interval` (CrashLoop). Timepickers list **1s**, **2s**, **5s**, …
+- **Refresh:** default **5s**; global min **1s** via `GF_DASHBOARDS_MIN_REFRESH_INTERVAL` and `[dashboards] default_refresh_intervals` in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml). Avoid `[unified_alerting] min_refresh_interval` (CrashLoop). Timepickers list **1s**, **2s**, **5s**, ï¿½
 
 | Row | Metrics source |
 |-----|----------------|
@@ -149,7 +149,7 @@ Prometheus should show **one target per GPU node** (distinct `instance`, shared 
 - **Setup:** [desktop-wsl-setup.sh](../k8s/gpu/desktop-wsl-setup.sh) â€” toolkit, containerd v3 drop-in, `no-cgroups` for WSL
 - **Labels:** `gpu=nvidia`, `workload=burst`
 - **SSH:** WSL port **2222**; homelab key in `authorized_keys`. From blackpearl: `ssh -p 2222 -i ~/.ssh/homelab s4il0r@192.168.10.31`
-- **Firewall:** elevated [windows-firewall-homelab-desktop.ps1](../scripts/windows-firewall-homelab-desktop.ps1) on the Windows host if LAN SSH/metrics time out
+- **Firewall:** run [windows-firewall-homelab-desktop.ps1](../scripts/windows-firewall-homelab-desktop.ps1) and **elevated** [windows-firewall-homelab-desktop-hyperv.ps1](../scripts/windows-firewall-homelab-desktop-hyperv.ps1) on the Windows host (opens **9100**, **9400**, **10250**, **2222**). WSL mirrored mode requires Hyper-V rules for DCGM **9400**.
 - **Verify:** `nvidia.com/gpu: 1`, DCGM pod on `desktop`, ~48 `DCGM_FI_*` metrics per exporter (same as engine)
 
 ## metrics-server / `kubectl top`

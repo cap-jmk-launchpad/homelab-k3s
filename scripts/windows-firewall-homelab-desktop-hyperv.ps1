@@ -9,7 +9,8 @@ $ErrorActionPreference = 'Stop'
 $rules = @(
   @{ Name = 'WSL Homelab SSH'; Port = 2222 },
   @{ Name = 'WSL Homelab node-exporter'; Port = 9100 },
-  @{ Name = 'WSL Homelab kubelet'; Port = 10250 }
+  @{ Name = 'WSL Homelab kubelet'; Port = 10250 },
+  @{ Name = 'WSL Homelab DCGM exporter'; Port = 9400 }
 )
 
 foreach ($rule in $rules) {
