@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Secrets and local paths — never commit
 .env
 .env.local
@@ -12,3 +13,20 @@ Thumbs.db
 
 homelab
 blackpearl
+=======
+# Never commit private keys or environment-specific secrets
+*.pem
+id_*
+homelab
+homelab.*
+!homelab.pub.example
+.env
+.env.*
+*.key
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+>>>>>>> origin/main

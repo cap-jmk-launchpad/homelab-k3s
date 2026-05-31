@@ -1,0 +1,3 @@
+# Copy to homelab.pub locally (gitignored) or pass your pubkey file to scripts.
+# Generate: ssh-keygen -t ed25519 -C "homelab-cluster" -f homelab
+ssh-ed25519 AAAA...your-public-key-here... homelab-cluster@example
