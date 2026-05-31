@@ -266,28 +266,10 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
           },
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 95
-              }
-            ]
-          },
-          "unit": "percent"
+          "decimals": 1,
+          "unit": "decgbytes"
         },
         "overrides": []
       },
@@ -300,7 +282,7 @@
       "id": 5,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -318,13 +300,14 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "avg(DCGM_FI_DEV_GPU_UTIL)",
-          "legendFormat": "gpu avg",
+          "expr": "sum(DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE) / 1024",
+          "legendFormat": "total",
           "refId": "A"
         }
       ],
-      "title": "GPU util avg %",
-      "type": "gauge"
+      "title": "VRAM total",
+      "type": "stat",
+      "description": "Sum of DCGM framebuffer metrics across GPUs reporting to Prometheus. With a single GPU node, totals reflect that one device."
     },
     {
       "datasource": {
@@ -554,57 +537,6 @@
       ],
       "title": "VRAM used",
       "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "decimals": 1,
-          "unit": "decgbytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "x": 16,
-        "y": 6,
-        "w": 4,
-        "h": 5
-      },
-      "id": 108,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE) / 1024",
-          "legendFormat": "total",
-          "refId": "A"
-        }
-      ],
-      "title": "VRAM total",
-      "type": "stat",
-      "description": "Sum of DCGM framebuffer metrics across GPUs reporting to Prometheus. With a single GPU node, totals reflect that one device."
     },
     {
       "collapsed": false,
