@@ -1,0 +1,79 @@
+# Homelab edge routes (beelink-cleanup).
+# Merged with majico-staging.httpd.toml on blackpearl — see scripts/edge-lis-apply.sh.
+# Backends: k3s NodePorts on loopback (kube-proxy).
+
+[server]
+listen = ":80"
+document_root = "/var/lib/li-httpd/empty"
+
+[health]
+max_fails = 3
+fail_timeout = "10s"
+
+[upstreams.grafana]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30300"]
+
+[upstreams.signoz]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30301"]
+
+[upstreams.agents_dashboard]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30477"]
+
+[upstreams.postgrest]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30421"]
+
+[upstreams.li_swarm_dashboard]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30478"]
+
+[[site]]
+host = "grafana.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:grafana"
+"POST /*" = "proxy:grafana"
+
+[[site]]
+host = "signoz.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:signoz"
+"POST /*" = "proxy:signoz"
+
+[[site]]
+host = "agents.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:agents_dashboard"
+"POST /*" = "proxy:agents_dashboard"
+
+[[site]]
+host = "api.agents.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:postgrest"
+"POST /*" = "proxy:postgrest"
+"PATCH /*" = "proxy:postgrest"
+"DELETE /*" = "proxy:postgrest"
+"OPTIONS /*" = "proxy:postgrest"
+
+[[site]]
+host = "li-swarm.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:li_swarm_dashboard"
+"POST /*" = "proxy:li_swarm_dashboard"

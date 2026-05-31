@@ -37,14 +37,14 @@ flowchart TB
 | Control plane | Single k3s server, cluster API on `:6443` |
 | Workers | Linux native, WSL2, or Raspberry Pi agents |
 | GPU worker | Optional NVIDIA workloads via device plugin |
-| Edge node | Terminates HTTP(S) on LAN; forwards to in-cluster ingress |
+| Edge node | **blackpearl** — li-httpd (LIS) on `:80`; TOML -> NodePort backends |
 
 ## Quick start
 
 1. **Prepare nodes** — [docs/node-prep.md](docs/node-prep.md): SSH key-only auth, passwordless sudo for automation user.
 2. **Install control plane** — [docs/k3s-server.md](docs/k3s-server.md): single server, Traefik disabled, UFW for SSH + 6443.
 3. **Join workers** — [docs/k3s-workers.md](docs/k3s-workers.md): native Linux, WSL2, or Pi.
-4. **Edge ingress** (optional) — [docs/edge-ingress.md](docs/edge-ingress.md): router `:80` → dedicated LB → Kubernetes ingress.
+4. **Edge ingress** — [docs/edge-ingress.md](docs/edge-ingress.md) / [k8s/edge/README.md](k8s/edge/README.md): **li-httpd** on blackpearl (LIS TOML -> k3s NodePorts).
 5. **GPU workers** (optional) — [docs/gpu-workers.md](docs/gpu-workers.md): NVIDIA device plugin and scheduling.
 
 ### Scripts

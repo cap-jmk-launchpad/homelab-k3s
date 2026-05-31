@@ -26,7 +26,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
   --tls-san <lan-ip>" sh -
 ```
 
-Why disable Traefik: run your own ingress controller (nginx, traefik, etc.) or terminate HTTP on a dedicated edge node — see [edge-ingress.md](edge-ingress.md).
+Why disable Traefik: this homelab terminates HTTP on **blackpearl** with **li-httpd** (LIS edge TOML -> NodePort backends). See [edge-ingress.md](edge-ingress.md) and [k8s/edge/README.md](../k8s/edge/README.md).
 
 ## Firewall
 
@@ -62,15 +62,14 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 
 Replace `127.0.0.1` with `<lan-ip>` or `<control-plane-host>` in the `server:` field.
 
-## Install ingress controller (in-cluster)
+## Edge ingress (LIS / li-httpd)
 
-Example: ingress-nginx (adjust to your preference):
+No in-cluster ingress controller. Workloads use **NodePort** or ClusterIP; **li-httpd** on the control plane proxies by hostname — [k8s/edge/README.md](../k8s/edge/README.md):
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/cloud/deploy.yaml
+bash scripts/edge-lis-validate.sh
+sudo bash scripts/edge-lis-apply.sh --install-systemd
 ```
-
-Wait for the controller pod, then expose via NodePort, LoadBalancer, or an external edge — [edge-ingress.md](edge-ingress.md).
 
 ## Upgrade k3s
 

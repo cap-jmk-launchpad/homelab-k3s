@@ -102,11 +102,14 @@ ufw allow OpenSSH
 ufw --force enable
 
 echo "== staging directories =="
-install -d -m 700 -o "$STAGING_USER" -g "$STAGING_USER" "/home/${STAGING_USER}/staging/secrets"`ninstall -d -o "$STAGING_USER" -g "$STAGING_USER" \
+install -d -m 700 -o "$STAGING_USER" -g "$STAGING_USER" "/home/${STAGING_USER}/staging/secrets"
+install -d -o "$STAGING_USER" -g "$STAGING_USER" \
   "/home/${STAGING_USER}/staging" \
   "/home/${STAGING_USER}/staging/supabase" \
   "/home/${STAGING_USER}/staging/majico.xyz" \
-  "/home/${STAGING_USER}/staging/lic"`n  "/home/${STAGING_USER}/staging/lis-httpd"
+  "/home/${STAGING_USER}/staging/lic" \
+  "/home/${STAGING_USER}/staging/lis" \
+  "/home/${STAGING_USER}/staging/beelink-cleanup"
 loginctl enable-linger "$STAGING_USER" 2>/dev/null || true
 
 echo ""

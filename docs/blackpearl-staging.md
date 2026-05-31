@@ -36,7 +36,9 @@ All majico staging config is in **majico.xyz**:
 
 ## Deploy
 
-**Authoritative runbook:** majico.xyz repo ? `deploy/staging/docs/blackpearl-k8s-lis.md` (k3s + li-httpd on blackpearl).
+**Edge ingress (homelab-wide):** [k8s/edge/README.md](../k8s/edge/README.md) — merges this repo's TOML with majico staging routes.
+
+**Staging runbook:** majico.xyz `deploy/staging/docs/blackpearl-k8s-lis.md` (on host at `~/staging/majico.xyz`).
 
 Legacy compose: `majico.xyz/deploy/staging/README.md`
 

@@ -1,99 +1,61 @@
-# Edge ingress
+# Edge ingress (LIS / li-httpd)
 
-Many homelabs expose services with a **dedicated edge node** (or the control plane) that accepts LAN HTTP(S) and forwards to an in-cluster ingress controller.
+Homelab HTTP(S) terminates on **blackpearl** with native **li-httpd** from `li/lic`. k3s runs with **Traefik disabled**; workloads use **NodePort** (or ClusterIP) and the edge TOML proxies by `Host` to `127.0.0.1:<nodePort>`.
 
-This doc describes a common pattern: **router `:80` → edge host → Kubernetes ingress**.
-
-Placeholders:
-
-| Placeholder | Description |
-|-------------|-------------|
-| `<edge-host>` | Hostname of the edge/LB machine |
-| `<lan-ip>` | Edge host LAN address |
-| `<control-plane-host>` | k3s API / optional co-located ingress |
+No third-party reverse proxies on the ingress path.
 
 ## Topology
 
 ```
-Internet (optional)
-       │
-   [Router]
-       │ :80 / :443
-       ▼
-  <edge-host>  ──►  reverse proxy (nginx, caddy, haproxy)
-       │
-       ▼
-  Ingress Controller (NodePort or hostNetwork in cluster)
-       │
-       ▼
-  Services / Pods
+LAN :80 / :443
+        |
+        v
+  blackpearl — li-httpd
+        |  LIS-validated TOML -> flatten -> runtime.conf
+        |-- majico staging (majico.xyz TOML)
+        |-- Grafana, SigNoz, agent-swarm, ... (beelink-cleanup TOML)
+        v
+  k3s NodePorts on loopback
 ```
 
-## Router configuration
+**Config:** [k8s/edge/](../k8s/edge/) — [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml), [scripts/edge-lis-apply.sh](../scripts/edge-lis-apply.sh).
 
-1. DHCP reservation for `<edge-host>` → fixed `<lan-ip>`.
-2. Port forward **TCP 80** (and **443** if terminating TLS on edge) to `<lan-ip>`.
-3. For purely local DNS, point `*.home.example` or individual names to `<lan-ip>` via router DNS or `/etc/hosts`.
+## Quick apply (blackpearl)
 
-## Edge reverse proxy
-
-Install nginx, Caddy, or similar on `<edge-host>`. Example nginx site (HTTP only on LAN):
-
-```nginx
-server {
-    listen 80;
-    server_name _;
-
-    location / {
-        proxy_pass http://<ingress-backend-ip>:<ingress-port>;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+```bash
+cd ~/staging/beelink-cleanup
+bash scripts/edge-lis-validate.sh
+sudo bash scripts/edge-lis-apply.sh --install-systemd
 ```
 
-`<ingress-backend-ip>` is typically:
+Requires `~/staging/lic` (build via `deploy/staging/scripts/build-li-httpd.sh` or `lic/scripts/build-li-httpd.sh`).
 
-- Node IP of a worker running ingress with `hostNetwork`, or
-- NodePort on any node (e.g. `http://<lan-ip>:30080`), or
-- MetalLB / kube-vip virtual IP if you run those
+## k3s install
 
-## In-cluster ingress
-
-Install an ingress controller on k3s (Traefik was disabled at install — see [k3s-server.md](k3s-server.md)). Example Ingress:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: example
-  namespace: default
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: app.home.example
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: example-service
-                port:
-                  number: 80
+```bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --disable traefik ..." sh -
 ```
 
-## TLS options
+See [k3s-server.md](k3s-server.md).
+
+## Validate
+
+```bash
+curl -H 'Host: grafana.homelab.lan' http://192.168.10.41/health
+curl -H 'Host: staging.majico.xyz' http://192.168.10.41/health
+```
+
+Add LAN DNS for `*.homelab.lan` -> `192.168.10.41`. NodePorts remain for direct debug.
+
+## TLS
 
 | Approach | Notes |
 |----------|-------|
-| TLS on edge | Let's Encrypt or internal CA on `<edge-host>`; proxy HTTP to cluster |
-| TLS in cluster | cert-manager + ingress TLS; edge passes through or terminates |
-| LAN only | HTTP on `:80` is often enough for homelab |
+| LAN HTTP | Current default (`:80`) |
+| Edge TLS | Fritz!box, manual certs, or future `li-httpd setup-tls` in lic |
+| In-cluster TLS | Not used — edge TOML routing |
 
-## Firewall on edge
+## Firewall
 
 ```bash
 sudo ufw allow 80/tcp
@@ -101,13 +63,4 @@ sudo ufw allow 443/tcp
 sudo ufw allow OpenSSH
 ```
 
-Do **not** expose k3s API (6443) to the internet unless you know the risk; keep it LAN-only.
-
-## Health checks
-
-From a LAN client:
-
-```bash
-curl -H 'Host: app.home.example' http://<lan-ip>/
-kubectl get ingress -A
-```
+Keep k3s API (6443) LAN-only. See [homelab-security-audit.md](homelab-security-audit.md).

@@ -11,6 +11,7 @@ beelink
 homelab
 homelab.*
 !homelab.pub.example
+!k8s/edge/homelab.httpd.toml
 blackpearl
 
 # OS / editor
