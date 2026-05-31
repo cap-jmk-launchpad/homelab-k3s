@@ -19,46 +19,26 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: blackpearl
-
       initContainers:
         - name: wait-postgrest
           image: curlimages/curl:8.5.0
-          imagePullPolicy: IfNotPresent
           env:
             - name: SUPABASE_SERVICE_ROLE_KEY
               valueFrom:
                 secretKeyRef:
                   name: agent-swarm-secrets
                   key: SUPABASE_SERVICE_ROLE_KEY
-          command:
-            - sh
-            - -c
-            - |
-              until curl -sf -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
-                -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-                http://postgrest:54321/rest/v1/; do
-                echo "waiting for postgrest..."
-                sleep 3
-              done      containers:
+          command: [sh, -c, "until curl -sf -H \"apikey: ${SUPABASE_SERVICE_ROLE_KEY}\" -H \"Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}\" http://postgrest:54321/rest/v1/; do sleep 3; done"]
+      containers:
         - name: async-swarm
           image: node:22-bookworm-slim
-          imagePullPolicy: IfNotPresent
           workingDir: /li/li-cursor-agents
-          command:
-            - bash
-            - -lc
-            - |
-              set -euo pipefail
-              apt-get update -qq && apt-get install -y -qq curl git python3 ca-certificates >/dev/null
-              if [[ ! -d node_modules ]]; then npm ci; fi
-              npm run build
-              exec node dist/cli/async-swarm.js start
+          command: [bash, -lc, "cd /li/li-cursor-agents && test -f dist/cli/async-swarm.js || (apt-get update -qq && apt-get install -y -qq curl git python3 ca-certificates && npm ci && npm run build) && exec node dist/cli/async-swarm.js start"]
           envFrom:
             - configMapRef:
                 name: agent-swarm-config
             - secretRef:
                 name: agent-swarm-secrets
-                optional: true
           env:
             - name: LI_AUTO_START_ASYNC_SWARM
               value: "1"
@@ -66,16 +46,15 @@ spec:
               value: "0"
           resources:
             requests:
-              cpu: "1"
-              memory: 2Gi
+              cpu: 300m
+              memory: 512Mi
             limits:
-              memory: 8Gi
+              memory: 2560Mi
           volumeMounts:
             - name: li-repo
               mountPath: /li
-              readOnly: false
       volumes:
         - name: li-repo
           hostPath:
-            path: /home/s4il0r/Documents/Cursor/li-langverse
-            type: Directory
+            path: /home/s4il0r/li-langverse
+            type: DirectoryOrCreate

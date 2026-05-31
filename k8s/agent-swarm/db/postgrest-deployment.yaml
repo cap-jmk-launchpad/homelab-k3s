@@ -27,12 +27,7 @@ spec:
                 secretKeyRef:
                   name: agent-swarm-db-secrets
                   key: POSTGRES_PASSWORD
-          command:
-            - sh
-            - -c
-            - |
-              until pg_isready -h postgres -p 5432 -U postgres; do sleep 2; done
-
+          command: [sh, -c, "until pg_isready -h postgres -p 5432 -U postgres; do sleep 2; done"]
         - name: wait-migrations
           image: postgres:15-alpine
           env:
@@ -41,17 +36,10 @@ spec:
                 secretKeyRef:
                   name: agent-swarm-db-secrets
                   key: POSTGRES_PASSWORD
-          command:
-            - sh
-            - -c
-            - |
-              until psql -h postgres -U postgres -d postgres -At -c "SELECT to_regclass('public.agent_handoffs');" | grep -q agent_handoffs; do
-                echo "waiting for migrations..."
-                sleep 3
-              done      containers:
+          command: [sh, -c, "until psql -h postgres -U postgres -d postgres -At -c \"SELECT to_regclass('public.agent_handoffs');\" | grep -q agent_handoffs; do sleep 3; done"]
+      containers:
         - name: postgrest
           image: postgrest/postgrest:v12.2.3
-          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 3000
