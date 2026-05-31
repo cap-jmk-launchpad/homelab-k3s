@@ -1,0 +1,114 @@
+# Homelab SigNoz (OTel-native logs, traces, metrics).
+# SSD + RAM on blackpearl; ClickHouse single shard/replica; local-path PVCs.
+#
+# Install (on blackpearl):
+#   helm repo add signoz https://charts.signoz.io
+#   helm repo update
+#   helm upgrade --install signoz signoz/signoz -n signoz --create-namespace \
+#     -f k8s/monitoring/signoz-values.yaml --wait --timeout 20m
+#
+# UI: NodePort 30301 (LAN, same pattern as Grafana 30300).
+# arm64 Pis: not scheduled here (nodeSelector blackpearl). k8s-infra agents still run on Pis.
+
+global:
+  storageClass: local-path
+  clusterName: homelab
+
+clickhouse:
+  layout:
+    shardsCount: 1
+    replicasCount: 1
+  zookeeper:
+    replicaCount: 1
+    nodeSelector:
+      kubernetes.io/hostname: blackpearl
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+  nodeSelector:
+    kubernetes.io/hostname: blackpearl
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  persistence:
+    enabled: true
+    size: 50Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      memory: 6Gi
+
+telemetryStoreMigrator:
+  enableReplication: false
+  nodeSelector:
+    kubernetes.io/hostname: blackpearl
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+signoz:
+  replicaCount: 1
+  nodeSelector:
+    kubernetes.io/hostname: blackpearl
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  service:
+    type: NodePort
+    port: 8080
+    nodePort: 30301
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  persistence:
+    enabled: true
+    size: 2Gi
+
+otelCollector:
+  replicaCount: 1
+  nodeSelector:
+    kubernetes.io/hostname: blackpearl
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+
+postgresql:
+  enabled: true
+  primary:
+    nodeSelector:
+      kubernetes.io/hostname: blackpearl
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 512Mi

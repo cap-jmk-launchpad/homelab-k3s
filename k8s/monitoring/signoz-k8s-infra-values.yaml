@@ -1,0 +1,73 @@
+# SigNoz k8s-infra — DaemonSet agents on every node → in-cluster OTLP collector.
+# Pair with signoz-values.yaml (release name "signoz", namespace signoz).
+#
+#   helm upgrade --install signoz-k8s-infra signoz/k8s-infra -n signoz \
+#     -f k8s/monitoring/signoz-k8s-infra-values.yaml --wait --timeout 10m
+
+global:
+  clusterName: homelab
+  cloud: other
+
+clusterName: homelab
+
+# In-cluster SigNoz OTel collector (gRPC OTLP).
+otelCollectorEndpoint: signoz-otel-collector.signoz.svc.cluster.local:4317
+otelInsecure: true
+
+namespace: signoz
+
+presets:
+  otlpExporter:
+    enabled: true
+  logsCollection:
+    enabled: true
+    includeFilePath: true
+    blacklist:
+      enabled: true
+      signozLogs: true
+  hostMetrics:
+    enabled: true
+    collectionInterval: 60s
+  kubeletMetrics:
+    enabled: true
+    collectionInterval: 60s
+  kubernetesAttributes:
+    enabled: true
+    extractMetadatas:
+      - k8s.namespace.name
+      - k8s.pod.name
+      - k8s.container.name
+      - k8s.node.name
+      - k8s.deployment.name
+      - k8s.daemonset.name
+      - k8s.statefulset.name
+  clusterMetrics:
+    enabled: true
+    collectionInterval: 60s
+
+otelAgent:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  tolerations:
+    - operator: Exists
+      effect: NoSchedule
+    - operator: Exists
+      effect: NoExecute
+
+otelDeployment:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  nodeSelector:
+    kubernetes.io/hostname: blackpearl
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
