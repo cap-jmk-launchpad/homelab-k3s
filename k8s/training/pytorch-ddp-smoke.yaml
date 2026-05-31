@@ -1,5 +1,7 @@
 # 2-rank PyTorch DDP smoke test across GPU nodes (engine + desktop).
-# Requires both nodes Ready with gpu=nvidia and nvidia device plugin.
+# Requires both nodes Ready with gpu=nvidia, nvidia device plugin, and burst mode:
+#   ./scripts/desktop-gpu-burst-on.sh   # remove desktop taint before applying
+# Restore gaming priority with ./scripts/desktop-gpu-burst-off.sh when done.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -98,6 +100,11 @@ spec:
       runtimeClassName: nvidia
       nodeSelector:
         gpu: nvidia
+      tolerations:
+        - key: workload
+          operator: Equal
+          value: burst
+          effect: NoSchedule
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -107,6 +114,20 @@ spec:
                     operator: In
                     values: [pytorch-ddp-smoke]
               topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [engine]
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [desktop]
+                  - key: burst
+                    operator: In
+                    values: ["enabled"]
       containers:
         - name: trainer
           image: pytorch/pytorch:2.2.0-cuda12.1-cudnn8-runtime

@@ -19,7 +19,11 @@ run_gpu() {
 }
 
 run_ddp() {
-  echo "==> PyTorch DDP smoke (engine + desktop)"
+  if ! kubectl get node desktop -o jsonpath='{.metadata.labels.burst}' 2>/dev/null | grep -qx enabled; then
+    echo "==> DDP needs desktop burst mode: run ./scripts/desktop-gpu-burst-on.sh first" >&2
+    exit 1
+  fi
+  echo "==> PyTorch DDP smoke (engine + desktop, burst enabled)"
   kubectl delete job pytorch-ddp-smoke -n training --ignore-not-found
   kubectl apply -f "$ROOT/k8s/training/pytorch-ddp-smoke.yaml"
   wait_job training pytorch-ddp-smoke 600

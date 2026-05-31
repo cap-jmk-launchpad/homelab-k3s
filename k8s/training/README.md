@@ -67,6 +67,25 @@ kubectl -n training port-forward svc/homelab-ray-head-svc 8265:8265
 
 See [ray/README.md](./ray/README.md).
 
+
+## Desktop GPU burst toggle
+
+| Mode | Script | Desktop taint | `burst=enabled` label | Cluster can use desktop GPU |
+|------|--------|---------------|----------------------|----------------------------|
+| Gaming (default) | `./scripts/desktop-gpu-burst-off.sh` | `workload=burst:NoSchedule` | removed | No |
+| Burst sharing | `./scripts/desktop-gpu-burst-on.sh` | removed | set | Yes (multi-GPU / DDP jobs) |
+
+- **gpu-smoke** and other engine jobs use `nodeSelector: { workload: training }` — engine only.
+- **pytorch-ddp-smoke** uses `gpu=nvidia`, tolerates the burst taint, and requires `burst=enabled` on desktop — run `desktop-gpu-burst-on.sh` first.
+
+```bash
+./scripts/desktop-gpu-burst-off.sh          # before gaming
+./scripts/desktop-gpu-burst-on.sh           # when sharing desktop GPU
+./scripts/k8s-training-smoke.sh gpu         # engine GPU only
+./scripts/k8s-training-smoke.sh ddp         # needs burst-on
+```
+
+
 ## Scheduling labels
 
 | Label | Nodes | Use |
