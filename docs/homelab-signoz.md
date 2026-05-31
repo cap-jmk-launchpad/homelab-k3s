@@ -98,7 +98,7 @@ To avoid two log collectors, you can extend [alloy-daemonset.yaml](../k8s/monito
 
 | PostgreSQL | `local-path` | 8Gi | blackpearl |
 
-Engine HDD paths (`/srv/homelab/loki`, `/srv/homelab/prometheus`) are **not** used for SigNoz.
+Engine HDD: **`/srv/homelab/prometheus`** remains for Prometheus TSDB. Leftover **`/srv/homelab/loki`** on **engine** was deleted 2026-05-31 (~17MiB reclaimed; `df` on `/` unchanged at ~49% used). SigNoz data lives on blackpearl PVCs only.
 
 ## Resource notes (homelab sizing)
 
@@ -117,6 +117,35 @@ Point SDKs or collectors at:
 - HTTP: `http://signoz-otel-collector.signoz.svc.cluster.local:4318`
 
 From a pod in the cluster, set `OTEL_EXPORTER_OTLP_ENDPOINT` accordingly.
+
+## Dashboards (recommended — no custom import)
+
+For homelab Kubernetes logs, **use built-in SigNoz views**; k8s-infra already attaches `k8s.namespace.name`, `k8s.pod.name`, and related attributes. There is no dedicated "homelab logs" JSON in this repo on purpose (less maintenance than a custom dashboard).
+
+| What you want | Where | URL / action |
+|---------------|-------|--------------|
+| Tail / search pod logs | **Logs Explorer** | [http://192.168.10.41:30301/logs](http://192.168.10.41:30301/logs) |
+| Pod / node CPU, memory, K8s infra | **Infrastructure monitoring** | UI: **Infrastructure** → **Kubernetes** (metrics from k8s-infra) |
+| PromQL-style charts you build yourself | **Dashboards** | [http://192.168.10.41:30301/dashboard](http://192.168.10.41:30301/dashboard) |
+
+### Homelab namespaces (Logs Explorer)
+
+1. Open **Logs Explorer**.
+2. Add a filter on **`k8s.namespace.name`** (one of `agent-swarm`, `training`, `majico-staging`), or use the attribute sidebar after a broad query.
+3. **Errors:** add a line filter such as `error` (case-insensitive) or match your apps' log level field if present.
+4. **Top noisy pods:** group or order by **`k8s.pod.name`** in the log table (or add a count panel under **Dashboards** only if you outgrow Explorer).
+
+Optional: **Save view** in Logs Explorer for each namespace so you get one-click filters later.
+
+### Community dashboard templates (optional)
+
+SigNoz publishes importable JSON for databases, APM, etc. — not a first-class "K8s pod logs" board (logs belong in **Logs Explorer**).
+
+- Template catalog: [Dashboard templates overview](https://signoz.io/docs/dashboards/dashboard-templates/overview/)
+- GitHub repo: [SigNoz/dashboards](https://github.com/SigNoz/dashboards)
+- Import path in UI: **Dashboards** → **+ New dashboard** → **Import** (paste JSON)
+
+k8s-infra setup reference: [K8s infra metrics and logs](https://signoz.io/docs/infrastructure-monitoring/user-guides/k8s-infra-metrics-and-logs/)
 
 ## Related docs
 
