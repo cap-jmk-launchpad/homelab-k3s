@@ -24,6 +24,42 @@
 
 **Prometheus/Grafana:** unchanged. Use Grafana for long-retention PromQL dashboards; use SigNoz for correlated logs/traces/metrics and OTel workflows.
 
+## Local-only / no cloud
+
+This homelab runs **SigNoz OSS self-hosted** via the official Helm chart (signoz/signoz from https://charts.signoz.io). That is **not** [SigNoz Cloud](https://signoz.io/docs/cloud/) (managed SaaS). You do not need a SigNoz Cloud account, license key, or ingest.signoz.io endpoint for this install.
+
+| | Self-hosted OSS (this homelab) | SigNoz Cloud (SaaS) |
+|---|-------------------------------|---------------------|
+| Install | Helm on your cluster | Hosted by SigNoz |
+| Data store | Your ClickHouse PVCs on blackpearl | SigNoz-operated backend |
+| Ingestion | In-cluster signoz-otel-collector | ingest.*.signoz.cloud / region URLs |
+| UI | Your NodePort :30301 | *.signoz.cloud |
+
+**Where data lives:** logs, traces, and metrics land in **ClickHouse** on a **local-path PVC** on **blackpearl** (50Gi data volume; PostgreSQL and SigNoz state PVCs on the same class). Nothing in [signoz-values.yaml](../k8s/monitoring/signoz-values.yaml) or [signoz-k8s-infra-values.yaml](../k8s/monitoring/signoz-k8s-infra-values.yaml) points collectors at SigNoz SaaS.
+
+**Agents (k8s-infra):** global.cloud: other and otelCollectorEndpoint: signoz-otel-collector.signoz.svc.cluster.local:4317 with otelInsecure: true. DaemonSet and deployment set OTEL_EXPORTER_OTLP_ENDPOINT to that in-cluster DNS name only.
+
+**No egress to SigNoz SaaS** unless you later add an exporter, license integration, or browser-only links to signoz.io docs. Chart install may pull container images from public registries (Docker Hub, etc.) on upgrade; that is image delivery, not shipping your telemetry to SigNoz Cloud.
+
+### How to verify (on blackpearl)
+
+```bash
+# Helm: OSS chart, not a cloud connector chart
+helm list -n signoz
+
+# Agents export to in-cluster collector only
+kubectl get ds signoz-k8s-infra-otel-agent -n signoz -o yaml | grep OTEL_EXPORTER_OTLP_ENDPOINT
+kubectl get deploy signoz-k8s-infra-otel-deployment -n signoz -o yaml | grep OTEL_EXPORTER_OTLP_ENDPOINT
+
+# No SaaS ingest hostnames in ConfigMaps
+kubectl get configmaps -n signoz -o yaml | grep -iE 'ingest\.signoz|signoz\.cloud' || echo 'OK: no cloud ingest URLs in configmaps'
+
+# Data PVCs on local-path
+kubectl get pvc -n signoz
+```
+
+Optional network check from a debug pod: `kubectl run -it --rm debug --image=busybox --restart=Never -- wget -qO- -T 2 ingest.signoz.io 2>&1` should fail or timeout if the cluster has no general internet; your telemetry path does not use that host anyway.
+
 ## Access (LAN)
 
 | Service | URL |
@@ -151,5 +187,5 @@ k8s-infra setup reference: [K8s infra metrics and logs](https://signoz.io/docs/i
 
 - [homelab-monitoring.md](./homelab-monitoring.md) — Prometheus, Grafana, GPU
 
-- [homelab-logging.md](./homelab-logging.md) — Loki + Alloy
+- [homelab-logging.md](./homelab-logging.md) — historical; logs are SigNoz-only (see Loki removed above)
 
