@@ -1,32 +1,19 @@
-<<<<<<< HEAD
 # Secrets and local paths — never commit
 .env
 .env.local
 .env.cursor-cloud
-beelink
+.env.*
 *.pem
 *.key
-
-# OS
-.DS_Store
-Thumbs.db
-
-homelab
-blackpearl
-=======
-# Never commit private keys or environment-specific secrets
-*.pem
 id_*
+beelink
 homelab
 homelab.*
 !homelab.pub.example
-.env
-.env.*
-*.key
+blackpearl
 
 # OS / editor
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
->>>>>>> origin/main
