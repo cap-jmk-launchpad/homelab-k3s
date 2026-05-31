@@ -26,8 +26,8 @@ echo "==> Upgrade Grafana stack to provision Loki datasource (if not already):"
 echo "    helm upgrade prometheus-stack prometheus-community/kube-prometheus-stack \\"
 echo "      -n monitoring -f ${MON_DIR}/kube-prometheus-stack-values.yaml --reuse-values"
 
-echo "==> Provision logs dashboard:"
-echo "    bash ${REPO_DIR}/scripts/homelab-deploy-dashboards.sh"
+echo "==> Provision Grafana dashboards (sidecar ConfigMaps)..."
+bash "${REPO_DIR}/scripts/homelab-deploy-dashboards.sh"
 
 echo ""
 echo "Loki: http://loki.monitoring.svc:3100 (in-cluster)"
