@@ -7,7 +7,8 @@ $rules = @(
   @{ Name = 'Homelab Desktop WSL SSH'; Port = 2222 },
   @{ Name = 'Homelab Desktop kubelet'; Port = 10250 },
   @{ Name = 'Homelab Desktop node-exporter'; Port = 9100 },
-  @{ Name = 'Homelab Desktop DCGM exporter'; Port = 9400 }
+  @{ Name = 'Homelab Desktop DCGM exporter'; Port = 9400 },
+  @{ Name = 'Homelab Desktop NCCL ephemeral'; Port = '1024-65535' }
 )
 
 foreach ($rule in $rules) {

@@ -28,6 +28,10 @@ run_ddp() {
   kubectl apply -f "$ROOT/k8s/training/pytorch-ddp-smoke.yaml"
   kubectl delete job pytorch-ddp-master pytorch-ddp-worker -n training --ignore-not-found
   kubectl apply -f "$ROOT/k8s/training/pytorch-ddp-master-job.yaml"
+  for _ in $(seq 1 30); do
+    kubectl -n training get pod -l ddp-role=master -o name 2>/dev/null | grep -q . && break
+    sleep 2
+  done
   kubectl -n training wait --for=condition=ready pod -l ddp-role=master --timeout=120s
   kubectl apply -f "$ROOT/k8s/training/pytorch-ddp-worker-job.yaml"
   wait_job training pytorch-ddp-worker 600
