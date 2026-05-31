@@ -21,7 +21,7 @@ foreach ($rule in $rules) {
   netsh advfirewall firewall add rule `
     name="$($rule.Name)" `
     dir=in action=allow protocol=TCP `
-    localport=$rule.Port remoteip=$remote profile=any | Out-Null
+    localport=$rule.Port remoteip=$remote profile=any enable=yes | Out-Null
   Write-Host "Added: $($rule.Name) TCP $($rule.Port) from $remote"
 }
 

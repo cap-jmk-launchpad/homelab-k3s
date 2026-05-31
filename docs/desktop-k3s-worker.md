@@ -99,6 +99,21 @@ wsl -d Ubuntu-24.04 -u root -- bash /mnt/c/Users/Julian/Documents/Programming/be
 
 Token comes from blackpearl: `sudo cat /var/lib/rancher/k3s/server/node-token`
 
+
+## Persistent firewall (survives reboot)
+
+
+etsh rules are stored in the Windows firewall policy permanently. **Hyper-V / WSL mirrored** rules often need to be re-applied after boot when the virtual switch starts.
+
+One-time install (elevated) registers a startup task (90s delay) and copies scripts to %ProgramData%\Homelab\firewall\:
+
+`powershell
+cd C:\Users\Julian\Documents\Programming\beelink-cleanup
+.\scripts\windows-firewall-homelab-desktop-install.ps1
+`
+
+Uninstall: .\scripts\windows-firewall-homelab-desktop-install.ps1 -Uninstall
+
 ## Metrics firewall (WSL mirrored)
 
 Standard Windows firewall rules are not enough for mirrored WSL. Run both scripts **elevated** on the desktop host:

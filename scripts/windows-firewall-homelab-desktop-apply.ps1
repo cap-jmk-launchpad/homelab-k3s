@@ -7,12 +7,14 @@
   Runs windows-firewall-homelab-desktop.ps1 then windows-firewall-homelab-desktop-hyperv.ps1
   sequentially in the same Administrator session. Re-launches elevated when needed.
 
-  Prefer this entry point over piping scripts to "powershell -Command -" (non-admin fails silently).
+  For persistence across reboot (especially Hyper-V/WSL), run:
+  windows-firewall-homelab-desktop-install.ps1
 
 .EXAMPLE
   cd C:\Users\Julian\Documents\Programming\beelink-cleanup
   .\scripts\windows-firewall-homelab-desktop-apply.ps1
 #>
+[CmdletBinding()]
 param(
     [switch]$Elevated
 )
