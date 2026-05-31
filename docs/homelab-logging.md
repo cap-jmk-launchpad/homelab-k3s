@@ -25,13 +25,24 @@ ssh engine 'sudo mkdir -p /srv/homelab/loki && sudo chown -R 10001:10001 /srv/ho
 # 2. Loki PV + Helm + Alloy
 bash scripts/homelab-deploy-logging.sh
 
-# 3. Grafana: Loki datasource (Helm upgrade if stack already running)
+# 3. Grafana Loki datasource + dashboards
+
+`homelab-deploy-logging.sh` runs a **kube-prometheus-stack** Helm upgrade using [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml) (includes `grafana.additionalDataSources` with uid `loki`). Do **not** use `--reuse-values` on that upgrade — it leaves Grafana without the Loki datasource and the Homelab Pod Logs dashboard shows empty panels.
+
+If the stack was upgraded before logging was added, re-run:
+
+```bash
+GRAF_PW=$(kubectl get secret prometheus-stack-grafana -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d)
 helm upgrade prometheus-stack prometheus-community/kube-prometheus-stack \
   -n monitoring \
   -f k8s/monitoring/kube-prometheus-stack-values.yaml \
-  --reuse-values
+  --set "grafana.adminPassword=${GRAF_PW}" \
+  --no-hooks --wait --timeout 6m
+```
 
-# homelab-deploy-logging.sh also runs homelab-deploy-dashboards.sh; re-run alone if needed:
+Re-run dashboards alone if needed:
+
+```bash
 bash scripts/homelab-deploy-dashboards.sh
 ```
 

@@ -22,9 +22,13 @@ helm upgrade --install loki grafana/loki \
 
 kubectl apply -f "${MON_DIR}/alloy-daemonset.yaml"
 
-echo "==> Upgrade Grafana stack to provision Loki datasource (if not already):"
-echo "    helm upgrade prometheus-stack prometheus-community/kube-prometheus-stack \\"
-echo "      -n monitoring -f ${MON_DIR}/kube-prometheus-stack-values.yaml --reuse-values"
+echo "==> Upgrade Grafana stack to provision Loki datasource (uid loki)..."
+GRAF_PW="$(kubectl get secret prometheus-stack-grafana -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d)"
+helm upgrade prometheus-stack prometheus-community/kube-prometheus-stack \
+  -n monitoring \
+  -f "${MON_DIR}/kube-prometheus-stack-values.yaml" \
+  --set "grafana.adminPassword=${GRAF_PW}" \
+  --no-hooks --wait --timeout 6m
 
 echo "==> Provision Grafana dashboards (sidecar ConfigMaps)..."
 bash "${REPO_DIR}/scripts/homelab-deploy-dashboards.sh"
