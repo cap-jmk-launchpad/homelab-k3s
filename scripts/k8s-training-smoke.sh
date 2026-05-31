@@ -23,10 +23,14 @@ run_ddp() {
     echo "==> DDP needs desktop burst mode: run ./scripts/desktop-gpu-burst-on.sh first" >&2
     exit 1
   fi
-  echo "==> PyTorch DDP smoke (engine + desktop, burst enabled)"
-  kubectl delete job pytorch-ddp-smoke -n training --ignore-not-found
+  echo "==> PyTorch DDP smoke (engine master + desktop worker, burst enabled)"
+  echo "==> ensure engine UFW allows DDP: ./scripts/homelab-engine-ddp-ufw.sh (on engine)"
   kubectl apply -f "$ROOT/k8s/training/pytorch-ddp-smoke.yaml"
-  wait_job training pytorch-ddp-smoke 600
+  kubectl delete job pytorch-ddp-master pytorch-ddp-worker -n training --ignore-not-found
+  kubectl apply -f "$ROOT/k8s/training/pytorch-ddp-master-job.yaml"
+  kubectl -n training wait --for=condition=ready pod -l ddp-role=master --timeout=120s
+  kubectl apply -f "$ROOT/k8s/training/pytorch-ddp-worker-job.yaml"
+  wait_job training pytorch-ddp-worker 600
 }
 
 run_sweep() {

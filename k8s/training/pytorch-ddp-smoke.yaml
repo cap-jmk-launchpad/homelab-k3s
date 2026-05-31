@@ -1,7 +1,4 @@
-﻿# 2-rank PyTorch DDP smoke test across GPU nodes (engine + desktop).
-# Requires both nodes Ready with gpu=nvidia, nvidia device plugin, and burst mode:
-#   ./scripts/desktop-gpu-burst-on.sh   # remove desktop taint before applying
-# Restore gaming priority with ./scripts/desktop-gpu-burst-off.sh when done.
+# 2-rank PyTorch DDP smoke test across GPU nodes (engine + desktop).
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -21,10 +18,117 @@ data:
     export RANK="${JOB_COMPLETION_INDEX}"
     export LOCAL_RANK=0
     export WORLD_SIZE=2
-    export MASTER_ADDR="pytorch-ddp-master.training.svc.cluster.local"
+    export MASTER_HOST="pytorch-ddp-master"
     export MASTER_PORT=29500
-    echo "rank=${RANK} world=${WORLD_SIZE} master=${MASTER_ADDR}:${MASTER_PORT}"
+    if [ "${RANK}" = "0" ]; then
+      if [ "${HOST_IP}" != "${ENGINE_MASTER_IP}" ]; then
+        echo "rank 0 must run on engine (${ENGINE_MASTER_IP}), got host_ip=${HOST_IP}" >&2
+        exit 1
+      fi
+      export MASTER_ADDR="${HOST_IP}"
+    else
+      export MASTER_ADDR="${ENGINE_MASTER_IP}"
+    fi
+    echo "rank=${RANK} world=${WORLD_SIZE} master=${MASTER_ADDR}:${MASTER_PORT} host_ip=${HOST_IP:-n/a}"
     exec python /scripts/train.py
+  resolve_master.py: |
+    import json
+    import os
+    import socket
+    import ssl
+    import struct
+    import time
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    def dns_a(name, server="10.43.0.10", timeout=2.0):
+        tid = os.getpid() & 0xFFFF
+        labels = name.rstrip(".").split(".")
+        qname = b"".join(bytes([len(p)]) + p.encode() for p in labels) + b"\x00"
+        header = struct.pack("!HHHHHH", tid, 0x0100, 1, 0, 0, 0)
+        packet = header + qname + struct.pack("!HH", 1, 1)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(timeout)
+        try:
+            sock.sendto(packet, (server, 53))
+            data, _ = sock.recvfrom(512)
+        finally:
+            sock.close()
+        _, _, qd, an, _, _ = struct.unpack("!HHHHHH", data[:12])
+        off = 12
+        for _ in range(qd):
+            while data[off] != 0:
+                off += 1 + data[off]
+            off += 5
+        for _ in range(an):
+            if data[off] & 0xC0 == 0xC0:
+                off += 2
+            else:
+                while data[off] != 0:
+                    off += 1 + data[off]
+                off += 1
+            rtype, _, _, rdlen = struct.unpack("!HHIH", data[off : off + 10])
+            off += 10
+            rdata = data[off : off + rdlen]
+            off += rdlen
+            if rtype == 1 and rdlen == 4:
+                return socket.inet_ntoa(rdata)
+        raise OSError(f"no A record for {name}")
+
+    def k8s_get(path):
+        host = os.environ["KUBERNETES_SERVICE_HOST"]
+        port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
+        token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        ca_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        url = f"https://{host}:{port}{path}"
+        req = urllib.request.Request(
+            url, headers={"Authorization": f"Bearer {open(token_path).read()}"}
+        )
+        ctx = ssl.create_default_context(cafile=ca_path)
+        with urllib.request.urlopen(req, context=ctx, timeout=5) as resp:
+            return json.load(resp)
+
+    def resolve_rank0_pod_ip(namespace="training"):
+        selector = urllib.parse.quote(
+            "job-name=pytorch-ddp-smoke,batch.kubernetes.io/job-completion-index=0",
+            safe="",
+        )
+        data = k8s_get(f"/api/v1/namespaces/{namespace}/pods?labelSelector={selector}")
+        items = sorted(
+            data.get("items", []),
+            key=lambda i: i["metadata"]["creationTimestamp"],
+            reverse=True,
+        )
+        for item in items:
+            host_ip = item.get("status", {}).get("hostIP")
+            if host_ip:
+                return host_ip
+            ip = item.get("status", {}).get("podIP")
+            if ip:
+                return ip
+        raise OSError("no rank-0 host/pod IP from API")
+
+    def resolve_master(host):
+        for _ in range(30):
+            try:
+                return resolve_rank0_pod_ip()
+            except (OSError, urllib.error.URLError):
+                time.sleep(2)
+        for name in (host, f"{host}.training.svc.cluster.local"):
+            try:
+                return socket.gethostbyname(name)
+            except OSError:
+                pass
+            try:
+                return dns_a(name)
+            except OSError:
+                pass
+        data = k8s_get(f"/api/v1/namespaces/training/services/{host}")
+        return data["spec"]["clusterIP"]
+
+    if __name__ == "__main__":
+        print(resolve_master(os.environ.get("MASTER_HOST", "pytorch-ddp-master")))
   train.py: |
     import os
     import socket
@@ -35,15 +139,14 @@ data:
         rank = int(os.environ["RANK"])
         world_size = int(os.environ["WORLD_SIZE"])
         local_rank = int(os.environ.get("LOCAL_RANK", "0"))
-        master = os.environ["MASTER_ADDR"]
-        port = os.environ["MASTER_PORT"]
-
+        print(f"before init rank={rank} master={os.environ.get('MASTER_ADDR')}:{os.environ.get('MASTER_PORT')}", flush=True)
         dist.init_process_group(
             backend="nccl",
-            init_method=f"tcp://{master}:{port}",
             rank=rank,
             world_size=world_size,
+            timeout=__import__("datetime").timedelta(seconds=120),
         )
+        print(f"after init rank={rank}", flush=True)
 
         device = torch.device(f"cuda:{local_rank}")
         host = socket.gethostname()
@@ -63,6 +166,30 @@ data:
     if __name__ == "__main__":
         main()
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pytorch-ddp-smoke
+  namespace: training
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pytorch-ddp-smoke
+  namespace: training
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pytorch-ddp-smoke
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: training
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -71,7 +198,7 @@ metadata:
 spec:
   clusterIP: None
   selector:
-    job-name: pytorch-ddp-smoke
+    ddp-role: master
   ports:
     - name: dist
       port: 29500
@@ -84,87 +211,10 @@ metadata:
   namespace: training
 spec:
   selector:
-    job-name: pytorch-ddp-smoke
+    ddp-role: master
     batch.kubernetes.io/job-completion-index: "0"
   ports:
     - name: dist
       port: 29500
       targetPort: 29500
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: pytorch-ddp-smoke
-  namespace: training
-  labels:
-    app: pytorch-ddp-smoke
-spec:
-  ttlSecondsAfterFinished: 3600
-  completions: 2
-  parallelism: 2
-  completionMode: Indexed
-  template:
-    metadata:
-      labels:
-        app: pytorch-ddp-smoke
-        job-name: pytorch-ddp-smoke
-    spec:
-      subdomain: pytorch-ddp-headless
-      restartPolicy: Never
-      runtimeClassName: nvidia
-      nodeSelector:
-        gpu: nvidia
-      tolerations:
-        - key: workload
-          operator: Equal
-          value: burst
-          effect: NoSchedule
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: app
-                    operator: In
-                    values: [pytorch-ddp-smoke]
-              topologyKey: kubernetes.io/hostname
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values: [engine]
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values: [desktop]
-                  - key: burst
-                    operator: In
-                    values: ["enabled"]
-      containers:
-        - name: trainer
-          image: pytorch/pytorch:2.2.0-cuda12.1-cudnn8-runtime
-          command: ["/bin/bash", "/scripts/entrypoint.sh"]
-          env:
-            - name: NCCL_DEBUG
-              value: INFO
-          ports:
-            - containerPort: 29500
-              name: dist
-          resources:
-            limits:
-              nvidia.com/gpu: 1
-              memory: 4Gi
-            requests:
-              cpu: "2"
-              memory: 2Gi
-          volumeMounts:
-            - name: scripts
-              mountPath: /scripts
-      volumes:
-        - name: scripts
-          configMap:
-            name: pytorch-ddp-smoke
-            defaultMode: 0755
 
