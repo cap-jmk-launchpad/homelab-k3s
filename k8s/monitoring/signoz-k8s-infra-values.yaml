@@ -11,7 +11,8 @@ global:
 clusterName: homelab
 
 # In-cluster SigNoz OTel collector (gRPC OTLP).
-otelCollectorEndpoint: signoz-otel-collector.signoz.svc.cluster.local:4317
+# OTLP HTTP (chart default otlphttpExporter); port 4318 on signoz-otel-collector.
+otelCollectorEndpoint: http://signoz-otel-collector.signoz.svc.cluster.local:4318
 otelInsecure: true
 
 namespace: signoz
@@ -46,6 +47,15 @@ presets:
     collectionInterval: 60s
 
 otelAgent:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - desktop
   resources:
     requests:
       cpu: 50m

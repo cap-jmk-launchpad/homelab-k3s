@@ -1,4 +1,4 @@
-# Homelab SigNoz (OTel-native observability)
+﻿# Homelab SigNoz (OTel-native observability)
 
 [SigNoz](https://signoz.io/) provides logs, traces, and metrics in one UI with OpenTelemetry-native ingestion. It runs alongside **Prometheus + Grafana** for infra metrics; **logs** are ingested via k8s-infra (Loki was removed).
 
@@ -37,7 +37,7 @@ This homelab runs **SigNoz OSS self-hosted** via the official Helm chart (signoz
 
 **Where data lives:** logs, traces, and metrics land in **ClickHouse** on a **local-path PVC** on **blackpearl** (50Gi data volume; PostgreSQL and SigNoz state PVCs on the same class). Nothing in [signoz-values.yaml](../k8s/monitoring/signoz-values.yaml) or [signoz-k8s-infra-values.yaml](../k8s/monitoring/signoz-k8s-infra-values.yaml) points collectors at SigNoz SaaS.
 
-**Agents (k8s-infra):** global.cloud: other and otelCollectorEndpoint: signoz-otel-collector.signoz.svc.cluster.local:4317 with otelInsecure: true. DaemonSet and deployment set OTEL_EXPORTER_OTLP_ENDPOINT to that in-cluster DNS name only.
+**Agents (k8s-infra):** global.cloud: other and otelCollectorEndpoint must be **OTLP HTTP** (`http://signoz-otel-collector.signoz.svc.cluster.local:4318`) because the k8s-infra chart enables `presets.otlphttpExporter` by default. gRPC `:4317` without an `http://` URL causes agents to drop all logs (`unsupported protocol scheme` in agent logs).
 
 **No egress to SigNoz SaaS** unless you later add an exporter, license integration, or browser-only links to signoz.io docs. Chart install may pull container images from public registries (Docker Hub, etc.) on upgrade; that is image delivery, not shipping your telemetry to SigNoz Cloud.
 
@@ -106,7 +106,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:30301/
 
 **k8s-infra** ([signoz-k8s-infra-values.yaml](../k8s/monitoring/signoz-k8s-infra-values.yaml)):
 
-- **Logs:** container stdout/stderr from `/var/log/pods` on every node, with Kubernetes metadata (`k8s.namespace.name`, `k8s.pod.name`, `k8s.container.name`, `k8s.node.name`, …).
+- **Logs:** container stdout/stderr from `/var/log/pods` on every node, with Kubernetes metadata (`k8s.namespace.name`, `k8s.pod.name`, `k8s.container.name`, `k8s.node.name`, â€¦).
 
 - **Metrics:** host metrics, kubelet metrics, cluster-level metrics (otelDeployment on blackpearl).
 
@@ -116,9 +116,9 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:30301/
 
 ## Loki removed (2026-05-31)
 
-Homelab logs use **k8s-infra → SigNoz** only. Loki, Alloy, the Grafana Loki datasource, and the Homelab Pod Logs dashboard were removed from the cluster and git.
+Homelab logs use **k8s-infra â†’ SigNoz** only. Loki, Alloy, the Grafana Loki datasource, and the Homelab Pod Logs dashboard were removed from the cluster and git.
 
-### Optional: Grafana Alloy → OTLP (not deployed)
+### Optional: Grafana Alloy â†’ OTLP (not deployed)
 
 To avoid two log collectors, you can extend [alloy-daemonset.yaml](../k8s/monitoring/alloy-daemonset.yaml) with an `otelcol.exporter.otlp` to `signoz-otel-collector` and set `presets.logsCollection.enabled: false` in k8s-infra. That is not enabled by default in this repo.
 
@@ -138,9 +138,9 @@ Engine HDD: **`/srv/homelab/prometheus`** remains for Prometheus TSDB. Leftover 
 
 ## Resource notes (homelab sizing)
 
-Official capacity docs target large clusters (multi-core ClickHouse, many collector replicas). This install uses **single replicas** and reduced requests suitable for a small k3s homelab (~8–16Gi RAM free on blackpearl recommended).
+Official capacity docs target large clusters (multi-core ClickHouse, many collector replicas). This install uses **single replicas** and reduced requests suitable for a small k3s homelab (~8â€“16Gi RAM free on blackpearl recommended).
 
-- **arm64:** SigNoz backend is excluded from Pis by nodeSelector; otel agent images are multi-arch. Very old arm CPUs without AVX2 may need ClickHouse `allow_simdjson=0` (see SigNoz issue #10819) — unlikely on blackpearl x86.
+- **arm64:** SigNoz backend is excluded from Pis by nodeSelector; otel agent images are multi-arch. Very old arm CPUs without AVX2 may need ClickHouse `allow_simdjson=0` (see SigNoz issue #10819) â€” unlikely on blackpearl x86.
 
 - **Retention:** tune in SigNoz UI / ClickHouse TTL later; default chart retention applies until customized.
 
@@ -154,14 +154,14 @@ Point SDKs or collectors at:
 
 From a pod in the cluster, set `OTEL_EXPORTER_OTLP_ENDPOINT` accordingly.
 
-## Dashboards (recommended — no custom import)
+## Dashboards (recommended â€” no custom import)
 
 For homelab Kubernetes logs, **use built-in SigNoz views**; k8s-infra already attaches `k8s.namespace.name`, `k8s.pod.name`, and related attributes. There is no dedicated "homelab logs" JSON in this repo on purpose (less maintenance than a custom dashboard).
 
 | What you want | Where | URL / action |
 |---------------|-------|--------------|
 | Tail / search pod logs | **Logs Explorer** | [http://192.168.10.41:30301/logs](http://192.168.10.41:30301/logs) |
-| Pod / node CPU, memory, K8s infra | **Infrastructure monitoring** | UI: **Infrastructure** → **Kubernetes** (metrics from k8s-infra) |
+| Pod / node CPU, memory, K8s infra | **Infrastructure monitoring** | UI: **Infrastructure** â†’ **Kubernetes** (metrics from k8s-infra) |
 | PromQL-style charts you build yourself | **Dashboards** | [http://192.168.10.41:30301/dashboard](http://192.168.10.41:30301/dashboard) |
 
 ### Homelab namespaces (Logs Explorer)
@@ -175,17 +175,49 @@ Optional: **Save view** in Logs Explorer for each namespace so you get one-click
 
 ### Community dashboard templates (optional)
 
-SigNoz publishes importable JSON for databases, APM, etc. — not a first-class "K8s pod logs" board (logs belong in **Logs Explorer**).
+SigNoz publishes importable JSON for databases, APM, etc. â€” not a first-class "K8s pod logs" board (logs belong in **Logs Explorer**).
 
 - Template catalog: [Dashboard templates overview](https://signoz.io/docs/dashboards/dashboard-templates/overview/)
 - GitHub repo: [SigNoz/dashboards](https://github.com/SigNoz/dashboards)
-- Import path in UI: **Dashboards** → **+ New dashboard** → **Import** (paste JSON)
+- Import path in UI: **Dashboards** â†’ **+ New dashboard** â†’ **Import** (paste JSON)
 
 k8s-infra setup reference: [K8s infra metrics and logs](https://signoz.io/docs/infrastructure-monitoring/user-guides/k8s-infra-metrics-and-logs/)
 
 ## Related docs
 
-- [homelab-monitoring.md](./homelab-monitoring.md) — Prometheus, Grafana, GPU
+- [homelab-monitoring.md](./homelab-monitoring.md) â€” Prometheus, Grafana, GPU
 
-- [homelab-logging.md](./homelab-logging.md) — historical; logs are SigNoz-only (see Loki removed above)
+- [homelab-logging.md](./homelab-logging.md) â€” historical; logs are SigNoz-only (see Loki removed above)
 
+
+
+## Troubleshooting
+
+### Logs Explorer empty (no data)
+
+1. **Agent export errors** — `kubectl logs -n signoz -l app.kubernetes.io/component=otel-agent --tail=50 | grep -i unsupported`
+   - **Cause:** `OTEL_EXPORTER_OTLP_ENDPOINT` missing `http://` while the chart uses the OTLP **HTTP** exporter (port **4318**).
+   - **Fix:** In [signoz-k8s-infra-values.yaml](../k8s/monitoring/signoz-k8s-infra-values.yaml) set  
+     `otelCollectorEndpoint: http://signoz-otel-collector.signoz.svc.cluster.local:4318`  
+     then `helm upgrade --install signoz-k8s-infra signoz/k8s-infra -n signoz -f k8s/monitoring/signoz-k8s-infra-values.yaml`.
+
+2. **ClickHouse has rows but UI empty** — widen time range; add filter `k8s.namespace.name` exists (k8s-infra adds k8s attributes).
+
+3. **Verify ingestion:**
+   ```bash
+   kubectl exec -n signoz chi-signoz-clickhouse-cluster-0-0-0 -c clickhouse -- \
+     clickhouse-client --query "SELECT count() FROM signoz_logs.logs_v2"
+   ```
+
+### `signoz-k8s-infra-otel-agent` CreateContainerError on `desktop` (WSL)
+
+Kubelet error: `path "/" is mounted on "/" but it is not a shared or slave mount` — host metrics/log collection mounts host `/` as `hostfs`; WSL2 often lacks **rshared** on `/`.
+
+**Homelab fix:** DaemonSet excludes node `desktop` via `otelAgent.affinity` (see values). Logs from workloads on other nodes still appear. To collect on desktop later, fix mount propagation on the node or run a custom agent without the `hostfs` volume.
+
+### Agent pod not Running on a node
+
+```bash
+kubectl get pods -n signoz -l app.kubernetes.io/component=otel-agent -o wide
+kubectl describe pod -n signoz <pod>
+```
