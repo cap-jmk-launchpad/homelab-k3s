@@ -12,10 +12,10 @@
     {
       "collapsed": false,
       "gridPos": {
-        "h": 1,
-        "w": 24,
         "x": 0,
-        "y": 0
+        "y": 0,
+        "w": 24,
+        "h": 1
       },
       "id": 100,
       "title": "Cluster totals",
@@ -55,10 +55,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
         "x": 0,
-        "y": 1
+        "y": 1,
+        "w": 4,
+        "h": 5
       },
       "id": 1,
       "options": {
@@ -105,10 +105,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 3,
-        "y": 1
+        "x": 4,
+        "y": 1,
+        "w": 4,
+        "h": 5
       },
       "id": 2,
       "options": {
@@ -155,10 +155,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 6,
-        "y": 1
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 5
       },
       "id": 3,
       "options": {
@@ -224,10 +224,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 9,
-        "y": 1
+        "x": 12,
+        "y": 1,
+        "w": 4,
+        "h": 5
       },
       "id": 4,
       "options": {
@@ -255,7 +255,7 @@
           "refId": "A"
         }
       ],
-      "title": "CPU usage % (cluster)",
+      "title": "CPU usage %",
       "type": "gauge"
     },
     {
@@ -292,10 +292,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 12,
-        "y": 1
+        "x": 0,
+        "y": 6,
+        "w": 4,
+        "h": 5
       },
       "id": 5,
       "options": {
@@ -342,10 +342,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 15,
-        "y": 1
+        "x": 4,
+        "y": 6,
+        "w": 4,
+        "h": 5
       },
       "id": 6,
       "options": {
@@ -392,10 +392,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 18,
-        "y": 1
+        "x": 16,
+        "y": 1,
+        "w": 4,
+        "h": 5
       },
       "id": 7,
       "options": {
@@ -470,10 +470,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 12,
-        "y": 5
+        "x": 8,
+        "y": 6,
+        "w": 4,
+        "h": 5
       },
       "id": 106,
       "options": {
@@ -502,7 +502,8 @@
         }
       ],
       "title": "VRAM used %",
-      "type": "gauge"
+      "type": "gauge",
+      "description": "Sum of DCGM framebuffer metrics across GPUs reporting to Prometheus. With a single GPU node, totals reflect that one device."
     },
     {
       "datasource": {
@@ -520,10 +521,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 15,
-        "y": 5
+        "x": 12,
+        "y": 6,
+        "w": 4,
+        "h": 5
       },
       "id": 107,
       "options": {
@@ -547,11 +548,11 @@
             "uid": "prometheus"
           },
           "expr": "sum(DCGM_FI_DEV_FB_USED) / 1024",
-          "legendFormat": "VRAM used GB",
+          "legendFormat": "used",
           "refId": "A"
         }
       ],
-      "title": "VRAM used GB",
+      "title": "VRAM used",
       "type": "stat"
     },
     {
@@ -570,10 +571,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 18,
-        "y": 5
+        "x": 16,
+        "y": 6,
+        "w": 4,
+        "h": 5
       },
       "id": 108,
       "options": {
@@ -597,20 +598,21 @@
             "uid": "prometheus"
           },
           "expr": "sum(DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE) / 1024",
-          "legendFormat": "VRAM total GB",
+          "legendFormat": "total",
           "refId": "A"
         }
       ],
-      "title": "VRAM total GB",
-      "type": "stat"
+      "title": "VRAM total",
+      "type": "stat",
+      "description": "Sum of DCGM framebuffer metrics across GPUs reporting to Prometheus. With a single GPU node, totals reflect that one device."
     },
     {
       "collapsed": false,
       "gridPos": {
-        "h": 1,
-        "w": 24,
         "x": 0,
-        "y": 9
+        "y": 11,
+        "w": 24,
+        "h": 1
       },
       "id": 101,
       "title": "Per-node memory",
@@ -642,10 +644,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 24,
         "x": 0,
-        "y": 10
+        "y": 12,
+        "w": 24,
+        "h": 8
       },
       "id": 10,
       "options": {
@@ -680,10 +682,10 @@
     {
       "collapsed": false,
       "gridPos": {
-        "h": 1,
-        "w": 24,
         "x": 0,
-        "y": 18
+        "y": 20,
+        "w": 24,
+        "h": 1
       },
       "id": 102,
       "title": "Per-node CPU",
@@ -713,10 +715,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 24,
         "x": 0,
-        "y": 19
+        "y": 21,
+        "w": 24,
+        "h": 8
       },
       "id": 11,
       "options": {
@@ -751,10 +753,10 @@
     {
       "collapsed": false,
       "gridPos": {
-        "h": 1,
-        "w": 24,
         "x": 0,
-        "y": 27
+        "y": 29,
+        "w": 24,
+        "h": 1
       },
       "id": 103,
       "title": "Network per node",
@@ -781,10 +783,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
         "x": 0,
-        "y": 28
+        "y": 30,
+        "w": 12,
+        "h": 8
       },
       "id": 12,
       "options": {
@@ -836,10 +838,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
         "x": 12,
-        "y": 28
+        "y": 30,
+        "w": 12,
+        "h": 8
       },
       "id": 13,
       "options": {
@@ -873,10 +875,10 @@
     {
       "collapsed": false,
       "gridPos": {
-        "h": 1,
-        "w": 24,
         "x": 0,
-        "y": 36
+        "y": 38,
+        "w": 24,
+        "h": 1
       },
       "id": 104,
       "title": "GPU per node (DCGM)",
@@ -905,10 +907,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 8,
         "x": 0,
-        "y": 37
+        "y": 39,
+        "w": 8,
+        "h": 8
       },
       "id": 14,
       "options": {
@@ -960,10 +962,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 8,
         "x": 8,
-        "y": 37
+        "y": 39,
+        "w": 8,
+        "h": 8
       },
       "id": 15,
       "options": {
@@ -1015,10 +1017,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 8,
         "x": 16,
-        "y": 37
+        "y": 39,
+        "w": 8,
+        "h": 8
       },
       "id": 16,
       "options": {
@@ -1052,10 +1054,10 @@
     {
       "collapsed": false,
       "gridPos": {
-        "h": 1,
-        "w": 24,
         "x": 0,
-        "y": 45
+        "y": 47,
+        "w": 24,
+        "h": 1
       },
       "id": 105,
       "title": "Current snapshot (all nodes)",
@@ -1290,10 +1292,10 @@
         ]
       },
       "gridPos": {
-        "h": 10,
-        "w": 24,
         "x": 0,
-        "y": 46
+        "y": 48,
+        "w": 24,
+        "h": 10
       },
       "id": 20,
       "options": {
