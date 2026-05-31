@@ -2,8 +2,7 @@
 
 General-purpose documentation and scripts for a small **k3s** homelab cluster: one control plane, optional GPU and burst workers, and a dedicated edge node for LAN ingress.
 
-GitHub PAT for push/clone: copy [.env.github.example](.env.github.example) to `.env.github` (gitignored).
-
+Copy [.env.example](.env.example) to `.env` and set `GH_TOKEN` for git push/clone. Push with `bash scripts/git-push.sh`.
 
 All examples use placeholders — replace with your own hostnames, IPs, and keys. **Never commit real credentials.**
 

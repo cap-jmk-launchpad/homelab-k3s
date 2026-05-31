@@ -7,6 +7,10 @@
 #   bash sync-staging-secrets.sh
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=lib/load-env.sh
+source "$ROOT/scripts/lib/load-env.sh" "$ROOT"
+
 STAGING_USER="${STAGING_USER:-s4il0r}"
 STAGING_HOST="${STAGING_HOST:-blackpearl}"
 STAGING_KEY="${STAGING_KEY:-$(dirname "$0")/../blackpearl}"
