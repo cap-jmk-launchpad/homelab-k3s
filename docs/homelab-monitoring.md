@@ -17,6 +17,15 @@ Cluster control plane: **blackpearl** (`192.168.10.41` SSH, node IP often `192.1
 
 Manifests: [k8s/monitoring/](../k8s/monitoring/), GPU: [k8s/gpu/](../k8s/gpu/).
 
+## Logging (Loki + Alloy)
+
+Container stdout/stderr from all pods is collected by **Grafana Alloy** (DaemonSet) and stored in **Loki** on engine (14-day retention, 100Gi PVC).
+
+- **Docs:** [homelab-logging.md](./homelab-logging.md)
+- **Grafana dashboard:** `/d/homelab-pod-logs/homelab-pod-logs`
+- **Explore:** datasource **Loki**, label browser `namespace` ? `pod` ? `container`
+
+
 ## Grafana (LAN)
 
 - **URL:** `http://192.168.10.41:30300` (or `http://192.168.10.33:30300` via node IP)

@@ -19,5 +19,6 @@ deploy_cm() {
 
 deploy_cm homelab-cluster-resources-dashboard homelab-cluster-resources-dashboard.json
 deploy_cm homelab-gpu-dashboard homelab-gpu-dashboard.json
+deploy_cm homelab-logs-dashboard homelab-logs-dashboard.json
 
 echo "Dashboard sidecar will reload within ~60s. Grafana: http://$(hostname -I | awk '{print $1}'):30300"
