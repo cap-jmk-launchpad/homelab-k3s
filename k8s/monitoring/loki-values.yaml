@@ -39,7 +39,8 @@ loki:
   compactor:
     working_directory: /var/loki/compactor
     retention_enabled: true
-    delete_delay: 2h
+    retention_delete_delay: 2h
+    delete_request_store: filesystem
     compaction_interval: 10m
 
 singleBinary:
