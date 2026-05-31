@@ -104,9 +104,12 @@ Token comes from blackpearl: `sudo cat /var/lib/rancher/k3s/server/node-token`
 Standard Windows firewall rules are not enough for mirrored WSL. Run both scripts **elevated** on the desktop host:
 
 ```powershell
-Get-Content scripts\windows-firewall-homelab-desktop.ps1 | powershell -ExecutionPolicy Bypass -Command -
-Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File scripts\windows-firewall-homelab-desktop-hyperv.ps1' -Wait
-```
+cd C:\Users\Julian\Documents\Programming\beelink-cleanup
+.\scripts\windows-firewall-homelab-desktop-apply.ps1
+`
+
+One elevated run applies **both** Windows (
+etsh) and Hyper-V (WSL mirrored) rules. Do **not** pipe the individual scripts to powershell -Command - without admin — Hyper-V rules will be skipped.``
 
 Without the Hyper-V script, `:9100`/`:10250` time out from the LAN and `kubectl top node desktop` stays `<unknown>`.
 

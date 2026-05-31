@@ -239,7 +239,7 @@ Remediation applied from `beelink-cleanup` manifests and scripts. Staging and Gr
 | L-1 | Removed `99-headless.conf.bak` on engine | Done |
 | L-2 | `kubectl uncordon deck` | Done |
 | L-3 | deck OS/kernel upgrade to match anch0r | Done (`6.12.87+rpt-rpi-v8`; uncordoned) |
-| L-4 | desktop metrics / SSH from LAN | **Partial** — WSL SSH via blackpearl jump `:2222` works; `netsh` LAN rules applied; `kubectl top node desktop` still blocked until **elevated** [windows-firewall-homelab-desktop-hyperv.ps1](../scripts/windows-firewall-homelab-desktop-hyperv.ps1) on the Windows host |
+| L-4 | desktop metrics / SSH from LAN | **Partial** — WSL SSH via blackpearl jump `:2222` works; `netsh` LAN rules applied; `kubectl top node desktop` still blocked until **elevated** [windows-firewall-homelab-desktop-apply.ps1](../scripts/windows-firewall-homelab-desktop-apply.ps1) on the Windows host |
 | L-5 | supabase-auth CrashLoopBackOff | **Not changed** (out of scope; no secret rotation) |
 
 ### Scripts and manifests added

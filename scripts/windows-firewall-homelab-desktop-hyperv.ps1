@@ -1,4 +1,5 @@
-# Run elevated on desktop Windows host (WSL mirrored networking).
+#Requires -RunAsAdministrator
+# Run via scripts/windows-firewall-homelab-desktop-apply.ps1 (auto-elevates).
 # Opens Hyper-V firewall rules so LAN can reach WSL listeners on 2222/9100/10250.
 #
 # WSL mirrored mode blocks inbound by default (Hyper-V DefaultInboundAction=Block).

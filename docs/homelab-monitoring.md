@@ -17,6 +17,13 @@ Cluster control plane: **blackpearl** (`192.168.10.41` SSH, node IP often `192.1
 
 Manifests: [k8s/monitoring/](../k8s/monitoring/), GPU: [k8s/gpu/](../k8s/gpu/).
 
+## SigNoz (OTel logs, traces, metrics)
+
+**SigNoz** on **blackpearl** (`signoz` namespace): UI **NodePort 30301**, ClickHouse on `local-path`. Collection via **k8s-infra** DaemonSet on all nodes. Coexists with Prometheus/Grafana and Loki during transition.
+
+- **Docs:** [homelab-signoz.md](./homelab-signoz.md)
+- **Deploy:** `bash scripts/homelab-deploy-signoz.sh`
+
 ## Logging (Loki + Alloy)
 
 Container stdout/stderr from all pods is collected by **Grafana Alloy** (DaemonSet) and stored in **Loki** on engine (14-day retention, 100Gi PVC).
@@ -72,7 +79,7 @@ URL: `/d/efa86fd1d0c121a26444b636a3f509a8/kubernetes-compute-resources-cluster`
 | Issue | Root cause | Fix applied |
 |-------|------------|-------------|
 | Empty **`$cluster`** dropdown (`var-cluster=` in URL) | Prometheus had no `cluster` label on scraped metrics | `externalLabels.cluster: homelab` plus `metricRelabelings` on node-exporter and kube-state-metrics in values |
-| Memory % low / inconsistent with homelab dashboard | node-exporter on **desktop** not scraped (4/5 nodes); upstream mixes node-exporter util with kube-state allocatable | Use **Homelab Cluster Resources** above for accurate node-exporter totals; open **9100/tcp** + **10250/tcp** on desktop Windows host ([windows-firewall-homelab-desktop.ps1](../scripts/windows-firewall-homelab-desktop.ps1)) |
+| Memory % low / inconsistent with homelab dashboard | node-exporter on **desktop** not scraped (4/5 nodes); upstream mixes node-exporter util with kube-state allocatable | Use **Homelab Cluster Resources** above for accurate node-exporter totals; open **9100/tcp** + **10250/tcp** on desktop Windows host ([windows-firewall-homelab-desktop-apply.ps1](../scripts/windows-firewall-homelab-desktop-apply.ps1)) |
 
 After Helm upgrade, pick **`homelab`** in the `$cluster` dropdown (or wait for new samples with the label).
 
@@ -158,7 +165,7 @@ Prometheus should show **one target per GPU node** (distinct `instance`, shared 
 - **Setup:** [desktop-wsl-setup.sh](../k8s/gpu/desktop-wsl-setup.sh) — toolkit, containerd v3 drop-in, `no-cgroups` for WSL
 - **Labels:** `gpu=nvidia`, `workload=burst`
 - **SSH:** WSL port **2222**; homelab key in `authorized_keys`. From blackpearl: `ssh -p 2222 -i ~/.ssh/homelab s4il0r@192.168.10.31`
-- **Firewall:** run [windows-firewall-homelab-desktop.ps1](../scripts/windows-firewall-homelab-desktop.ps1) and **elevated** [windows-firewall-homelab-desktop-hyperv.ps1](../scripts/windows-firewall-homelab-desktop-hyperv.ps1) on the Windows host (opens **9100**, **9400**, **10250**, **2222**). WSL mirrored mode requires Hyper-V rules for DCGM **9400**.
+- **Firewall:** run [windows-firewall-homelab-desktop-apply.ps1](../scripts/windows-firewall-homelab-desktop-apply.ps1) on the Windows host (auto-elevates; applies netsh + Hyper-V rules) (opens **9100**, **9400**, **10250**, **2222**). WSL mirrored mode requires Hyper-V rules for DCGM **9400**.
 - **Verify:** `nvidia.com/gpu: 1`, DCGM pod on `desktop`, ~48 `DCGM_FI_*` metrics per exporter (same as engine)
 
 ## metrics-server / `kubectl top`

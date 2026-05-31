@@ -46,7 +46,7 @@ kubectl exec -n monitoring deploy/prometheus-stack-grafana -c grafana -- \
 PROM_URL=http://10.42.1.22:9090 bash /path/to/homelab-prom-targets-summary.sh
 ```
 
-Typical result after fix: **~26 UP / ~5 DOWN** (DOWN targets are usually **desktop** `192.168.10.31` — node-exporter/kubelet blocked from LAN until [windows-firewall-homelab-desktop-hyperv.ps1](../scripts/windows-firewall-homelab-desktop-hyperv.ps1) is run elevated on the Windows host).
+Typical result after fix: **~26 UP / ~5 DOWN** (DOWN targets are usually **desktop** `192.168.10.31` — node-exporter/kubelet blocked from LAN until [windows-firewall-homelab-desktop-apply.ps1](../scripts/windows-firewall-homelab-desktop-apply.ps1) is run elevated on the Windows host).
 
 Sample PromQL (2026-05-30):
 

@@ -1,4 +1,5 @@
-# Run in elevated PowerShell on the desktop Windows host.
+#Requires -RunAsAdministrator
+# Run via scripts/windows-firewall-homelab-desktop-apply.ps1 (auto-elevates).
 # Opens inbound TCP from the homelab LAN for WSL SSH, kubelet, and node-exporter.
 $ErrorActionPreference = 'Stop'
 $remote = '192.168.10.0/24'

@@ -37,7 +37,7 @@ WSL specifics:
 - **Cgroups:** set `no-cgroups = true` under `[nvidia-container-cli]` in `/etc/nvidia-container-runtime/config.toml`.
 - **k3s v1.35+:** copy `/etc/containerd/conf.d/99-nvidia.toml` into `/var/lib/rancher/k3s/agent/etc/containerd/config-v3.toml.d/`.
 - **SSH:** WSL port **2222**; homelab pubkey in `authorized_keys`. From blackpearl: `ssh -p 2222 -i ~/.ssh/homelab s4il0r@192.168.10.31`.
-- **Windows firewall:** run [scripts/windows-firewall-homelab-desktop.ps1](../../scripts/windows-firewall-homelab-desktop.ps1) as Administrator.
+- **Windows firewall:** run [scripts/windows-firewall-homelab-desktop-apply.ps1](../../scripts/windows-firewall-homelab-desktop-apply.ps1) as Administrator.
 
 If `nvidia-smi` fails entirely: install a current Windows NVIDIA driver with WSL support.
 
