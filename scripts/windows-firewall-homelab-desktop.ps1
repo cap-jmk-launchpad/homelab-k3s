@@ -13,7 +13,9 @@ $rules = @(
 )
 
 foreach ($rule in $rules) {
-  $existing = netsh advfirewall firewall show rule name="$($rule.Name)" 2>$null
+  $ErrorActionPreference = 'Continue'
+  $null = netsh advfirewall firewall show rule name="$($rule.Name)" 2>&1
+  $ErrorActionPreference = 'Stop'
   if ($LASTEXITCODE -eq 0) {
     Write-Host "Rule already exists: $($rule.Name)"
     continue
