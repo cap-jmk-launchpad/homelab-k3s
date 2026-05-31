@@ -32,7 +32,7 @@ Provisioned from git via ConfigMap sidecar (`grafana_dashboard=1`):
 
 - **URL:** `http://192.168.10.41:30300/d/homelab-cluster-resources/homelab-cluster-resources`
 - **UID:** `homelab-cluster-resources`
-- **Refresh:** default **10s** (Grafana 13 `min_refresh_interval` floor); dashboard timepicker lists **1s**, **2s**, **5s** plus global options **5sâ€“1d** in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml)
+- **Refresh:** default **5s**; global min **1s** via `GF_DASHBOARDS_MIN_REFRESH_INTERVAL` and `[dashboards] default_refresh_intervals` in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml). Avoid `[unified_alerting] min_refresh_interval` (CrashLoop). Timepickers list **1s**, **2s**, **5s**, …
 
 | Row | Metrics source |
 |-----|----------------|
