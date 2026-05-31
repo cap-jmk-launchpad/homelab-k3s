@@ -1,0 +1,92 @@
+# Ray cluster — requires KubeRay operator (scripts/k8s-training-ray-install.sh).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: training
+  labels:
+    workload: training
+---
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: homelab-ray
+  namespace: training
+  labels:
+    ray.io/cluster: homelab-ray
+spec:
+  rayVersion: "2.9.3"
+  enableInTreeAutoscaling: false
+  headGroupSpec:
+    rayStartParams:
+      dashboard-host: "0.0.0.0"
+      num-cpus: "0"
+    template:
+      spec:
+        nodeSelector:
+          kubernetes.io/hostname: blackpearl
+        containers:
+          - name: ray-head
+            image: rayproject/ray:2.9.3-py310
+            ports:
+              - containerPort: 6379
+                name: gcs
+              - containerPort: 8265
+                name: dashboard
+              - containerPort: 10001
+                name: client
+            resources:
+              requests:
+                cpu: "500m"
+                memory: 2Gi
+              limits:
+                cpu: "2"
+                memory: 4Gi
+  workerGroupSpecs:
+    - groupName: gpu
+      replicas: 2
+      minReplicas: 1
+      maxReplicas: 2
+      rayStartParams:
+        num-gpus: "1"
+      template:
+        spec:
+          runtimeClassName: nvidia
+          nodeSelector:
+            gpu: nvidia
+          containers:
+            - name: ray-worker
+              image: rayproject/ray:2.9.3-py310-gpu
+              resources:
+                requests:
+                  cpu: "2"
+                  memory: 4Gi
+                limits:
+                  nvidia.com/gpu: 1
+                  cpu: "4"
+                  memory: 8Gi
+    - groupName: cpu-pi
+      replicas: 2
+      minReplicas: 0
+      maxReplicas: 2
+      rayStartParams:
+        num-cpus: "1"
+      template:
+        spec:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/hostname
+                        operator: In
+                        values: [deck, anch0r]
+          containers:
+            - name: ray-worker
+              image: rayproject/ray:2.9.3-py310
+              resources:
+                requests:
+                  cpu: "500m"
+                  memory: 512Mi
+                limits:
+                  cpu: "1"
+                  memory: 1Gi

@@ -1,0 +1,56 @@
+# Parallel CPU workers pinned to Raspberry Pi nodes (deck + anch0r).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: training
+  labels:
+    workload: training
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cpu-fanout
+  namespace: training
+spec:
+  ttlSecondsAfterFinished: 3600
+  completions: 4
+  parallelism: 4
+  completionMode: Indexed
+  template:
+    spec:
+      restartPolicy: Never
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [deck, anch0r]
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    job-name: cpu-fanout
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: worker
+          image: python:3.12-slim
+          command:
+            - python
+            - -c
+            - |
+              import json, os, socket, time
+              idx = int(os.environ["JOB_COMPLETION_INDEX"])
+              host = socket.gethostname()
+              print(json.dumps({"index": idx, "host": host}))
+              time.sleep(3)
+          resources:
+            requests:
+              cpu: "100m"
+              memory: 128Mi
+            limits:
+              cpu: "500m"
+              memory: 256Mi

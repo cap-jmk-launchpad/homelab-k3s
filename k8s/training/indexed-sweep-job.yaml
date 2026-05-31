@@ -1,0 +1,63 @@
+# Indexed Job template: each pod gets JOB_COMPLETION_INDEX for hyperparameter / shard selection.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: training
+  labels:
+    workload: training
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: param-sweep
+  namespace: training
+data:
+  worker.py: |
+    import json
+    import os
+    import time
+
+    # Example sweep space — replace with your own.
+    LEARNING_RATES = [1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2, 1e-1, 3e-1, 1.0, 3.0]
+
+    def main():
+        idx = int(os.environ["JOB_COMPLETION_INDEX"])
+        lr = LEARNING_RATES[idx % len(LEARNING_RATES)]
+        result = {"index": idx, "lr": lr, "loss": 1.0 / (idx + 1)}
+        print(json.dumps(result))
+        time.sleep(2)
+
+    if __name__ == "__main__":
+        main()
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: param-sweep
+  namespace: training
+spec:
+  ttlSecondsAfterFinished: 3600
+  completions: 10
+  parallelism: 5
+  completionMode: Indexed
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: worker
+          image: python:3.12-slim
+          command: ["python", "/scripts/worker.py"]
+          resources:
+            requests:
+              cpu: "250m"
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: param-sweep
