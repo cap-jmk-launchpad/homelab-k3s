@@ -40,7 +40,7 @@ Uses k3s default in `kube-system`. See [metrics-server-k3s-patch.md](./metrics-s
 | `homelab-worker-firewall-ds.yaml` | Optional: open ufw/iptables for 9100/10250 on workers |
 
 Docs: [../../docs/homelab-monitoring.md](../../docs/homelab-monitoring.md)
-
+
 
 ## Grafana dashboards (sidecar)
 
@@ -49,27 +49,3 @@ bash ../../scripts/homelab-deploy-dashboards.sh
 ```
 
 ConfigMaps need label `grafana_dashboard=1` in `monitoring` namespace.
-
-## Logging (Loki + Alloy)
-
-Centralized pod stdout/stderr on all nodes. See [../../docs/homelab-logging.md](../../docs/homelab-logging.md).
-
-```bash
-# On engine (once)
-sudo mkdir -p /srv/homelab/loki && sudo chown -R 10001:10001 /srv/homelab/loki
-
-# On blackpearl
-bash ../../scripts/homelab-deploy-logging.sh   # includes dashboard ConfigMaps
-helm upgrade prometheus-stack prometheus-community/kube-prometheus-stack \
-  -n monitoring -f kube-prometheus-stack-values.yaml --reuse-values
-# If dashboards missing after an older logging deploy:
-bash ../../scripts/homelab-deploy-dashboards.sh
-```
-
-| File | Purpose |
-|------|---------|
-| `loki-engine-pv.yaml` | hostPath PV + StorageClass for Loki on engine HDD |
-| `loki-values.yaml` | Loki Helm values (SingleBinary, 14d retention, 100Gi) |
-| `alloy-daemonset.yaml` | Alloy DaemonSet — ships logs with namespace/pod/container/app/node labels |
-| `homelab-logs-dashboard.json` | Grafana per-pod log browser |
-

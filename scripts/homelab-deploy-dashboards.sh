@@ -68,12 +68,9 @@ GRAFANA_PW="$(kubectl get secret prometheus-stack-grafana -n "${NS}" -o jsonpath
 
 deploy_cm homelab-cluster-resources-dashboard homelab-cluster-resources-dashboard.json
 deploy_cm homelab-gpu-dashboard homelab-gpu-dashboard.json
-deploy_cm homelab-logs-dashboard homelab-logs-dashboard.json
 
 echo "Checking dashboards in Grafana (${GRAF_URL})..."
 ensure_dashboard homelab-cluster-resources-dashboard.json
 ensure_dashboard homelab-gpu-dashboard.json
-ensure_dashboard homelab-logs-dashboard.json
 
 echo "Done. Grafana: ${GRAF_URL}"
-echo "Pod logs dashboard: ${GRAF_URL}/d/homelab-pod-logs/homelab-pod-logs"

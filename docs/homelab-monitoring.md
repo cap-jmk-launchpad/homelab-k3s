@@ -19,18 +19,17 @@ Manifests: [k8s/monitoring/](../k8s/monitoring/), GPU: [k8s/gpu/](../k8s/gpu/).
 
 ## SigNoz (OTel logs, traces, metrics)
 
-**SigNoz** on **blackpearl** (`signoz` namespace): UI **NodePort 30301**, ClickHouse on `local-path`. Collection via **k8s-infra** DaemonSet on all nodes. Coexists with Prometheus/Grafana and Loki during transition.
+**SigNoz** on **blackpearl** (`signoz` namespace): UI **NodePort 30301**, ClickHouse on `local-path`. Collection via **k8s-infra** DaemonSet on all nodes. **Logs, traces, and OTel metrics** via **k8s-infra** DaemonSet on all nodes. **Prometheus + Grafana** remain the primary infra metrics UI.
 
 - **Docs:** [homelab-signoz.md](./homelab-signoz.md)
 - **Deploy:** `bash scripts/homelab-deploy-signoz.sh`
 
-## Logging (Loki + Alloy)
+## Logging (SigNoz)
 
-Container stdout/stderr from all pods is collected by **Grafana Alloy** (DaemonSet) and stored in **Loki** on engine (14-day retention, 100Gi PVC).
+Pod stdout/stderr is collected by **SigNoz k8s-infra** and searchable in the SigNoz UI.
 
-- **Docs:** [homelab-logging.md](./homelab-logging.md)
-- **Grafana dashboard:** `/d/homelab-pod-logs/homelab-pod-logs`
-- **Explore:** datasource **Loki**, label browser `namespace` ? `pod` ? `container`
+- **Docs:** [homelab-signoz.md](./homelab-signoz.md) (primary), [homelab-logging.md](./homelab-logging.md) (short pointer + kubectl)
+- **Deploy:** ash scripts/homelab-deploy-signoz.sh
 
 
 ## Grafana (LAN)
