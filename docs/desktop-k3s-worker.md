@@ -66,7 +66,7 @@ Standard Windows firewall rules are not enough for mirrored WSL. Run both script
 
 ```powershell
 Get-Content scripts\windows-firewall-homelab-desktop.ps1 | powershell -ExecutionPolicy Bypass -Command -
-Get-Content scripts\windows-firewall-homelab-desktop-hyperv.ps1 | powershell -ExecutionPolicy Bypass -Command -
+Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File scripts\windows-firewall-homelab-desktop-hyperv.ps1' -Wait
 ```
 
 Without the Hyper-V script, `:9100`/`:10250` time out from the LAN and `kubectl top node desktop` stays `<unknown>`.

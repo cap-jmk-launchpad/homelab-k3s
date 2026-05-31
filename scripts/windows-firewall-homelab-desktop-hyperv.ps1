@@ -1,14 +1,15 @@
 # Run elevated on desktop Windows host (WSL mirrored networking).
-# Adds Hyper-V firewall rules so LAN can reach WSL listeners on 2222/9100/10250.
+# Opens Hyper-V firewall rules so LAN can reach WSL listeners on 2222/9100/10250.
+#
+# WSL mirrored mode blocks inbound by default (Hyper-V DefaultInboundAction=Block).
+# Rules must omit -VMCreatorId (matches working "WSL Homelab SSH") and use RemoteAddresses Any.
+# Port-specific VMCreatorId rules alone are not enough for 9100/10250 on some hosts.
 $ErrorActionPreference = 'Stop'
-$remote = '192.168.10.0/24'
-# WSL / Linux VM creator ID (Windows 11 mirrored mode)
-$vmCreatorId = '{40E0FD32-5877-4D78-9C54-4D3F68CABC92}'
 
 $rules = @(
-  @{ Name = 'Homelab HyperV WSL SSH'; Port = 2222 },
-  @{ Name = 'Homelab HyperV WSL kubelet'; Port = 10250 },
-  @{ Name = 'Homelab HyperV WSL node-exporter'; Port = 9100 }
+  @{ Name = 'WSL Homelab SSH'; Port = 2222 },
+  @{ Name = 'WSL Homelab node-exporter'; Port = 9100 },
+  @{ Name = 'WSL Homelab kubelet'; Port = 10250 }
 )
 
 foreach ($rule in $rules) {
@@ -20,12 +21,11 @@ foreach ($rule in $rules) {
   New-NetFirewallHyperVRule `
     -DisplayName $rule.Name `
     -Direction Inbound `
-    -VMCreatorId $vmCreatorId `
     -Protocol TCP `
     -LocalPorts $rule.Port `
     -Action Allow `
-    -RemoteAddresses $remote | Out-Null
-  Write-Host "Added Hyper-V: $($rule.Name) TCP $($rule.Port) from $remote"
+    -RemoteAddresses Any | Out-Null
+  Write-Host "Added Hyper-V: $($rule.Name) TCP $($rule.Port) (RemoteAddresses Any)"
 }
 
-Write-Host 'Done. Test from blackpearl: nc -zv 192.168.10.31 9100'
+Write-Host 'Done. Test from blackpearl: nc -zv 192.168.10.31 9100; kubectl top node desktop'
