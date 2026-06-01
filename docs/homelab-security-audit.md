@@ -146,6 +146,7 @@ None deployed. **majico-staging** shares the cluster network with monitoring and
 | 192.168.10.26 | deck | 22, 9100, 10250 |
 | 192.168.10.32 | engine | 22, 80, 9100, 10250 |
 | 192.168.10.31 | desktop | 22 |
+| 192.168.10.28 | macbook (client) | 22 |
 
 ---
 

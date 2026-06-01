@@ -1,10 +1,10 @@
-# homelab-k3s
+﻿# homelab-k3s
 
 General-purpose documentation and scripts for a small **k3s** homelab cluster: one control plane, optional GPU and burst workers, and a dedicated edge node for LAN ingress.
 
 Copy [.env.example](.env.example) to `.env` and set `GH_TOKEN` for git push/clone. Push with `bash scripts/git-push.sh`.
 
-All examples use placeholders — replace with your own hostnames, IPs, and keys. **Never commit real credentials.**
+All examples use placeholders â€” replace with your own hostnames, IPs, and keys. **Never commit real credentials.**
 
 ## Architecture
 
@@ -20,8 +20,8 @@ flowchart TB
     EDGE["Edge / LB node<br/><edge-host>"]
   end
 
-  R -->|":80 → edge"| EDGE
-  EDGE -->|"Ingress → Services"| CP
+  R -->|":80 â†’ edge"| EDGE
+  EDGE -->|"Ingress â†’ Services"| CP
   W1 -->|6443| CP
   W2 -->|6443| CP
   W3 -->|6443| CP
@@ -37,15 +37,15 @@ flowchart TB
 | Control plane | Single k3s server, cluster API on `:6443` |
 | Workers | Linux native, WSL2, or Raspberry Pi agents |
 | GPU worker | Optional NVIDIA workloads via device plugin |
-| Edge node | **blackpearl** — li-httpd (LIS) on `:80`; TOML -> NodePort backends |
+| Edge node | **blackpearl** â€” li-httpd (LIS) on `:80`; TOML -> NodePort backends |
 
 ## Quick start
 
-1. **Prepare nodes** — [docs/node-prep.md](docs/node-prep.md): SSH key-only auth, passwordless sudo for automation user.
-2. **Install control plane** — [docs/k3s-server.md](docs/k3s-server.md): single server, Traefik disabled, UFW for SSH + 6443.
-3. **Join workers** — [docs/k3s-workers.md](docs/k3s-workers.md): native Linux, WSL2, or Pi.
-4. **Edge ingress** — [docs/edge-ingress.md](docs/edge-ingress.md) / [k8s/edge/README.md](k8s/edge/README.md): **li-httpd** on blackpearl (LIS TOML -> k3s NodePorts).
-5. **GPU workers** (optional) — [docs/gpu-workers.md](docs/gpu-workers.md): NVIDIA device plugin and scheduling.
+1. **Prepare nodes** â€” [docs/node-prep.md](docs/node-prep.md): SSH key-only auth, passwordless sudo for automation user.
+2. **Install control plane** â€” [docs/k3s-server.md](docs/k3s-server.md): single server, Traefik disabled, UFW for SSH + 6443.
+3. **Join workers** â€” [docs/k3s-workers.md](docs/k3s-workers.md): native Linux, WSL2, or Pi.
+4. **Edge ingress** â€” [docs/edge-ingress.md](docs/edge-ingress.md) / [k8s/edge/README.md](k8s/edge/README.md): **li-httpd** on blackpearl (LIS TOML -> k3s NodePorts).
+5. **GPU workers** (optional) â€” [docs/gpu-workers.md](docs/gpu-workers.md): NVIDIA device plugin and scheduling.
 
 ### Scripts
 
@@ -59,7 +59,7 @@ Generate a dedicated automation key locally (gitignored):
 
 ```bash
 ssh-keygen -t ed25519 -C "homelab-cluster" -f homelab
-cp homelab.pub homelab.pub.example  # edit example only — never commit the private key
+cp homelab.pub homelab.pub.example  # edit example only â€” never commit the private key
 ```
 
 ## Security model (homelab)
@@ -84,3 +84,4 @@ kubectl get pods -A
 ## License
 
 Documentation and scripts are provided as-is for personal homelab use.
+

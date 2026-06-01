@@ -9,7 +9,7 @@ set -euo pipefail
 WORKER_HOST="${WORKER_HOST:?Set WORKER_HOST e.g. <admin-user>@<lan-ip>}"
 NODE_NAME="${NODE_NAME:-$(echo "$WORKER_HOST" | cut -d@ -f1)}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/homelab}"
-K3S_URL="${K3S_URL:-https://<control-plane-host>:6443}"
+K3S_URL="${K3S_URL:-https://192.168.10.41:6443}"
 SSH_PORT="${SSH_PORT:-22}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
