@@ -10,7 +10,7 @@ No third-party reverse proxies on the ingress path.
 LAN :80 / :443
         |
         v
-  blackpearl — li-httpd
+  blackpearl â€” li-httpd
         |  LIS-validated TOML -> flatten -> runtime.conf
         |-- majico staging (majico.xyz TOML)
         |-- Grafana, SigNoz, agent-swarm, ... (beelink-cleanup TOML)
@@ -18,7 +18,7 @@ LAN :80 / :443
   k3s NodePorts on loopback
 ```
 
-**Config:** [k8s/edge/](../k8s/edge/) — [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml), [scripts/edge-lis-apply.sh](../scripts/edge-lis-apply.sh).
+**Config:** [k8s/edge/](../k8s/edge/) â€” [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml), [scripts/edge-lis-apply.sh](../scripts/edge-lis-apply.sh).
 
 ## Quick apply (blackpearl)
 
@@ -52,8 +52,7 @@ Add LAN DNS for `*.homelab.lan` -> `192.168.10.41`. NodePorts remain for direct 
 | Approach | Notes |
 |----------|-------|
 | LAN HTTP | Current default (`:80`) |
-| Edge TLS | Fritz!box, manual certs, or future `li-httpd setup-tls` in lic |
-| In-cluster TLS | Not used — edge TOML routing |
+| In-cluster TLS | Not used â€” edge TOML routing |
 
 ## Firewall
 
@@ -64,3 +63,15 @@ sudo ufw allow OpenSSH
 ```
 
 Keep k3s API (6443) LAN-only. See [homelab-security-audit.md](homelab-security-audit.md).
+## HTTPS (:443)
+
+li-httpd terminates TLS on **:443** using `[server.tls]` in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml). Default homelab profile uses **self_signed** with `dev = true` (LAN trust / browser warning). Replace with `[server.tls.manual]` for Fritz or internal-CA certs under `/etc/li-httpd/tls/`.
+
+```bash
+# On blackpearl after rsync
+sudo mkdir -p /var/lib/li-httpd/tls
+sudo bash scripts/edge-lis-apply.sh   # runs setup-tls-httpd when needed, then flatten + restart
+curl -k -H 'Host: grafana.homelab.lan' https://127.0.0.1/health
+```
+
+Fritz!Box: forward **TCP 443** → `192.168.10.33:443`. Plain **:80** remains available when the merged profile includes `:80` sites (separate listener requires a second `li-httpd` instance today).

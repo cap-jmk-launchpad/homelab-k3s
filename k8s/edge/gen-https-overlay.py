@@ -48,7 +48,7 @@ def build_overlay(http: dict[str, Any]) -> dict[str, Any]:
             "tls": {
                 "mode": "self_signed",
                 "cert_dir": CERT_DIR,
-                "min_protocol": "1.2",
+                "min_protocol": "1.3",
                 "terminate": True,
                 "self_signed": {"dev": True, "valid_days": 365},
             },
