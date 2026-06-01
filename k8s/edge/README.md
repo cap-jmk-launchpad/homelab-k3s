@@ -92,3 +92,19 @@ Rebuild `li-httpd` on blackpearl after pulling lic changes.
 - [docs/edge-ingress.md](../../docs/edge-ingress.md)
 - [docs/k3s-server.md](../../docs/k3s-server.md)
 - majico.xyz `deploy/staging/docs/blackpearl-k8s-lis.md`
+
+## TLS (:443)
+
+Native li-httpd TLS uses a **second process** on port 443 (`li-httpd-homelab-tls.service`).
+
+1. Merged HTTP TOML -> `gen-https-overlay.py` -> `homelab.https.httpd.toml`
+2. `lic/scripts/setup-tls-httpd.py` writes dev certs under `/var/lib/li-httpd/tls/homelab`
+3. Flatten -> `/run/li-httpd/homelab.tls.runtime.conf`
+
+Test:
+
+```bash
+curl -k -H 'Host: grafana.homelab.lan' https://127.0.0.1/health
+```
+
+Requires **lic** with pure-li-https merged (PR #699+). Rebuild `li-httpd` after `git pull` on blackpearl.
