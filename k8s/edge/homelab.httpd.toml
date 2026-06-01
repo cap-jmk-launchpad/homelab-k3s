@@ -77,3 +77,16 @@ listen = ":80"
 "GET /health" = "static:healthcheck"
 "GET /*" = "proxy:li_swarm_dashboard"
 "POST /*" = "proxy:li_swarm_dashboard"
+
+[upstreams.high_fi_demos]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30580"]
+
+[[site]]
+host = "high-fi-demos.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:high_fi_demos"
+"POST /*" = "proxy:high_fi_demos"
