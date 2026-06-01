@@ -1,4 +1,4 @@
-# Homelab values for prometheus-community/kube-prometheus-stack
+﻿# Homelab values for prometheus-community/kube-prometheus-stack
 # Install / upgrade:
 #   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 #   helm repo update
@@ -22,7 +22,7 @@ alertmanager:
   enabled: true
   alertmanagerSpec:
     nodeSelector:
-      kubernetes.io/hostname: blackpearl
+      kubernetes.io/hostname: engine
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
@@ -55,7 +55,7 @@ grafana:
     nodePort: 30300
     port: 80
   nodeSelector:
-    kubernetes.io/hostname: blackpearl
+    kubernetes.io/hostname: engine
   tolerations:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
@@ -103,13 +103,13 @@ prometheusOperator:
   admissionWebhooks:
     patch:
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       tolerations:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
           effect: NoSchedule
   nodeSelector:
-    kubernetes.io/hostname: blackpearl
+    kubernetes.io/hostname: engine
   tolerations:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
@@ -122,7 +122,7 @@ kube-state-metrics:
         - targetLabel: cluster
           replacement: homelab
   nodeSelector:
-    kubernetes.io/hostname: blackpearl
+    kubernetes.io/hostname: engine
   tolerations:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
@@ -148,3 +148,4 @@ kubeScheduler:
   enabled: false
 kubeProxy:
   enabled: false
+

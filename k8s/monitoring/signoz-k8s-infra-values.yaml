@@ -1,4 +1,4 @@
-# SigNoz k8s-infra — DaemonSet agents on every node → in-cluster OTLP collector.
+﻿# SigNoz k8s-infra â€” DaemonSet agents on every node â†’ in-cluster OTLP collector.
 # Pair with signoz-values.yaml (release name "signoz", namespace signoz).
 #
 #   helm upgrade --install signoz-k8s-infra signoz/k8s-infra -n signoz \
@@ -76,8 +76,6 @@ otelDeployment:
     limits:
       memory: 512Mi
   nodeSelector:
-    kubernetes.io/hostname: blackpearl
-  tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      operator: Exists
-      effect: NoSchedule
+    kubernetes.io/hostname: engine
+
+

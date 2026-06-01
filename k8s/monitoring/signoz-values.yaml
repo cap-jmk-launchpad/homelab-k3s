@@ -1,14 +1,14 @@
-# Homelab SigNoz (OTel-native logs, traces, metrics).
-# SSD + RAM on blackpearl; ClickHouse single shard/replica; local-path PVCs.
+﻿# Homelab SigNoz (OTel-native logs, traces, metrics).
+# SSD + RAM on engine (moved off control plane); ClickHouse single shard/replica; local-path PVCs.
 #
-# Install (on blackpearl):
+# Install (from blackpearl kubectl; workloads schedule on engine):
 #   helm repo add signoz https://charts.signoz.io
 #   helm repo update
 #   helm upgrade --install signoz signoz/signoz -n signoz --create-namespace \
 #     -f k8s/monitoring/signoz-values.yaml --wait --timeout 20m
 #
 # UI: NodePort 30301 (LAN, same pattern as Grafana 30300).
-# arm64 Pis: not scheduled here (nodeSelector blackpearl). k8s-infra agents still run on Pis.
+# arm64 Pis: excluded via k8s-infra affinity. k8s-infra agents still run on Pis.
 
 global:
   storageClass: local-path
@@ -21,11 +21,7 @@ clickhouse:
   zookeeper:
     replicaCount: 1
     nodeSelector:
-      kubernetes.io/hostname: blackpearl
-    tolerations:
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
-        effect: NoSchedule
+      kubernetes.io/hostname: engine
     resources:
       requests:
         cpu: 50m
@@ -33,11 +29,7 @@ clickhouse:
       limits:
         memory: 512Mi
   nodeSelector:
-    kubernetes.io/hostname: blackpearl
-  tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      operator: Exists
-      effect: NoSchedule
+    kubernetes.io/hostname: engine
   persistence:
     enabled: true
     size: 50Gi
@@ -51,20 +43,12 @@ clickhouse:
 telemetryStoreMigrator:
   enableReplication: false
   nodeSelector:
-    kubernetes.io/hostname: blackpearl
-  tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      operator: Exists
-      effect: NoSchedule
+    kubernetes.io/hostname: engine
 
 signoz:
   replicaCount: 1
   nodeSelector:
-    kubernetes.io/hostname: blackpearl
-  tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      operator: Exists
-      effect: NoSchedule
+    kubernetes.io/hostname: engine
   service:
     type: NodePort
     port: 8080
@@ -82,11 +66,7 @@ signoz:
 otelCollector:
   replicaCount: 1
   nodeSelector:
-    kubernetes.io/hostname: blackpearl
-  tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      operator: Exists
-      effect: NoSchedule
+    kubernetes.io/hostname: engine
   resources:
     requests:
       cpu: 200m
@@ -98,11 +78,7 @@ postgresql:
   enabled: true
   primary:
     nodeSelector:
-      kubernetes.io/hostname: blackpearl
-    tolerations:
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
-        effect: NoSchedule
+      kubernetes.io/hostname: engine
     persistence:
       enabled: true
       size: 8Gi
@@ -112,3 +88,6 @@ postgresql:
         memory: 256Mi
       limits:
         memory: 512Mi
+
+
+
