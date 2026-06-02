@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -15,7 +16,16 @@ except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore
 
 CERT_DIR = "/var/lib/li-httpd/tls/homelab"
+LETSENCRYPT_LIVE = "/etc/letsencrypt/live/majico.d3bu7.com"
 LISTEN_HTTPS = "0.0.0.0:443"
+ACME_EMAIL = os.environ.get("HOMELAB_ACME_EMAIL", "admin@majico.xyz").strip()
+ACME_DOMAINS = [
+    d.strip()
+    for d in os.environ.get(
+        "HOMELAB_ACME_DOMAINS", "majico.d3bu7.com,api.majico.d3bu7.com"
+    ).split(",")
+    if d.strip()
+]
 
 
 def _toml_quote(s: str) -> str:
@@ -37,6 +47,39 @@ def _write_inline_table(name: str, table: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _tls_block() -> dict[str, Any]:
+    """Prefer Let's Encrypt on disk; else request LIS/li-httpd lets_encrypt (HTTP-01 on :80)."""
+    le_cert = Path(LETSENCRYPT_LIVE) / "fullchain.pem"
+    le_key = Path(LETSENCRYPT_LIVE) / "privkey.pem"
+    if le_cert.is_file() and le_key.is_file():
+        return {
+            "mode": "manual",
+            "cert_dir": CERT_DIR,
+            "min_protocol": "1.3",
+            "terminate": True,
+            "manual": {"cert": str(le_cert), "key": str(le_key)},
+        }
+    if ACME_EMAIL and ACME_DOMAINS:
+        return {
+            "mode": "lets_encrypt",
+            "cert_dir": CERT_DIR,
+            "min_protocol": "1.3",
+            "terminate": True,
+            "lets_encrypt": {
+                "email": ACME_EMAIL,
+                "domains": ACME_DOMAINS,
+                "environment": "production",
+            },
+        }
+    return {
+        "mode": "self_signed",
+        "cert_dir": CERT_DIR,
+        "min_protocol": "1.3",
+        "terminate": True,
+        "self_signed": {"dev": True, "valid_days": 365},
+    }
+
+
 def build_overlay(http: dict[str, Any]) -> dict[str, Any]:
     server_in = http.get("server") if isinstance(http.get("server"), dict) else {}
     root = server_in.get("document_root", "/var/lib/li-httpd/empty")
@@ -45,13 +88,7 @@ def build_overlay(http: dict[str, Any]) -> dict[str, Any]:
         "server": {
             "listen": LISTEN_HTTPS,
             "document_root": str(root),
-            "tls": {
-                "mode": "self_signed",
-                "cert_dir": CERT_DIR,
-                "min_protocol": "1.3",
-                "terminate": True,
-                "self_signed": {"dev": True, "valid_days": 365},
-            },
+            "tls": _tls_block(),
         },
     }
 
@@ -83,16 +120,17 @@ def write_toml(data: dict[str, Any]) -> str:
         tls = server.get("tls")
         if isinstance(tls, dict):
             tls_flat: dict[str, Any] = {}
-            ss: dict[str, Any] = {}
+            nested: dict[str, dict[str, Any]] = {}
             for k, v in tls.items():
-                if k == "self_signed" and isinstance(v, dict):
-                    ss = v
+                if k in ("self_signed", "manual", "lets_encrypt") and isinstance(v, dict):
+                    nested[k] = v
                 else:
                     tls_flat[k] = v
             lines.extend(_write_inline_table("server.tls", tls_flat))
-            if ss:
-                lines.append("")
-                lines.extend(_write_inline_table("server.tls.self_signed", ss))
+            for sub_key in ("manual", "lets_encrypt", "self_signed"):
+                if sub_key in nested:
+                    lines.append("")
+                    lines.extend(_write_inline_table(f"server.tls.{sub_key}", nested[sub_key]))
         lines.append("")
 
     for key in ("health", "limits", "auth"):
