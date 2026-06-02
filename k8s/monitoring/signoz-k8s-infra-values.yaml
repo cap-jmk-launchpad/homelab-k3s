@@ -12,7 +12,7 @@ clusterName: homelab
 
 # In-cluster SigNoz OTel collector (gRPC OTLP).
 # OTLP HTTP (chart default otlphttpExporter); port 4318 on signoz-otel-collector.
-otelCollectorEndpoint: http://signoz-otel-collector.signoz.svc.cluster.local:4318
+otelCollectorEndpoint: http://10.43.152.102:4318
 otelInsecure: true
 
 namespace: signoz
@@ -77,5 +77,6 @@ otelDeployment:
       memory: 512Mi
   nodeSelector:
     kubernetes.io/hostname: engine
+
 
 
