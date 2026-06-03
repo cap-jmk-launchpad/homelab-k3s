@@ -14,6 +14,17 @@ homelab.*
 !k8s/edge/homelab.httpd.toml
 blackpearl
 
+# k8s secrets (local only)
+k8s/searxng/secret.yaml
+
+# Vault bootstrap (never commit)
+.vault-token
+vault-bootstrap.env
+hcp-vault*.env
+k8s/vault/external-secrets/cluster-secret-store.yaml
+k8s/vault/projects/**/external-secret.yaml
+!k8s/vault/projects/**/external-secret.example.yaml
+
 # OS / editor
 .DS_Store
 Thumbs.db

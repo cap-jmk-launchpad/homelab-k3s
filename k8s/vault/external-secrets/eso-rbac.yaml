@@ -1,0 +1,18 @@
+# Lets Vault (via ESO) call the Kubernetes TokenReview API.
+# Required for Kubernetes auth against HCP Vault from outside the cluster.
+#
+# Apply after hcp-vault-install-eso.sh:
+#   kubectl apply -f k8s/vault/external-secrets/eso-rbac.yaml
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: external-secrets-tokenreview
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: external-secrets
+    namespace: external-secrets

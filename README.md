@@ -46,6 +46,7 @@ flowchart TB
 3. **Join workers** â€” [docs/k3s-workers.md](docs/k3s-workers.md): native Linux, WSL2, or Pi.
 4. **Edge ingress** â€” [docs/edge-ingress.md](docs/edge-ingress.md) / [k8s/edge/README.md](k8s/edge/README.md): **li-httpd** on blackpearl (LIS TOML -> k3s NodePorts).
 5. **GPU workers** (optional) â€” [docs/gpu-workers.md](docs/gpu-workers.md): NVIDIA device plugin and scheduling.
+6. **Secrets (HCP Vault)** (optional) â€” [docs/hcp-vault.md](docs/hcp-vault.md): centralize SaaS secrets, sync to k3s via External Secrets Operator.
 
 ### Scripts
 
@@ -54,6 +55,9 @@ flowchart TB
 | [scripts/install-automation-key.sh](scripts/install-automation-key.sh) | Install cluster automation pubkey on a node |
 | [scripts/join-k3s-agent.sh](scripts/join-k3s-agent.sh) | Join this host as a k3s agent |
 | [scripts/join-from-control-plane.sh](scripts/join-from-control-plane.sh) | SCP + SSH join helper from control plane |
+| [scripts/hcp-vault-install-eso.sh](scripts/hcp-vault-install-eso.sh) | Install External Secrets Operator for HCP Vault |
+| [scripts/hcp-vault-configure-k8s-auth.sh](scripts/hcp-vault-configure-k8s-auth.sh) | Wire Vault Kubernetes auth to homelab k3s |
+| [scripts/hcp-vault-onboard-project.sh](scripts/hcp-vault-onboard-project.sh) | Onboard a SaaS project (policy + ExternalSecret) |
 
 Generate a dedicated automation key locally (gitignored):
 
