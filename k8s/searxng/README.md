@@ -19,7 +19,7 @@ blackpearl :443 (li-httpd TLS, Let's Encrypt)
       │  Host: search.klaut.pro
       ▼
 127.0.0.1:30479  ←  k3s NodePort → searxng pod (8080)
-                              └── valkey sidecar (limiter)
+                              └── valkey (ClusterIP, rate limiter)
 ```
 
 ## Deploy
