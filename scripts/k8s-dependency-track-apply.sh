@@ -69,7 +69,7 @@ apply_local() {
   echo "==> postgres (namespace $DEPTRACK_NAMESPACE)"
   kubectl apply -f "$ROOT/k8s/dependency-track/namespace.yaml"
   kubectl apply -k "$ROOT/k8s/dependency-track/postgres/"
-  kubectl -n "$DEPTRACK_NAMESPACE" rollout status statefulset/dependency-track-postgres --timeout=300s
+  kubectl -n "$DEPTRACK_NAMESPACE" rollout status statefulset/dependency-track-postgres --timeout=600s
 
   echo "==> helm repo + dependency-track chart"
   helm repo add dependency-track https://dependencytrack.github.io/helm-charts 2>/dev/null || true
