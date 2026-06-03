@@ -33,10 +33,23 @@ http://search.klaut.pro {
 	reverse_proxy 127.0.0.1:30479
 }
 
-# HTTPS for search — appended by edge-caddy-apply.sh when LE cert exists (copied to /etc/caddy/certs-klaut/).
+http://gitlab.klaut.pro {
+	reverse_proxy 127.0.0.1:30481
+}
 
-# Optional WAN — workloads run on NodePorts 30481–30483; uncomment + edge-caddy-apply.sh:
-# http://gitlab.klaut.pro { reverse_proxy 127.0.0.1:30481 }   # namespace gitlab
-# http://deps.klaut.pro { reverse_proxy 127.0.0.1:30482 }     # namespace dependency-track
-# http://cwe.klaut.pro { reverse_proxy 127.0.0.1:30483 }      # namespace cwe
+http://deps.klaut.pro {
+	reverse_proxy 127.0.0.1:30482
+}
+
+http://cwe.klaut.pro {
+	reverse_proxy 127.0.0.1:30483
+}
+
+# HCP Vault is not on-cluster yet — DNS ready; finish VAULT_* bootstrap (docs/hcp-vault.md).
+http://vault.klaut.pro {
+	respond "HCP Vault pending — configure VAULT_ADDR and VAULT_TOKEN in launchpad .env (see homelab-k3s/docs/hcp-vault.md)." 503
+}
+
+# Per-host HTTPS blocks appended by edge-caddy-apply.sh when LE certs exist.
+
 # Inventory: docs/klaut-pro-products.md#homelab-inventory-current

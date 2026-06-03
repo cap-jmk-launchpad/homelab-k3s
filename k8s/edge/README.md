@@ -14,9 +14,10 @@ Traffic flow for **WAN** (`*.klaut.pro`, `majico.d3bu7.com`) and **LAN** (`*.hom
 | Hostname | Namespace | Backend | WAN status |
 |----------|-----------|---------|------------|
 | `search.klaut.pro` | `searxng` | `127.0.0.1:30479` | **Live** — HTTPS on WAN |
-| `gitlab.klaut.pro` | `gitlab` | `127.0.0.1:30481` | **Running** in cluster; WAN optional (uncomment [Caddyfile](./Caddyfile) + [homelab.httpd.toml](./homelab.httpd.toml)) |
-| `deps.klaut.pro` | `dependency-track` | `127.0.0.1:30482` | **Running**; WAN optional |
-| `cwe.klaut.pro` | `cwe` | `127.0.0.1:30483` | **Running**; WAN optional |
+| `gitlab.klaut.pro` | `gitlab` | `127.0.0.1:30481` | **WAN** — GitLab on `engine` NodePort |
+| `deps.klaut.pro` | `dependency-track` | `127.0.0.1:30482` | **WAN** |
+| `cwe.klaut.pro` | `cwe` | `127.0.0.1:30483` | **WAN** — `/health`, `/manifest.json` |
+| `vault.klaut.pro` | *(HCP pending)* | — | **503 placeholder** until `VAULT_*` bootstrap |
 | `majico.d3bu7.com`, `api.majico.d3bu7.com`, `supabase.majico.d3bu7.com` | Majico NodePorts | Enabled (manual TLS under `/etc/caddy/certs/`) |
 
 **Internal-only** (no `*.klaut.pro` route): `grafana.homelab.lan`, `signoz.homelab.lan`, `agents.homelab.lan`, `api.agents.homelab.lan`, `li-swarm.homelab.lan`, `high-fi-demos.homelab.lan`, Supabase (`db.klaut.pro` out of scope).
@@ -30,8 +31,8 @@ rsync -avz -e "ssh -i …/homelab" k8s/edge/Caddyfile scripts/edge-caddy-apply.s
 ssh -i …/homelab s4il0r@blackpearl
 cd ~/staging/homelab-k3s   # or beelink-cleanup mirror
 sudo bash scripts/edge-caddy-apply.sh
-# First LE cert (needs Fritz :80 → .33):
-sudo bash scripts/edge-caddy-apply.sh --certbot-search
+# LE certs for klaut hostnames (needs Fritz :80 → .33):
+sudo bash scripts/edge-caddy-apply.sh --certbot-klaut
 ```
 
 Do **not** append a bare `search.klaut.pro { reverse_proxy … }` without TLS files — Caddy 2.6 can panic when auto-HTTPS fails (WAN :80 closed).

@@ -10,11 +10,11 @@
 |---------|-----------|----------|--------------|--------|
 | SearXNG | `searxng` | **30479** | `search.klaut.pro` | **Live** — HTTPS on WAN |
 | Supabase (Launchpad) | `supabase` | **30480** | *(internal only)* | **Running** — no `*.klaut.pro` route |
-| GitLab CE | `gitlab` | **30481** | `gitlab.klaut.pro` | **Running** — WAN optional (Caddy/li-httpd uncomment) |
-| Dependency-Track | `dependency-track` | **30482** | `deps.klaut.pro` | **Running** — WAN optional |
-| CWE mirror | `cwe` | **30483** | `cwe.klaut.pro` | **Running** — WAN optional |
-| HCP Vault + ESO | `external-secrets` | — | — | **ESO installed** — set `VAULT_ADDR` + `VAULT_TOKEN` in `.env` to finish HCP bootstrap |
-| k3s WAN edge | blackpearl `.33` | **80** / **443** | Fritz → `.33` | **Caddy** — only `search.klaut.pro` enabled on WAN today |
+| GitLab CE | `gitlab` | **30481** | `gitlab.klaut.pro` | **WAN HTTP/HTTPS** — pod on `engine`; Caddy → NodePort |
+| Dependency-Track | `dependency-track` | **30482** | `deps.klaut.pro` | **WAN HTTP/HTTPS** |
+| CWE mirror | `cwe` | **30483** | `cwe.klaut.pro` | **WAN HTTP/HTTPS** — use `/health`, `/manifest.json` (not `/`) |
+| HCP Vault + ESO | `external-secrets` | — | `vault.klaut.pro` | **DNS + edge 503** — finish `VAULT_*` in `.env` ([hcp-vault.md](hcp-vault.md)) |
+| k3s WAN edge | blackpearl `.33` | **80** / **443** | Fritz → `.33` | **Caddy** — all five `*.klaut.pro` hostnames in [Caddyfile](../k8s/edge/Caddyfile) |
 
 **LAN-only** (li-httpd `*.homelab.lan`, no klaut WAN): Grafana, SigNoz, agent-swarm, high-fi-demos, etc. — see [k8s/edge/README.md](../k8s/edge/README.md).
 

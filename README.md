@@ -93,11 +93,11 @@ Master inventory (products + NodePorts + WAN): **[docs/klaut-pro-products.md](do
 |---------|-----------|----------|--------------|--------|
 | SearXNG | `searxng` | 30479 | `search.klaut.pro` | Live HTTPS |
 | Supabase | `supabase` | 30480 | internal only | Running |
-| GitLab CE | `gitlab` | 30481 | `gitlab.klaut.pro` (optional) | Running |
-| Dependency-Track | `dependency-track` | 30482 | `deps.klaut.pro` (optional) | Running |
-| CWE mirror | `cwe` | 30483 | `cwe.klaut.pro` (optional) | Running |
-| HCP Vault / ESO | `external-secrets` | — | — | ESO ready; needs `VAULT_*` in `.env` |
-| WAN edge | blackpearl `.33` | 80 / 443 | Fritz → `.33` | Caddy (SSH on `.41` only) |
+| GitLab CE | `gitlab` | 30481 | `gitlab.klaut.pro` | WAN HTTPS |
+| Dependency-Track | `dependency-track` | 30482 | `deps.klaut.pro` | WAN HTTPS |
+| CWE mirror | `cwe` | 30483 | `cwe.klaut.pro` | WAN HTTPS (`/manifest.json`) |
+| HCP Vault / ESO | `external-secrets` | — | `vault.klaut.pro` | Edge 503; finish `VAULT_*` in `.env` |
+| WAN edge | blackpearl `.33` | 80 / 443 | Fritz → `.33` | Caddy — five `*.klaut.pro` hostnames |
 
 **Products:** `sec-agent` (DT + CWE), `search-api` (`search.klaut.pro`), `vault-api` (HCP pending) — see [docs/klaut-pro-products.md](docs/klaut-pro-products.md).
 

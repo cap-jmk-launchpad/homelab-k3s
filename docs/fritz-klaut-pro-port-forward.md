@@ -52,9 +52,10 @@ At your **klaut.pro** DNS provider, each public hostname needs an **A** record t
 | Hostname | Purpose | Edge today |
 |----------|---------|------------|
 | `search.klaut.pro` | SearXNG | **Enabled** (HTTP + HTTPS) |
-| `gitlab.klaut.pro` | GitLab CE | Optional — uncomment Caddy + DNS |
-| `deps.klaut.pro` | Dependency-Track | Optional |
-| `cwe.klaut.pro` | CWE mirror | Optional |
+| `gitlab.klaut.pro` | GitLab CE | **Enabled** (HTTP + HTTPS when LE cert issued) |
+| `deps.klaut.pro` | Dependency-Track | **Enabled** |
+| `cwe.klaut.pro` | CWE mirror | **Enabled** |
+| `vault.klaut.pro` | HCP Vault (planned) | **503 placeholder** — DNS ready; `VAULT_*` pending |
 
 Optional LAN testing before WAN DNS: Fritz **DNS-Rebind** / local DNS or `/etc/hosts` → `192.168.10.33`.
 
