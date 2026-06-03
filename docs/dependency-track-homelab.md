@@ -102,6 +102,8 @@ Suggested hostname: **`deps.klaut.pro`**.
 
 The **GitHub security agent** (`sec-agent`) can upload CycloneDX SBOMs to Dependency-Track and read findings for PR reviews. See [klaut-pro-products.md](klaut-pro-products.md). Store API URL + key in Vault `secret/saas/sec-agent/{env}/` when the product worker ships.
 
+**CWE taxonomy** (weakness names, catalog version) is served separately by the lightweight [CWE mirror](cwe-homelab.md) — Dependency-Track vuln records may reference CWE ids but do not replace the full MITRE catalog cache.
+
 ## Coexistence with GitLab / Supabase
 
 Separate namespace and NodePort **30482** (Supabase **30480**, GitLab **30481**). Watch total **engine** RAM if all three run together.

@@ -34,6 +34,11 @@ peers = ["http://127.0.0.1:30478"]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30479"]
 
+# Optional WAN CWE mirror (uncomment site block too). Set CWE_PUBLIC_URL=https://cwe.klaut.pro
+# [upstreams.cwe_mirror]
+# balance = "round_robin"
+# peers = ["http://127.0.0.1:30483"]
+
 [upstreams.high_fi_demos]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30580"]
@@ -95,6 +100,15 @@ listen = ":80"
 "GET /health" = "static:healthcheck"
 "GET /*" = "proxy:li_swarm_dashboard"
 "POST /*" = "proxy:li_swarm_dashboard"
+
+# [[site]]
+# host = "cwe.klaut.pro"
+# listen = ":80"
+#
+# [site.routes]
+# "GET /health" = "static:healthcheck"
+# "GET /*" = "proxy:cwe_mirror"
+# "HEAD /*" = "proxy:cwe_mirror"
 
 [[site]]
 host = "search.klaut.pro"

@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cwe-mirror-sync
+  labels:
+    app: cwe-mirror
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: cwe-mirror
+            component: sync
+        spec:
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: blackpearl
+          containers:
+            - name: sync
+              image: python:3.12-alpine
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - apk add --no-cache curl unzip >/dev/null && chmod +x /scripts/sync.sh && /scripts/sync.sh
+              env:
+                - name: CWE_DATA_DIR
+                  value: /data
+                - name: CWE_SOURCE_URL
+                  valueFrom:
+                    configMapKeyRef:
+                      name: cwe-mirror-config
+                      key: CWE_SOURCE_URL
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: cwe-mirror-data
+            - name: scripts
+              configMap:
+                name: cwe-mirror-scripts
+                defaultMode: 0755
