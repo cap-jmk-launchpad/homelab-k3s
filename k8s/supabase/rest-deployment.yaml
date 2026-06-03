@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rest
+  labels:
+    app: rest
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: rest
+  template:
+    metadata:
+      labels:
+        app: rest
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      initContainers:
+        - name: wait-db
+          image: postgres:15-alpine
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: POSTGRES_PASSWORD
+          command: [sh, -c, "until pg_isready -h db -p 5432 -U postgres; do sleep 2; done"]
+      containers:
+        - name: rest
+          image: postgrest/postgrest:v14.8
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PGRST_DB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: PGRST_DB_URI
+            - name: PGRST_DB_SCHEMAS
+              value: public,storage,graphql_public
+            - name: PGRST_DB_ANON_ROLE
+              value: anon
+            - name: PGRST_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: JWT_SECRET
+            - name: PGRST_DB_EXTRA_SEARCH_PATH
+              value: public
+            - name: PGRST_DB_MAX_ROWS
+              value: "1000"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 192Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rest
+  labels:
+    app: rest
+spec:
+  selector:
+    app: rest
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: supabase
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: supabase-kong-config
+    files:
+      - config/kong.yml
+      - config/kong-entrypoint.sh
+  - name: supabase-backup-scripts
+    files:
+      - scripts/backup.sh
+      - scripts/prune-backups.sh
+  - name: supabase-migrate-scripts
+    files:
+      - scripts/migrate.sh
+  - name: supabase-migrations
+    files:
+      - migrations/20260603120000_platform_tables.sql
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  # secret: scripts/k8s-supabase-secret.sh only (never apply secret.example.yaml)
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+  - auth-deployment.yaml
+  - rest-deployment.yaml
+  - meta-deployment.yaml
+  # analytics omitted on homelab (RAM); Studio runs with NEXT_PUBLIC_ENABLE_LOGS=false
+  - studio-deployment.yaml
+  - kong-deployment.yaml
+  - kong-service.yaml
+  - backup-pvc.yaml
+  - backup-cronjob.yaml
+  - backup-prune-cronjob.yaml
+  - migrate-job.yaml

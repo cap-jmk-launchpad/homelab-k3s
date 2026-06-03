@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supabase-config
+data:
+  SUPABASE_NAMESPACE: supabase
+  SUPABASE_PUBLIC_URL: http://127.0.0.1:30480
+  API_EXTERNAL_URL: http://127.0.0.1:30480
+  SITE_URL: http://127.0.0.1:30480
+  GOTRUE_JWT_ISSUER: http://127.0.0.1:30480/auth/v1
+  STUDIO_DEFAULT_ORGANIZATION: Launchpad
+  STUDIO_DEFAULT_PROJECT: Prototype

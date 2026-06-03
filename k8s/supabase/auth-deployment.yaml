@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  labels:
+    app: auth
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      initContainers:
+        - name: wait-db
+          image: postgres:15-alpine
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: POSTGRES_PASSWORD
+          command: [sh, -c, "until pg_isready -h db -p 5432 -U postgres; do sleep 2; done"]
+      containers:
+        - name: auth
+          image: supabase/gotrue:v2.186.0
+          ports:
+            - name: http
+              containerPort: 9999
+          env:
+            - name: GOTRUE_API_HOST
+              value: 0.0.0.0
+            - name: GOTRUE_API_PORT
+              value: "9999"
+            - name: API_EXTERNAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: API_EXTERNAL_URL
+            - name: GOTRUE_DB_DRIVER
+              value: postgres
+            - name: GOTRUE_DB_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: GOTRUE_DB_DATABASE_URL
+            - name: GOTRUE_SITE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: SITE_URL
+            - name: GOTRUE_URI_ALLOW_LIST
+              value: ""
+            - name: GOTRUE_DISABLE_SIGNUP
+              value: "false"
+            - name: GOTRUE_JWT_ADMIN_ROLES
+              value: service_role
+            - name: GOTRUE_JWT_AUD
+              value: authenticated
+            - name: GOTRUE_JWT_DEFAULT_GROUP_NAME
+              value: authenticated
+            - name: GOTRUE_JWT_EXP
+              value: "3600"
+            - name: GOTRUE_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: JWT_SECRET
+            - name: GOTRUE_JWT_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: GOTRUE_JWT_ISSUER
+            - name: GOTRUE_EXTERNAL_EMAIL_ENABLED
+              value: "true"
+            - name: GOTRUE_MAILER_AUTOCONFIRM
+              value: "true"
+            - name: GOTRUE_SMTP_ADMIN_EMAIL
+              value: admin@example.com
+            - name: GOTRUE_SMTP_HOST
+              value: ""
+            - name: GOTRUE_SMTP_PORT
+              value: "587"
+            - name: GOTRUE_SMTP_USER
+              value: ""
+            - name: GOTRUE_SMTP_PASS
+              value: ""
+            - name: GOTRUE_SMTP_SENDER_NAME
+              value: launchpad
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 192Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  labels:
+    app: auth
+spec:
+  selector:
+    app: auth
+  ports:
+    - name: http
+      port: 9999
+      targetPort: http

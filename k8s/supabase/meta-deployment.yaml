@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meta
+  labels:
+    app: meta
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: meta
+  template:
+    metadata:
+      labels:
+        app: meta
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      initContainers:
+        - name: wait-db
+          image: postgres:15-alpine
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: POSTGRES_PASSWORD
+          command: [sh, -c, "until pg_isready -h db -p 5432 -U postgres; do sleep 2; done"]
+      containers:
+        - name: meta
+          image: supabase/postgres-meta:v0.96.3
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PG_META_PORT
+              value: "8080"
+            - name: PG_META_DB_HOST
+              value: db
+            - name: PG_META_DB_PORT
+              value: "5432"
+            - name: PG_META_DB_NAME
+              value: postgres
+            - name: PG_META_DB_USER
+              value: supabase_admin
+            - name: PG_META_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: POSTGRES_PASSWORD
+            - name: CRYPTO_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: PG_META_CRYPTO_KEY
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 192Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meta
+  labels:
+    app: meta
+spec:
+  selector:
+    app: meta
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

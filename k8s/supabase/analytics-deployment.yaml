@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics
+  labels:
+    app: analytics
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: analytics
+  template:
+    metadata:
+      labels:
+        app: analytics
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      initContainers:
+        - name: wait-db
+          image: postgres:15-alpine
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: POSTGRES_PASSWORD
+          command: [sh, -c, "until pg_isready -h db -p 5432 -U postgres; do sleep 3; done"]
+      containers:
+        - name: analytics
+          image: supabase/logflare:1.36.1
+          ports:
+            - name: http
+              containerPort: 4000
+          env:
+            - name: LOGFLARE_NODE_HOST
+              value: 127.0.0.1
+            - name: DB_USERNAME
+              value: supabase_admin
+            - name: DB_DATABASE
+              value: _supabase
+            - name: DB_HOSTNAME
+              value: db
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DB_SCHEMA
+              value: _analytics
+            - name: LOGFLARE_PUBLIC_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: LOGFLARE_PUBLIC_ACCESS_TOKEN
+            - name: LOGFLARE_PRIVATE_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: LOGFLARE_PRIVATE_ACCESS_TOKEN
+            - name: LOGFLARE_SINGLE_TENANT
+              value: "true"
+            - name: LOGFLARE_SUPABASE_MODE
+              value: "true"
+            - name: POSTGRES_BACKEND_URL
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: POSTGRES_BACKEND_URL
+            - name: POSTGRES_BACKEND_SCHEMA
+              value: _analytics
+            - name: LOGFLARE_FEATURE_FLAG_OVERRIDE
+              value: multibackend=true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics
+  labels:
+    app: analytics
+spec:
+  selector:
+    app: analytics
+  ports:
+    - name: http
+      port: 4000
+      targetPort: http

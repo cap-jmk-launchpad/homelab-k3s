@@ -200,6 +200,7 @@ Platform secrets (`STRIPE_SECRET`, `VAULT_TOKEN` with write-only tenant policy) 
 
 ## Related
 
+- [docs/supabase-launchpad.md](supabase-launchpad.md) — self-hosted Supabase on k3s (`supabase` namespace) for Launchpad prototyping
 - [docs/hcp-vault.md](hcp-vault.md) — HCP setup, ESO, `saas/*` paths
 - [docs/search-klaut-pro.md](search-klaut-pro.md) — SearXNG API, pricing, gateway notes
 - [k8s/vault/README.md](../k8s/vault/README.md) — manifests and onboard scripts

@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studio
+  labels:
+    app: studio
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: studio
+  template:
+    metadata:
+      labels:
+        app: studio
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      containers:
+        - name: studio
+          image: supabase/studio:2026.04.27-sha-5f60601
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: HOSTNAME
+              value: 0.0.0.0
+            - name: STUDIO_PG_META_URL
+              value: http://meta:8080
+            - name: POSTGRES_HOST
+              value: db
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_DB
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PG_META_CRYPTO_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: PG_META_CRYPTO_KEY
+            - name: DEFAULT_ORGANIZATION_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: STUDIO_DEFAULT_ORGANIZATION
+            - name: DEFAULT_PROJECT_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: STUDIO_DEFAULT_PROJECT
+            - name: SUPABASE_URL
+              value: http://kong:8000
+            - name: SUPABASE_PUBLIC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: supabase-config
+                  key: SUPABASE_PUBLIC_URL
+            - name: SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: ANON_KEY
+            - name: SUPABASE_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: SERVICE_ROLE_KEY
+            - name: AUTH_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: JWT_SECRET
+            - name: NEXT_PUBLIC_ENABLE_LOGS
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /api/platform/profile
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: studio
+  labels:
+    app: studio
+spec:
+  selector:
+    app: studio
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

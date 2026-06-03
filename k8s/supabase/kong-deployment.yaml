@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong
+  labels:
+    app: kong
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      initContainers:
+        - name: wait-studio
+          image: curlimages/curl:8.12.1
+          command: [sh, -c, "until curl -sf http://studio:3000/api/platform/profile; do sleep 3; done"]
+        - name: render-kong
+          image: busybox:1.37
+          command:
+            - sh
+            - /scripts/kong-entrypoint.sh
+          env:
+            - name: KONG_DECLARATIVE_CONFIG
+              value: /kong-out/kong.yml
+            - name: SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: ANON_KEY
+            - name: SUPABASE_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: SERVICE_ROLE_KEY
+            - name: DASHBOARD_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: DASHBOARD_USERNAME
+            - name: DASHBOARD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: supabase-secrets
+                  key: DASHBOARD_PASSWORD
+          volumeMounts:
+            - name: kong-config
+              mountPath: /home/kong/temp.yml
+              subPath: kong.yml
+            - name: kong-config
+              mountPath: /scripts/kong-entrypoint.sh
+              subPath: kong-entrypoint.sh
+            - name: kong-out
+              mountPath: /kong-out
+      containers:
+        - name: kong
+          image: kong:2.8.1
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: KONG_DATABASE
+              value: "off"
+            - name: KONG_DECLARATIVE_CONFIG
+              value: /kong-out/kong.yml
+            - name: KONG_PROXY_ACCESS_LOG
+              value: /dev/stdout
+            - name: KONG_ADMIN_ACCESS_LOG
+              value: /dev/stdout
+            - name: KONG_PROXY_ERROR_LOG
+              value: /dev/stderr
+            - name: KONG_ADMIN_ERROR_LOG
+              value: /dev/stderr
+            - name: KONG_PROXY_LISTEN
+              value: 0.0.0.0:8000
+            - name: KONG_NGINX_WORKER_PROCESSES
+              value: "1"
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 768Mi
+          volumeMounts:
+            - name: kong-out
+              mountPath: /kong-out
+              readOnly: true
+      volumes:
+        - name: kong-config
+          configMap:
+            name: supabase-kong-config
+            defaultMode: 0755
+        - name: kong-out
+          emptyDir: {}
