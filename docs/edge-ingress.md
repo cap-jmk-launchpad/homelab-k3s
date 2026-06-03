@@ -45,7 +45,7 @@ curl -H 'Host: grafana.homelab.lan' http://192.168.10.33/health
 curl -H 'Host: staging.majico.xyz' http://192.168.10.33/health
 ```
 
-Add LAN DNS for `*.homelab.lan` → **`192.168.10.33`** (edge / li-httpd). SSH to blackpearl uses **`192.168.10.41`**. NodePorts remain for direct debug (either IP on the control-plane node).
+Add LAN DNS for `*.homelab.lan` → **`192.168.10.33`** (edge / li-httpd). Full steps: [homelab-lan-dns.md](homelab-lan-dns.md) (Fritz DHCP, optional [k8s/dns/](../k8s/dns/) CoreDNS). SSH to blackpearl uses **`192.168.10.41`**. NodePorts remain for direct debug (either IP on the control-plane node).
 
 ## TLS
 

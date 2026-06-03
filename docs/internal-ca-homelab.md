@@ -96,9 +96,9 @@ Goal: every LAN device resolves `*.homelab.lan` (and optionally `ca.homelab.lan`
    - `signoz.homelab.lan` → `192.168.10.33`
 5. **Anwenden** / save. Renew DHCP on a test client (`ipconfig /renew` / toggle Wi‑Fi).
 
-### Option B — Fritz as DNS, homelab upstream (AdGuard / CoreDNS)
+### Option B — Homelab CoreDNS + Fritz DHCP (recommended)
 
-Point Fritz **DNS server** to AdGuard Home or CoreDNS on the cluster; forward `homelab.lan` to a zone file with `A *.homelab.lan 192.168.10.33` (or per-host records). Useful if you outgrow Fritz’s UI.
+Deploy [k8s/dns/](../k8s/dns/) on blackpearl and set Fritz **local DNS server** to **`192.168.10.33`** — full steps in [homelab-lan-dns.md](homelab-lan-dns.md). Covers all edge hostnames and `ca.homelab.lan` without per-host Fritz entries.
 
 ### DNS-Rebind protection
 

@@ -80,10 +80,35 @@ Canonical inventory: [docs/klaut-pro-products.md](../../docs/klaut-pro-products.
 
 ## Internal TLS (`*.homelab.lan`)
 
-Public **Let's Encrypt** stays on Caddy for `*.klaut.pro`. LAN hostnames use **step-ca** (namespace `step-ca`, NodePort **30484**). Clients trust HTTPS after installing the homelab root CA once — see [docs/internal-ca-homelab.md](../../docs/internal-ca-homelab.md). Fritz **local DNS** resolves `*.homelab.lan` → `192.168.10.33`; no WAN DNS records needed.
+Public **Let's Encrypt** stays on Caddy for `*.klaut.pro`. LAN hostnames use **step-ca** (namespace `step-ca`, NodePort **30484**). Clients trust HTTPS after installing the homelab root CA once — see [docs/internal-ca-homelab.md](../../docs/internal-ca-homelab.md). No WAN DNS records for `homelab.lan`.
+
+## DNS (LAN)
+
+Point edge traffic at **`192.168.10.33`** (li-httpd / Caddy on blackpearl). **Recommended:** [k8s/dns/](../dns/) CoreDNS + Fritz DHCP DNS → `192.168.10.33` — [docs/homelab-lan-dns.md](../../docs/homelab-lan-dns.md). Quick one-PC fix: Windows `hosts`. SSH/admin: **`192.168.10.41`** (`s4il0r@blackpearl`).
+
+| Host |
+|------|
+| `grafana.homelab.lan`, `signoz.homelab.lan`, `agents.homelab.lan` |
+| `api.agents.homelab.lan`, `li-swarm.homelab.lan`, `high-fi-demos.homelab.lan` |
+
+## Apply (li-httpd)
+
+```bash
+rsync -avz -e "ssh -i homelab" k8s/edge/ scripts/edge-lis-*.sh \
+  s4il0r@blackpearl:~/staging/homelab-k3s/
+ssh -i homelab s4il0r@blackpearl 'cd ~/staging/homelab-k3s && bash scripts/edge-lis-validate.sh && sudo bash scripts/edge-lis-apply.sh'
+```
+
+## Validate
+
+```bash
+curl -H 'Host: grafana.homelab.lan' http://127.0.0.1/health
+nslookup grafana.homelab.lan 127.0.0.1   # after homelab-dns-apply.sh
+```
 
 ## Related
 
+- [docs/homelab-lan-dns.md](../../docs/homelab-lan-dns.md)
 - [docs/internal-ca-homelab.md](../../docs/internal-ca-homelab.md)
 - [docs/search-klaut-pro.md](../../docs/search-klaut-pro.md)
 - [docs/fritz-klaut-pro-port-forward.md](../../docs/fritz-klaut-pro-port-forward.md)

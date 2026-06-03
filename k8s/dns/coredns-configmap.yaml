@@ -1,0 +1,37 @@
+# LAN DNS for *.homelab.lan → edge (li-httpd on 192.168.10.33).
+# Upstream: node resolv.conf (Fritz!Box / ISP).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homelab-lan-coredns
+  namespace: homelab-dns
+data:
+  Corefile: |
+    .:53 {
+      errors
+      log
+      hosts homelab.hosts {
+        fallthrough
+      }
+      template IN A homelab.lan {
+        match ^(.+)\.homelab\.lan\.$
+        answer "{{ .Name }} 300 IN A 192.168.10.33"
+        fallthrough
+      }
+      template IN A homelab.lan {
+        match ^homelab\.lan\.$
+        answer "homelab.lan 300 IN A 192.168.10.33"
+        fallthrough
+      }
+      forward . /etc/resolv.conf
+      cache 30
+    }
+  homelab.hosts: |
+    192.168.10.33 grafana.homelab.lan
+    192.168.10.33 signoz.homelab.lan
+    192.168.10.33 agents.homelab.lan
+    192.168.10.33 api.agents.homelab.lan
+    192.168.10.33 li-swarm.homelab.lan
+    192.168.10.33 high-fi-demos.homelab.lan
+    192.168.10.33 homelab.lan
+    192.168.10.33 ca.homelab.lan
