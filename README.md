@@ -85,6 +85,15 @@ kubectl get nodes -o wide
 kubectl get pods -A
 ```
 
+## Application stacks (optional)
+
+| Stack | Doc |
+|-------|-----|
+| Supabase | [docs/supabase-launchpad.md](docs/supabase-launchpad.md) |
+| GitLab CE | [docs/gitlab-homelab.md](docs/gitlab-homelab.md) |
+| OWASP Dependency-Track | [docs/dependency-track-homelab.md](docs/dependency-track-homelab.md) |
+| SearXNG | [docs/search-klaut-pro.md](docs/search-klaut-pro.md) |
+
 ## License
 
 Documentation and scripts are provided as-is for personal homelab use.

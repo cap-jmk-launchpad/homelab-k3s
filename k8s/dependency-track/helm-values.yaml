@@ -1,0 +1,52 @@
+# Homelab values for official chart: helm repo add dependency-track https://dependencytrack.github.io/helm-charts
+# Install: see scripts/k8s-dependency-track-apply.sh
+
+common:
+  secretKey:
+    createSecret: false
+    existingSecretName: dependency-track-secrets
+
+apiServer:
+  deploymentType: StatefulSet
+  nodeSelector:
+    kubernetes.io/hostname: engine
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      memory: 4Gi
+  extraEnv:
+    - name: ALPINE_DATABASE_MODE
+      value: external
+    - name: ALPINE_DATABASE_URL
+      value: jdbc:postgresql://dependency-track-postgres.dependency-track.svc.cluster.local:5432/dtrack
+    - name: ALPINE_DATABASE_DRIVER
+      value: org.postgresql.Driver
+    - name: ALPINE_DATABASE_USERNAME
+      value: dtrack
+    - name: ALPINE_DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: dependency-track-secrets
+          key: POSTGRES_PASSWORD
+    - name: ALPINE_DATABASE_POOL_ENABLED
+      value: "true"
+    - name: ALPINE_DATABASE_POOL_MAX_SIZE
+      value: "10"
+    - name: ALPINE_DATABASE_POOL_MIN_IDLE
+      value: "2"
+
+frontend:
+  nodeSelector:
+    kubernetes.io/hostname: engine
+  apiBaseUrl: http://dependency-track-api-server.dependency-track.svc.cluster.local:8080
+  service:
+    type: NodePort
+    nodePort: 30482
+
+ingress:
+  enabled: false

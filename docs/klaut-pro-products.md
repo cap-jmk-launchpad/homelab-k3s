@@ -4,7 +4,7 @@
 
 | Product | Slug | Model |
 |---------|------|--------|
-| **GitHub security agent** | `sec-agent` | CodeRabbit-style security reviews on PRs |
+| **GitHub security agent** | `sec-agent` | CodeRabbit-style security reviews on PRs; SBOM/vuln context via homelab [Dependency-Track](dependency-track-homelab.md) |
 | **Monetized search** | `search-api` | Metered agent search API |
 | **Monetized vault** | `vault-api` | BYOK secrets API for agents and apps |
 
@@ -14,7 +14,7 @@ Control-plane architecture (search + secrets API, billing, hostnames) stays in [
 
 | Product | Slug | Monetization | Stack dependency |
 |---------|------|--------------|------------------|
-| **GitHub security agent** | `sec-agent` | Subscription per org/repo; sec review on PRs (CodeRabbit-style for security) | GitHub App, homelab k3s runners, optional Supabase for usage; Vault for app credentials |
+| **GitHub security agent** | `sec-agent` | Subscription per org/repo; sec review on PRs (CodeRabbit-style for security) | GitHub App, homelab k3s runners, optional Supabase for usage; Vault for app credentials; [Dependency-Track](dependency-track-homelab.md) for SBOM ingestion and CVE intelligence |
 | **Monetized search** | `search-api` | Tiered search quota + overage ([search-klaut-pro.md](search-klaut-pro.md#suggested-tiers)) | SearXNG (`search.klaut.pro`), gateway `api.search.klaut.pro`, Redis, Supabase `platform_api_keys` |
 | **Monetized vault** | `vault-api` | Tiered BYOK keys/seats; tenant secrets API | HCP Vault ([hcp-vault.md](hcp-vault.md)), control plane `api.klaut.pro`, ESO for hosted runners |
 
@@ -34,7 +34,7 @@ KV v2 mount: `secret`. ESO `remoteRef` uses paths **without** the `data/` prefix
 
 | Product slug | Example platform path | Typical keys (names only) |
 |--------------|----------------------|---------------------------|
-| `sec-agent` | `secret/saas/sec-agent/staging` | `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `WEBHOOK_SECRET`, scanner tokens |
+| `sec-agent` | `secret/saas/sec-agent/staging` | `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `WEBHOOK_SECRET`, `DEPTRACK_API_URL`, `DEPTRACK_API_KEY`, scanner tokens |
 | `search-api` | `secret/saas/search-api/prod` | `REDIS_URL`, `STRIPE_SECRET`, gateway signing secret |
 | `vault-api` | `secret/saas/vault-api/prod` | `VAULT_TOKEN` (tenant-write policy), `STRIPE_SECRET`, Postgres DSN |
 | *(existing homelab)* | `secret/saas/agent-swarm/staging`, `secret/saas/majico/staging` | Internal apps — unchanged |
@@ -141,3 +141,4 @@ Upgrade HCP to **Standard+** before paid tenant traffic ([hcp-vault.md#security-
 - [hcp-vault.md](hcp-vault.md) — HCP portal, ESO, onboard/seed scripts
 - [search-klaut-pro.md](search-klaut-pro.md) — SearXNG deploy and search pricing
 - [supabase-launchpad.md](supabase-launchpad.md) — self-hosted Supabase on k3s
+- [dependency-track-homelab.md](dependency-track-homelab.md) — OWASP Dependency-Track (vuln feeds, SBOM)

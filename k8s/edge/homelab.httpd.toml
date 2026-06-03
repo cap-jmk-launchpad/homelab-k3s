@@ -43,6 +43,11 @@ peers = ["http://127.0.0.1:30580"]
 # balance = "round_robin"
 # peers = ["http://127.0.0.1:30481"]
 
+# Optional WAN OWASP Dependency-Track (uncomment site block). Set DEPTRACK_PUBLIC_URL=https://deps.klaut.pro
+# [upstreams.dependency_track]
+# balance = "round_robin"
+# peers = ["http://127.0.0.1:30482"]
+
 [[site]]
 host = "grafana.homelab.lan"
 listen = ":80"
@@ -118,3 +123,12 @@ listen = ":80"
 # "GET /health" = "static:healthcheck"
 # "GET /*" = "proxy:gitlab"
 # "POST /*" = "proxy:gitlab"
+
+# [[site]]
+# host = "deps.klaut.pro"
+# listen = ":80"
+#
+# [site.routes]
+# "GET /health" = "static:healthcheck"
+# "GET /*" = "proxy:dependency_track"
+# "POST /*" = "proxy:dependency_track"
