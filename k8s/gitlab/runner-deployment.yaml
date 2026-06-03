@@ -28,6 +28,13 @@ spec:
             - -c
             - |
               set -euo pipefail
+              echo "Waiting for GitLab API at ${GITLAB_URL}..."
+              for i in $(seq 1 120); do
+                if wget -q -O /dev/null "${GITLAB_URL}/-/health" 2>/dev/null; then
+                  break
+                fi
+                sleep 10
+              done
               if [[ ! -f /etc/gitlab-runner/config.toml ]] || ! grep -q '^\[\[runners\]\]' /etc/gitlab-runner/config.toml; then
                 cp /etc/gitlab-runner-base/config.toml /etc/gitlab-runner/config.toml
                 gitlab-runner register --non-interactive \
