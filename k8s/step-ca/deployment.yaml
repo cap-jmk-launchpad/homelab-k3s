@@ -64,6 +64,7 @@ spec:
                 --password-file=/home/step/secrets/password \
                 --provisioner-password-file=/home/step/secrets/provisioner_password \
                 --acme
+              chmod -R u+rwX,g-rwx,o-rwx /home/step
               echo "step-ca bootstrap complete"
           volumeMounts:
             - name: step-data
@@ -72,7 +73,10 @@ spec:
         - name: step-ca
           image: smallstep/step-ca:0.27.4
           imagePullPolicy: IfNotPresent
+          command:
+            - step-ca
           args:
+            - --password-file=/home/step/secrets/password
             - /home/step/config/ca.json
           ports:
             - name: https
@@ -81,8 +85,6 @@ spec:
           env:
             - name: STEPPATH
               value: /home/step
-            - name: DOCKER_STEPCA_INIT_NAME
-              value: ""
           readinessProbe:
             httpGet:
               path: /health
