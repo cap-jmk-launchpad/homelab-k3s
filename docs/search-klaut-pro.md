@@ -221,6 +221,7 @@ Overage: **$2 per 1,000** queries (undercuts ~$5/1k Brave-style pricing).
 
 ## Related
 
+- [docs/agentic-platform.md](agentic-platform.md) — unified search + Vault BYOK product
 - [k8s/searxng/README.md](../k8s/searxng/README.md)
 - [k8s/edge/README.md](../k8s/edge/README.md)
 - [edge-ingress.md](edge-ingress.md)

@@ -170,10 +170,15 @@ Existing flow (`./scripts/k8s-agent-swarm-secret.sh`) creates secrets directly. 
 
 ESO needs `system:auth-delegator` on its service account so Vault can call the Kubernetes TokenReview API. The configure script and `eso-rbac.yaml` set this up.
 
+## Agentic SaaS (customer BYOK)
+
+For a paid agent product (search + tenant secrets), extend paths to `secret/tenants/{tenant_id}/` and add a Secrets API or per-tenant ESO — see [agentic-platform.md](agentic-platform.md). Platform secrets stay under `saas/klaut-platform/prod`.
+
 ## Files in this repo
 
 | Path | Purpose |
 |------|---------|
+| [docs/agentic-platform.md](agentic-platform.md) | Unified search + secrets product architecture |
 | [k8s/vault/README.md](../k8s/vault/README.md) | Manifest index |
 | [k8s/vault/external-secrets/](../k8s/vault/external-secrets/) | ESO namespace, RBAC, ClusterSecretStore example |
 | [k8s/vault/projects/](../k8s/vault/projects/) | Per-project ExternalSecret examples |
