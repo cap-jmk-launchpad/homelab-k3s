@@ -1,0 +1,13 @@
+# Root + intermediate CA material, badger DB, and ca.json — back up before any reinstall.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: step-ca-data
+  labels:
+    app: step-ca
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

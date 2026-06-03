@@ -37,7 +37,7 @@ flowchart TB
 | Control plane | Single k3s server, cluster API on `:6443` |
 | Workers | Linux native, WSL2, or Raspberry Pi agents |
 | GPU worker | Optional NVIDIA workloads via device plugin |
-| Edge node | **blackpearl** — **Caddy** `:80`/`:443` (WAN `*.klaut.pro`); **li-httpd** for `*.homelab.lan` on `:80` |
+| Edge node | **blackpearl** — **Caddy** `:80`/`:443` (WAN `*.klaut.pro` + LE); **li-httpd** for `*.homelab.lan`; **step-ca** internal PKI (LAN) |
 
 ## Quick start
 
@@ -97,6 +97,7 @@ Master inventory (products + NodePorts + WAN): **[docs/klaut-pro-products.md](do
 | Dependency-Track | `dependency-track` | 30482 | `deps.klaut.pro` | WAN HTTPS |
 | CWE mirror | `cwe` | 30483 | `cwe.klaut.pro` | WAN HTTPS (`/manifest.json`) |
 | HCP Vault / ESO | `external-secrets` | — | `vault.klaut.pro` | Edge 503; finish `VAULT_*` in `.env` |
+| step-ca (internal PKI) | `step-ca` | 30484 | `ca.homelab.lan` (LAN) | ACME for `*.homelab.lan` — not on WAN DNS |
 | WAN edge | blackpearl `.33` | 80 / 443 | Fritz → `.33` | Caddy — five `*.klaut.pro` hostnames |
 
 **Products:** `sec-agent` (DT + CWE), `search-api` (`search.klaut.pro`), `vault-api` (HCP pending) — see [docs/klaut-pro-products.md](docs/klaut-pro-products.md).
@@ -111,6 +112,7 @@ Master inventory (products + NodePorts + WAN): **[docs/klaut-pro-products.md](do
 | SearXNG | [docs/search-klaut-pro.md](docs/search-klaut-pro.md) |
 | HCP Vault | [docs/hcp-vault.md](docs/hcp-vault.md) |
 | Fritz port-forward | [docs/fritz-klaut-pro-port-forward.md](docs/fritz-klaut-pro-port-forward.md) |
+| Internal CA (step-ca) | [docs/internal-ca-homelab.md](docs/internal-ca-homelab.md) |
 
 ## License
 

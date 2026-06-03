@@ -52,6 +52,7 @@ Add LAN DNS for `*.homelab.lan` → **`192.168.10.33`** (edge / li-httpd). SSH t
 | Approach | Notes |
 |----------|-------|
 | LAN HTTP | Current default (`:80`) |
+| LAN HTTPS (internal CA) | step-ca ACME → li-httpd manual TLS — [internal-ca-homelab.md](internal-ca-homelab.md) |
 | In-cluster TLS | Not used â€” edge TOML routing |
 
 ## Firewall

@@ -78,8 +78,13 @@ Canonical inventory: [docs/klaut-pro-products.md](../../docs/klaut-pro-products.
 | Dependency-Track | `dependency-track` | 30482 | `deps.klaut.pro` optional |
 | CWE mirror | `cwe` | 30483 | `cwe.klaut.pro` optional |
 
+## Internal TLS (`*.homelab.lan`)
+
+Public **Let's Encrypt** stays on Caddy for `*.klaut.pro`. LAN hostnames use **step-ca** (namespace `step-ca`, NodePort **30484**). Clients trust HTTPS after installing the homelab root CA once — see [docs/internal-ca-homelab.md](../../docs/internal-ca-homelab.md). Fritz **local DNS** resolves `*.homelab.lan` → `192.168.10.33`; no WAN DNS records needed.
+
 ## Related
 
+- [docs/internal-ca-homelab.md](../../docs/internal-ca-homelab.md)
 - [docs/search-klaut-pro.md](../../docs/search-klaut-pro.md)
 - [docs/fritz-klaut-pro-port-forward.md](../../docs/fritz-klaut-pro-port-forward.md)
 - [docs/edge-ingress.md](../../docs/edge-ingress.md)

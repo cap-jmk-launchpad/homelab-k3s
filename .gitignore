@@ -19,6 +19,7 @@ k8s/searxng/secret.yaml
 k8s/supabase/secret.yaml
 k8s/gitlab/secret.yaml
 k8s/dependency-track/secret.yaml
+k8s/step-ca/secret.yaml
 
 # Vault bootstrap (never commit)
 .vault-token

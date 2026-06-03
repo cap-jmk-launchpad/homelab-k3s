@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: step-ca
+  labels:
+    app: step-ca
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: step-ca
+  template:
+    metadata:
+      labels:
+        app: step-ca
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsNonRoot: true
+      initContainers:
+        - name: bootstrap
+          image: smallstep/step-ca:0.27.4
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: STEPPATH
+              value: /home/step
+            - name: STEP_CA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: step-ca-secrets
+                  key: STEP_CA_PASSWORD
+            - name: STEP_PROVISIONER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: step-ca-secrets
+                  key: STEP_PROVISIONER_PASSWORD
+            - name: STEP_CA_DNS
+              value: "ca.homelab.lan,pki.homelab.lan,step-ca.step-ca.svc.cluster.local"
+            - name: STEP_CA_NAME
+              value: "Homelab Internal CA"
+            - name: STEP_CA_PROVISIONER
+              value: "homelab-admin"
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              if [ -f /home/step/config/ca.json ]; then
+                echo "step-ca already initialized on PVC"
+                exit 0
+              fi
+              mkdir -p /home/step/secrets
+              printf '%s' "$STEP_CA_PASSWORD" > /home/step/secrets/password
+              printf '%s' "$STEP_PROVISIONER_PASSWORD" > /home/step/secrets/provisioner_password
+              chmod 600 /home/step/secrets/password /home/step/secrets/provisioner_password
+              step ca init \
+                --deployment-type=standalone \
+                --name="$STEP_CA_NAME" \
+                --dns="$STEP_CA_DNS" \
+                --address=":9000" \
+                --provisioner="$STEP_CA_PROVISIONER" \
+                --password-file=/home/step/secrets/password \
+                --provisioner-password-file=/home/step/secrets/provisioner_password \
+                --acme
+              echo "step-ca bootstrap complete"
+          volumeMounts:
+            - name: step-data
+              mountPath: /home/step
+      containers:
+        - name: step-ca
+          image: smallstep/step-ca:0.27.4
+          imagePullPolicy: IfNotPresent
+          args:
+            - /home/step/config/ca.json
+          ports:
+            - name: https
+              containerPort: 9000
+              protocol: TCP
+          env:
+            - name: STEPPATH
+              value: /home/step
+            - name: DOCKER_STEPCA_INIT_NAME
+              value: ""
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: step-data
+              mountPath: /home/step
+      volumes:
+        - name: step-data
+          persistentVolumeClaim:
+            claimName: step-ca-data
