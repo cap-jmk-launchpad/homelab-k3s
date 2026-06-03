@@ -21,8 +21,10 @@ Manifests: [k8s/searxng/](../k8s/searxng/). Edge route: [k8s/edge/homelab.httpd.
 | Step | Action |
 |------|--------|
 | 1 | At your DNS provider for **klaut.pro**, add an **A** (or **AAAA**) record: `search` → your public WAN IP (same as other `*.klaut.pro` services if you already expose the homelab). |
-| 2 | On **Fritz!Box** (or router): forward **TCP 80** and **TCP 443** to blackpearl (`192.168.10.41` in this repo’s examples). HTTP-01 for Let’s Encrypt needs **:80**. |
-| 3 | Optional LAN override: `/etc/hosts` or Fritz local DNS `search.klaut.pro` → `192.168.10.41` for testing before public DNS propagates. |
+| 2 | On **Fritz!Box** (or router): forward **TCP 80** and **TCP 443** to the k3s edge node at **`192.168.10.33`** (li-httpd listens here). HTTP-01 for Let’s Encrypt needs **:80**. |
+| 3 | Optional LAN override: `/etc/hosts` or Fritz local DNS `search.klaut.pro` → `192.168.10.33` for testing before public DNS propagates. |
+
+**Host roles:** `192.168.10.33` is blackpearl’s k3s **node IP** (edge / NodePort / li-httpd). `192.168.10.41` is the **SSH admin hostname** for the same machine — use `.41` for `ssh s4il0r@blackpearl`, `.33` for router port-forwards and LAN HTTP(S) curls.
 
 Confirm:
 

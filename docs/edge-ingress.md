@@ -41,11 +41,11 @@ See [k3s-server.md](k3s-server.md).
 ## Validate
 
 ```bash
-curl -H 'Host: grafana.homelab.lan' http://192.168.10.41/health
-curl -H 'Host: staging.majico.xyz' http://192.168.10.41/health
+curl -H 'Host: grafana.homelab.lan' http://192.168.10.33/health
+curl -H 'Host: staging.majico.xyz' http://192.168.10.33/health
 ```
 
-Add LAN DNS for `*.homelab.lan` -> `192.168.10.41`. NodePorts remain for direct debug.
+Add LAN DNS for `*.homelab.lan` → **`192.168.10.33`** (edge / li-httpd). SSH to blackpearl uses **`192.168.10.41`**. NodePorts remain for direct debug (either IP on the control-plane node).
 
 ## TLS
 
@@ -74,4 +74,4 @@ sudo bash scripts/edge-lis-apply.sh   # runs setup-tls-httpd when needed, then f
 curl -k -H 'Host: grafana.homelab.lan' https://127.0.0.1/health
 ```
 
-Fritz!Box: forward **TCP 443** → `192.168.10.33:443`. Plain **:80** remains available when the merged profile includes `:80` sites (separate listener requires a second `li-httpd` instance today).
+Fritz!Box: forward **TCP 80** and **TCP 443** → **`192.168.10.33`** (k3s edge node on blackpearl). Plain **:80** remains available when the merged profile includes `:80` sites (separate listener requires a second `li-httpd` instance today). SSH/admin hostname remains **`192.168.10.41`**.

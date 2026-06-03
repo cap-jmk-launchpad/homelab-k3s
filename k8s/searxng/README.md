@@ -26,7 +26,7 @@ blackpearl :443 (li-httpd TLS, Let's Encrypt)
 
 ### 1. DNS (public)
 
-Point **`search.klaut.pro`** at your public edge IP (the host that terminates HTTPS — typically blackpearl behind Fritz!Box port-forward).
+Point **`search.klaut.pro`** at your public WAN IP (the address Fritz!Box exposes). HTTPS terminates on **blackpearl** via li-httpd.
 
 | Record | Name | Value | TTL |
 |--------|------|-------|-----|
@@ -35,7 +35,7 @@ Point **`search.klaut.pro`** at your public edge IP (the host that terminates HT
 
 Use **A** when you have a stable IPv4. Use **CNAME** only if you front with a CDN or another hostname (e.g. `search` → `edge.example.com`); do not CNAME to a NodePort.
 
-**Router:** forward **TCP 443** (and **80** for ACME HTTP-01) to blackpearl, same as other public homelab sites.
+**Router:** forward **TCP 443** (and **80** for ACME HTTP-01) to **`192.168.10.33`** (k3s node / edge IP on blackpearl). SSH to the same host remains at **`192.168.10.41`** (`s4il0r@blackpearl`).
 
 Verify:
 

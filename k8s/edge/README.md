@@ -47,7 +47,7 @@ bash ~/staging/majico.xyz/deploy/staging/scripts/build-li-httpd.sh
 
 ## DNS (LAN)
 
-Point at `192.168.10.41` (Fritz!box or `/etc/hosts`):
+Point edge traffic at **`192.168.10.33`** (k3s node IP where li-httpd listens). Use Fritz!Box local DNS or `/etc/hosts`. SSH/admin access to the same host is **`192.168.10.41`** (`s4il0r@blackpearl`).
 
 | Host |
 |------|
