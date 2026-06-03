@@ -10,30 +10,16 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LAUNCHPAD_ENV="${LAUNCHPAD_ENV:-$(dirname "$ROOT")/.env}"
 
-if [[ -f "$ROOT/scripts/lib/load-env.sh" ]]; then
-  # shellcheck source=lib/load-env.sh
-  source "$ROOT/scripts/lib/load-env.sh" "$ROOT"
-  load_repo_env "$ROOT"
-fi
-
-load_launchpad_env() {
-  [[ -f "$LAUNCHPAD_ENV" ]] || return 0
-  local tmp
-  tmp="$(mktemp)"
-  sed '1s/^\xEF\xBB\xBF//; s/\r$//' "$LAUNCHPAD_ENV" >"$tmp"
-  set -a
-  # shellcheck disable=SC1090
-  source "$tmp"
-  set +a
-  rm -f "$tmp"
-}
-
-load_launchpad_env
+# shellcheck source=lib/load-launchpad-deptrack-env.sh
+source "$ROOT/scripts/lib/load-launchpad-deptrack-env.sh"
+load_launchpad_deptrack_env
 
 DEPTRACK_NAMESPACE="${DEPTRACK_NAMESPACE:-dependency-track}"
 DEPTRACK_MIRROR_CADENCE_HOURS="${DEPTRACK_MIRROR_CADENCE_HOURS:-1}"
 API_KEY="${DEPTRACK_API_KEY:-}"
 API_BASE="${DEPTRACK_API_BASE_URL:-http://dependency-track-api-server.${DEPTRACK_NAMESPACE}.svc.cluster.local:8080}"
+API_POD="$(kubectl -n "$DEPTRACK_NAMESPACE" get pods -l app.kubernetes.io/component=api-server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+[[ -n "$API_POD" ]] || API_POD="dependency-track-api-server-0"
 
 if [[ -z "$API_KEY" ]]; then
   echo "SKIP: DEPTRACK_API_KEY not set in $LAUNCHPAD_ENV"
@@ -61,11 +47,20 @@ EOF
 )"
 
 echo "==> set mirror cadence to ${cadence}h (requested 10min not supported — see docs)"
-curl -fsS -X POST \
-  -H "Content-Type: application/json" \
-  -H "X-Api-Key: ${API_KEY}" \
-  "${API_BASE}/api/v1/configProperty/aggregate" \
-  --data "${payload}" >/dev/null
+if kubectl -n "$DEPTRACK_NAMESPACE" get pod "$API_POD" >/dev/null 2>&1; then
+  kubectl -n "$DEPTRACK_NAMESPACE" exec "$API_POD" -- \
+    curl -fsS -X POST \
+    -H "Content-Type: application/json" \
+    -H "X-Api-Key: ${API_KEY}" \
+    "http://127.0.0.1:8080/api/v1/configProperty/aggregate" \
+    --data "${payload}" >/dev/null
+else
+  curl -fsS -X POST \
+    -H "Content-Type: application/json" \
+    -H "X-Api-Key: ${API_KEY}" \
+    "${API_BASE}/api/v1/configProperty/aggregate" \
+    --data "${payload}" >/dev/null
+fi
 
 echo "==> restart apiserver so task scheduler picks up new cadence"
 kubectl -n "$DEPTRACK_NAMESPACE" rollout restart statefulset/dependency-track-api-server

@@ -60,8 +60,30 @@ Unauthenticated NVD REST mirroring is rate-limited. Request a key at [NVD API ke
 | `DEPTRACK_ALPINE_SECRET_KEY` | JWT signing key (also `secret.key` in k8s secret) |
 | `DEPTRACK_MIRROR_CADENCE_HOURS` | Mirror poll interval in hours (default `1`) |
 | `DEPTRACK_API_KEY` | Optional — automation API key for feed cadence script |
+| `DEPTRACK_URL` | LAN NodePort UI (`http://192.168.10.33:30482`) |
+| `DEPTRACK_API_BASE_URL` | In-cluster API base URL (for `configure-feeds.sh` on blackpearl) |
+| `DEPTRACK_ADMIN_USER` | Local admin username (`admin`) |
+| `DEPTRACK_ADMIN_PASSWORD` | Rotated admin password (set by bootstrap script) |
 
 Never commit `.env`.
+
+### Bootstrap admin + API key
+
+On **blackpearl** (kubectl + API pod exec):
+
+```bash
+LAUNCHPAD_ENV=~/launchpad/.env ./scripts/k8s-dependency-track-bootstrap-auth.sh
+LAUNCHPAD_ENV=~/launchpad/.env ./scripts/k8s-dependency-track-configure-feeds.sh
+```
+
+From a workstation, sync `DEPTRACK_*` into local launchpad `.env`:
+
+```bash
+python homelab-k3s/scripts/merge-deptrack-env-from-remote.py \
+  --local-env ../.env --ssh-key /path/to/homelab
+```
+
+Emergency DB reset if the admin password is unknown: `./scripts/k8s-dependency-track-reset-admin-db.sh` (then re-run bootstrap).
 
 ## Deploy
 
