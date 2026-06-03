@@ -9,8 +9,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 ESO_NAMESPACE="${ESO_NAMESPACE:-external-secrets}"
 ESO_CHART_VERSION="${ESO_CHART_VERSION:-0.14.2}"
-# Homelab: service ClusterIP (10.43.0.1) is unreachable from many pods — use hostNetwork.
-ESO_HOST_NETWORK="${ESO_HOST_NETWORK:-true}"
+# Use hostNetwork only when ClusterIP is broken (see homelab-blackpearl-node-ip-fix.sh).
+ESO_HOST_NETWORK="${ESO_HOST_NETWORK:-false}"
 ESO_NODE_HOSTNAME="${ESO_NODE_HOSTNAME:-blackpearl}"
 HELM_TIMEOUT="${HELM_TIMEOUT:-10m}"
 

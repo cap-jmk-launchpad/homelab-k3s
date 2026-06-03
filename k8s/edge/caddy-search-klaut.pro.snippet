@@ -1,0 +1,6 @@
+# Append to /etc/caddy/Caddyfile on blackpearl (Caddy holds :443 for homelab WAN TLS).
+# SearXNG NodePort on blackpearl; li-httpd :80 still proxies search for ACME/HTTP if enabled.
+
+search.klaut.pro {
+	reverse_proxy 127.0.0.1:30479
+}

@@ -240,7 +240,7 @@ For **vault-api**, extend paths to `secret/tenants/{tenant_id}/` and add a Secre
 | `invalid audience` (Vault 1.21+) | ClusterSecretStore must set `audiences: [vault]`; Vault role needs matching `audience` |
 | ExternalSecret `SecretSyncedError` | Path exists in Vault; policy allows read; `VAULT_NAMESPACE=admin` in store |
 | Wrong keys in pod | `remoteRef.property` must match KV field names |
-| ESO CrashLoop `10.43.0.1: no route to host` | Homelab k3s: ClusterIP for `kubernetes` unreachable — re-run `hcp-vault-install-eso.sh` (uses `hostNetwork` + `127.0.0.1:6443` on control plane). Long-term: fix kube-proxy OUTPUT/hairpin for `10.43.0.1` |
+| ESO CrashLoop `10.43.0.1: no route to host` | Blackpearl: k3s `InternalIP` (`.33`) must exist on the node NIC — run `sudo bash scripts/homelab-blackpearl-node-ip-fix.sh` and `homelab-security-ufw-blackpearl-k3s.sh`. Then reinstall ESO (`ESO_HOST_NETWORK=false` default). Fallback: `ESO_HOST_NETWORK=true` + `127.0.0.1:6443` env on control plane only |
 
 ## Security notes (homelab)
 

@@ -21,6 +21,7 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
+      enableServiceLinks: false
       nodeSelector:
         kubernetes.io/hostname: blackpearl
       initContainers:
@@ -34,7 +35,7 @@ spec:
               until valkey-cli -h valkey ping | grep -q PONG; do sleep 2; done
       containers:
         - name: searxng
-          image: searxng/searxng:2025.12.19-8b907917a
+          image: searxng/searxng:2026.5.29-780ee3256
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

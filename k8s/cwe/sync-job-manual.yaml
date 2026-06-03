@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cwe-mirror-sync-manual
+  namespace: cwe
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      containers:
+        - name: sync
+          image: python:3.12-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - apk add --no-cache curl unzip python3 && sh /scripts/sync.sh
+          env:
+            - name: CWE_DATA_DIR
+              value: /data
+            - name: CWE_SOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cwe-mirror-config
+                  key: CWE_SOURCE_URL
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: cwe-mirror-data
+        - name: scripts
+          configMap:
+            name: cwe-mirror-scripts
+            defaultMode: 0755

@@ -35,6 +35,16 @@ sudo ufw allow 6443/tcp comment 'k3s API for agents'
 sudo ufw status
 ```
 
+On **blackpearl**, use [scripts/homelab-security-ufw-blackpearl-k3s.sh](../scripts/homelab-security-ufw-blackpearl-k3s.sh) (`ufw default allow routed` + flannel/cni0 rules). Plain `deny (routed)` breaks ClusterIP (`10.43.0.1` → `no route to host`).
+
+## blackpearl: stable InternalIP vs DHCP
+
+k3s registers `InternalIP` from install time (often `192.168.10.33`). If DHCP moves the host to another address (e.g. `.41`), kube-proxy still DNATs `kubernetes` to `.33:6443` and **ClusterIP breaks** until `.33` exists on the NIC:
+
+```bash
+sudo bash scripts/homelab-blackpearl-node-ip-fix.sh
+```
+
 ## Retrieve join token
 
 ```bash

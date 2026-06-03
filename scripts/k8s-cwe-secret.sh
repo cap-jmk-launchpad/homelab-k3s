@@ -30,12 +30,13 @@ set_env_key() {
     awk -v k="$key" -v v="$value" '
       BEGIN { done = 0 }
       $0 ~ "^" k "=" { print k "=" v; done = 1; next }
+      # preserve shell-style quoted values from %q
       { print }
       END { if (!done) print k "=" v }
     ' "$file" >"$tmp"
     mv "$tmp" "$file"
   else
-    printf '%s=%s\n' "$key" "$value" >>"$file"
+    printf '%s=%q\n' "$key" "$value" >>"$file"
   fi
 }
 
