@@ -108,7 +108,16 @@ Policies are scoped per project/env — see `k8s/vault/policies/`.
 Run from control plane (or any host with `kubectl` + `helm`):
 
 ```bash
-cd beelink-cleanup
+cd homelab-k3s
+
+# From your PC (syncs repo + launchpad/.env to blackpearl, runs step remotely):
+./scripts/hcp-vault-apply-remote.sh install-eso
+./scripts/hcp-vault-apply-remote.sh configure-auth   # needs VAULT_ADDR + VAULT_TOKEN
+./scripts/hcp-vault-apply-remote.sh onboard
+# After cluster-secret-store.yaml exists with your VAULT_ADDR:
+./scripts/hcp-vault-apply-remote.sh apply-store
+
+# Or on blackpearl directly:
 
 # 1. Install External Secrets Operator
 ./scripts/hcp-vault-install-eso.sh
@@ -194,6 +203,34 @@ For **vault-api**, extend paths to `secret/tenants/{tenant_id}/` and add a Secre
 | [k8s/vault/projects/](../k8s/vault/projects/) | Per-project ExternalSecret examples |
 | [k8s/vault/policies/](../k8s/vault/policies/) | Vault policy HCL templates |
 | [scripts/hcp-vault-*.sh](../scripts/) | Install, auth config, onboard, seed |
+| [scripts/hcp-vault-apply-remote.sh](../scripts/hcp-vault-apply-remote.sh) | Sync to blackpearl + run install steps over SSH |
+
+## After you paste HCP credentials (one-time)
+
+1. HCP portal → **Vault → your cluster → Running** → copy **Public cluster URL** into `launchpad/.env` as `VAULT_ADDR`.
+2. **Generate admin token** once → `VAULT_TOKEN=` in `launchpad/.env` (never commit).
+3. On your PC: `scp launchpad/.env blackpearl:~/launchpad/.env` (or re-run `hcp-vault-apply-remote.sh` sync).
+4. On blackpearl (or remote script):
+
+   ```bash
+   cd ~/homelab-k3s
+   export VAULT_ADDR VAULT_TOKEN VAULT_NAMESPACE=admin
+   vault secrets enable -version=2 -path=secret kv 2>/dev/null || true
+   ./scripts/hcp-vault-configure-k8s-auth.sh
+   cp k8s/vault/external-secrets/cluster-secret-store.example.yaml \
+      k8s/vault/external-secrets/cluster-secret-store.yaml
+   # Edit server: to your VAULT_ADDR, then:
+   kubectl apply -f k8s/vault/external-secrets/cluster-secret-store.yaml
+   ./scripts/hcp-vault-onboard-project.sh sec-agent staging sec-agent
+   ./scripts/hcp-vault-onboard-project.sh search-api prod search-gateway
+   ./scripts/hcp-vault-onboard-project.sh vault-api prod klaut-platform
+   kubectl apply -f k8s/vault/projects/sec-agent/external-secret.yaml
+   kubectl apply -f k8s/vault/projects/search-gateway/external-secret.yaml
+   kubectl apply -f k8s/vault/projects/klaut-platform/external-secret.yaml
+   ```
+
+5. Seed KV when product `.env` files exist; verify `kubectl get externalsecrets,secrets -A`.
+6. **Rotate** the admin token in HCP after bootstrap.
 
 ## Troubleshooting
 
@@ -203,6 +240,7 @@ For **vault-api**, extend paths to `secret/tenants/{tenant_id}/` and add a Secre
 | `invalid audience` (Vault 1.21+) | ClusterSecretStore must set `audiences: [vault]`; Vault role needs matching `audience` |
 | ExternalSecret `SecretSyncedError` | Path exists in Vault; policy allows read; `VAULT_NAMESPACE=admin` in store |
 | Wrong keys in pod | `remoteRef.property` must match KV field names |
+| ESO CrashLoop `10.43.0.1: no route to host` | Homelab k3s: ClusterIP for `kubernetes` unreachable — re-run `hcp-vault-install-eso.sh` (uses `hostNetwork` + `127.0.0.1:6443` on control plane). Long-term: fix kube-proxy OUTPUT/hairpin for `10.43.0.1` |
 
 ## Security notes (homelab)
 

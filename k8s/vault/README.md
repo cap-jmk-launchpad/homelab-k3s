@@ -23,6 +23,9 @@ kubectl apply -f external-secrets/cluster-secret-store.yaml
 | `policies/` | Vault policy HCL (reference; applied by configure script) |
 | `projects/agent-swarm/` | ExternalSecret for agent-swarm |
 | `projects/majico-staging/` | ExternalSecret for majico staging |
+| `projects/sec-agent/` | GitHub security agent (klaut.pro) |
+| `projects/search-gateway/` | Search API (`search-api` slug) |
+| `projects/klaut-platform/` | Vault API control plane (`vault-api` slug) |
 
 ## Secret paths (KV v2, mount `secret`)
 
@@ -40,4 +43,4 @@ Copy an example, customize keys, apply:
 kubectl apply -f projects/majico-staging/external-secret.yaml
 ```
 
-Committed files use `.example.yaml` suffix. Generated `external-secret.yaml` is gitignored — create on each cluster.
+Klaut product manifests are committed under `projects/sec-agent`, `search-gateway`, `klaut-platform`. Other projects may use `.example.yaml` only — run `hcp-vault-onboard-project.sh` to generate `external-secret.yaml`.

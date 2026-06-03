@@ -6,6 +6,11 @@ load_repo_env() {
     root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
   fi
   local env_file="$root/.env"
+  if [[ ! -f "$env_file" && -n "${LAUNCHPAD_ENV:-}" && -f "${LAUNCHPAD_ENV}" ]]; then
+    env_file="${LAUNCHPAD_ENV}"
+  elif [[ ! -f "$env_file" && -f "${HOME}/launchpad/.env" ]]; then
+    env_file="${HOME}/launchpad/.env"
+  fi
   [[ -f "$env_file" ]] || return 0
   set -a
   # shellcheck disable=SC1090

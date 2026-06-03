@@ -27,6 +27,9 @@ hcp-vault*.env
 k8s/vault/external-secrets/cluster-secret-store.yaml
 k8s/vault/projects/**/external-secret.yaml
 !k8s/vault/projects/**/external-secret.example.yaml
+!k8s/vault/projects/sec-agent/external-secret.yaml
+!k8s/vault/projects/search-gateway/external-secret.yaml
+!k8s/vault/projects/klaut-platform/external-secret.yaml
 
 # OS / editor
 .DS_Store
