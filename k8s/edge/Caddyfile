@@ -1,0 +1,41 @@
+# Homelab WAN edge on blackpearl (Caddy holds :443; :80 for ACME + cleartext klaut).
+# Apply: scripts/edge-caddy-apply.sh (generates /etc/caddy/Caddyfile, reloads caddy).
+#
+# Fritz!Box: forward TCP 80 and 443 → 192.168.10.33 (k3s edge IP, not SSH .41).
+# DNS: *.klaut.pro A records → Fritz WAN IP (same as majico.d3bu7.com).
+
+{
+	email admin@majico.xyz
+	# Majico uses manual TLS; klaut HTTPS blocks added when LE certs exist (see apply script).
+	auto_https disable_redirects
+}
+
+# --- Majico staging (manual certs under /etc/caddy/certs/) ---
+
+majico.d3bu7.com {
+	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
+	reverse_proxy 127.0.0.1:30080
+}
+
+supabase.majico.d3bu7.com {
+	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
+	reverse_proxy 127.0.0.1:30000
+}
+
+api.majico.d3bu7.com {
+	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
+	reverse_proxy 127.0.0.1:30000
+}
+
+# --- klaut.pro WAN (HTTP always; HTTPS when /etc/letsencrypt/live/<host>/ exists) ---
+
+http://search.klaut.pro {
+	reverse_proxy 127.0.0.1:30479
+}
+
+# HTTPS for search — appended by edge-caddy-apply.sh when LE cert exists (copied to /etc/caddy/certs-klaut/).
+
+# Optional WAN (uncomment upstream in homelab.httpd.toml + blocks below after deploy):
+# http://gitlab.klaut.pro { reverse_proxy 127.0.0.1:30481 }
+# http://deps.klaut.pro { reverse_proxy 127.0.0.1:30482 }
+# http://cwe.klaut.pro { reverse_proxy 127.0.0.1:30483 }

@@ -1,6 +1,6 @@
 # SearXNG on homelab k3s (`search.klaut.pro`)
 
-Privacy-focused metasearch for humans and AI agents. Exposed via **li-httpd** edge routing (not in-cluster Ingress — Traefik is disabled on this cluster).
+Privacy-focused metasearch for humans and AI agents. Exposed via **Caddy** on blackpearl (WAN `:443` → NodePort; not in-cluster Ingress — Traefik is disabled).
 
 | Component | Value |
 |-----------|-------|
@@ -15,7 +15,7 @@ Privacy-focused metasearch for humans and AI agents. Exposed via **li-httpd** ed
 Internet / LAN
       │
       ▼
-blackpearl :443 (li-httpd TLS, Let's Encrypt)
+Fritz → 192.168.10.33 → Caddy :443 (Let's Encrypt via certbot)
       │  Host: search.klaut.pro
       ▼
 127.0.0.1:30479  ←  k3s NodePort → searxng pod (8080)
@@ -26,7 +26,7 @@ blackpearl :443 (li-httpd TLS, Let's Encrypt)
 
 ### 1. DNS (public)
 
-Point **`search.klaut.pro`** at your public WAN IP (the address Fritz!Box exposes). HTTPS terminates on **blackpearl** via li-httpd.
+Point **`search.klaut.pro`** at your public WAN IP. HTTPS terminates on **blackpearl** via Caddy — see [docs/fritz-klaut-pro-port-forward.md](../../docs/fritz-klaut-pro-port-forward.md).
 
 | Record | Name | Value | TTL |
 |--------|------|-------|-----|
