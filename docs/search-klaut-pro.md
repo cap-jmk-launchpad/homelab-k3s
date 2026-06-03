@@ -223,6 +223,7 @@ Overage: **$2 per 1,000** queries (undercuts ~$5/1k Brave-style pricing).
 
 ## Related
 
+- [docs/launchpad-products.md](launchpad-products.md) — product catalog; **search-api** slug, Vault path `saas/search-api/{env}`, gateway hostname
 - [docs/agentic-platform.md](agentic-platform.md) — unified search + Vault BYOK product
 - [k8s/searxng/README.md](../k8s/searxng/README.md)
 - [k8s/edge/README.md](../k8s/edge/README.md)

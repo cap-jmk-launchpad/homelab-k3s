@@ -86,7 +86,12 @@ KV v2 mount: `secret`. Logical paths (ESO `remoteRef.key` uses the path **withou
 | `saas/agent-swarm/prod` | Production agent-swarm |
 | `saas/majico/staging` | Majico staging app secrets |
 | `saas/majico/prod` | Majico production |
+| `saas/sec-agent/{env}` | GitHub security agent ([launchpad-products.md](launchpad-products.md)) |
+| `saas/search-api/{env}` | Search gateway (metered API) |
+| `saas/vault-api/{env}` | Secrets control plane (BYOK product) |
+| `saas/klaut-platform/prod` | Cross-product Stripe, Vault admin, gateway HMAC |
 | `saas/_shared/homelab` | Cross-project tokens (e.g. `GH_TOKEN`) — optional |
+| `tenants/{tenant_id}` | Customer BYOK keys (**vault-api** only) |
 
 Example write:
 
@@ -170,14 +175,19 @@ Existing flow (`./scripts/k8s-agent-swarm-secret.sh`) creates secrets directly. 
 
 ESO needs `system:auth-delegator` on its service account so Vault can call the Kubernetes TokenReview API. The configure script and `eso-rbac.yaml` set this up.
 
+## Launchpad products (three slugs)
+
+Each monetizable product gets its own `saas/{slug}/{env}/` path — **do not** share one KV blob across products. Slugs: `sec-agent`, `search-api`, `vault-api`. Onboarding commands and GitLab repo names: [launchpad-products.md](launchpad-products.md).
+
 ## Agentic SaaS (customer BYOK)
 
-For a paid agent product (search + tenant secrets), extend paths to `secret/tenants/{tenant_id}/` and add a Secrets API or per-tenant ESO — see [agentic-platform.md](agentic-platform.md). Platform secrets stay under `saas/klaut-platform/prod`.
+For **vault-api**, extend paths to `secret/tenants/{tenant_id}/` and add a Secrets API or per-tenant ESO — see [agentic-platform.md](agentic-platform.md). Per-product platform secrets use `saas/{slug}/{env}/`; shared control-plane keys use `saas/klaut-platform/prod`.
 
 ## Files in this repo
 
 | Path | Purpose |
 |------|---------|
+| [docs/launchpad-products.md](launchpad-products.md) | Three products, Vault slugs, Supabase rows |
 | [docs/agentic-platform.md](agentic-platform.md) | Unified search + secrets product architecture |
 | [k8s/vault/README.md](../k8s/vault/README.md) | Manifest index |
 | [k8s/vault/external-secrets/](../k8s/vault/external-secrets/) | ESO namespace, RBAC, ClusterSecretStore example |

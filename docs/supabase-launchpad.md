@@ -74,7 +74,7 @@ Host copy (optional): mount or `kubectl cp` from pod with PVC mounted under `/ba
 
 ## Platform migrations
 
-SQL: `k8s/supabase/migrations/20260603120000_platform_tables.sql` (`platform_projects`, `platform_api_keys`).
+SQL: `k8s/supabase/migrations/20260603120000_platform_tables.sql` (`platform_projects`, `platform_api_keys`). Product seed rows: `20260603130000_platform_projects_seed.sql` — see [launchpad-products.md](launchpad-products.md).
 
 Re-run after SQL changes:
 
