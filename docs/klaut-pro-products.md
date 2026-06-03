@@ -1,6 +1,12 @@
-# Launchpad — three monetizable products
+# klaut.pro products — three monetizable surfaces
 
-Product catalog for **Launchpad**: each sellable surface gets its own **Vault path**, **Supabase `platform_projects` row**, and **GitLab repo** (no shared secret blob across products).
+**klaut.pro products** is the portfolio strategy: identify successful SaaS elsewhere, ship cloned or improved variants under the **klaut.pro** brand, and monetize them. Each sellable surface gets its own **Vault path**, **Supabase `platform_projects` row**, and **GitLab repo** (no shared secret blob across products).
+
+| Product | Slug | Model |
+|---------|------|--------|
+| **GitHub security agent** | `sec-agent` | CodeRabbit-style security reviews on PRs |
+| **Monetized search** | `search-api` | Metered agent search API |
+| **Monetized vault** | `vault-api` | BYOK secrets API for agents and apps |
 
 Control-plane architecture (search + secrets API, billing, hostnames) stays in [agentic-platform.md](agentic-platform.md). This doc is the **project matrix** and onboarding checklist.
 
@@ -105,7 +111,7 @@ Host: homelab GitLab CE ([gitlab-homelab.md](gitlab-homelab.md)) or GitHub org `
 | Monetized search | `launchpad/search-gateway` | Thin proxy: API key → Redis quota → SearXNG; homelab manifests stay in `homelab-k3s/k8s/searxng/` |
 | Monetized vault | `launchpad/vault-api` | Secrets API + tenant CRUD; infra in `homelab-k3s/k8s/vault/` |
 
-Keep **`homelab-k3s`** as the cluster/edge/Vault/Supabase runbook repo; product repos are application code and CI.
+Keep **`homelab-k3s`** as the cluster/edge/Vault/Supabase runbook repo; product repos are application code and CI. (`launchpad/` here is the dev monorepo path on disk, not the product brand.)
 
 ---
 

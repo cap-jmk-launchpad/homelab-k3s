@@ -1,4 +1,4 @@
--- Seed Launchpad product rows (see docs/launchpad-products.md)
+-- Seed klaut.pro product rows (see docs/klaut-pro-products.md)
 INSERT INTO public.platform_projects (slug, name) VALUES
   ('sec-agent', 'GitHub Security Agent'),
   ('search-api', 'Klaut Search API'),

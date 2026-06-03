@@ -1,6 +1,6 @@
 # Klaut agentic platform — architecture
 
-Unified Klaut control plane: **agent search API** ([search.klaut.pro](search-klaut-pro.md)) + **BYOK secrets** ([HCP Vault](hcp-vault.md)) + landing/signup/billing. This doc is the architecture; the three sellable products (slugs, Vault paths, Supabase rows, GitLab repos) are in [launchpad-products.md](launchpad-products.md).
+Unified Klaut control plane: **agent search API** ([search.klaut.pro](search-klaut-pro.md)) + **BYOK secrets** ([HCP Vault](hcp-vault.md)) + landing/signup/billing. This doc is the architecture; the three **klaut.pro products** (slugs, Vault paths, Supabase rows, GitLab repos) are in [klaut-pro-products.md](klaut-pro-products.md).
 
 ## Verdict: reuse HCP Vault?
 
@@ -200,8 +200,8 @@ Platform secrets (`STRIPE_SECRET`, `VAULT_TOKEN` with write-only tenant policy) 
 
 ## Related
 
-- [docs/launchpad-products.md](launchpad-products.md) — `sec-agent`, `search-api`, `vault-api` product matrix
-- [docs/supabase-launchpad.md](supabase-launchpad.md) — self-hosted Supabase on k3s (`supabase` namespace) for Launchpad prototyping
+- [docs/klaut-pro-products.md](klaut-pro-products.md) — `sec-agent`, `search-api`, `vault-api` product matrix
+- [docs/supabase-launchpad.md](supabase-launchpad.md) — self-hosted Supabase on k3s (`supabase` namespace) for klaut.pro platform data
 - [docs/hcp-vault.md](hcp-vault.md) — HCP setup, ESO, `saas/*` paths
 - [docs/search-klaut-pro.md](search-klaut-pro.md) — SearXNG API, pricing, gateway notes
 - [k8s/vault/README.md](../k8s/vault/README.md) — manifests and onboard scripts

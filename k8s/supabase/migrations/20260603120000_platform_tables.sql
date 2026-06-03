@@ -1,4 +1,4 @@
--- Launchpad platform tables (public schema)
+-- klaut.pro platform tables (public schema)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS public.platform_projects (
