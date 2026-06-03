@@ -1,0 +1,34 @@
+# SearXNG settings for agent/programmatic use (search.klaut.pro).
+# Secret key and base URL are overridden by container env (SEARXNG_SECRET, SEARXNG_BASE_URL).
+
+use_default_settings: true
+
+general:
+  instance_name: "Klaut Search"
+  debug: false
+  enable_metrics: true
+  contact_url: false
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+server:
+  secret_key: "replace-via-env"
+  limiter: true
+  image_proxy: false
+  method: "GET"
+  default_http_protocol: "https"
+
+outgoing:
+  request_timeout: 10.0
+  max_request_timeout: 15.0
+  pool_connections: 100
+  pool_maxsize: 20
+
+valkey:
+  url: valkey://valkey:6379/0

@@ -22,7 +22,7 @@ ACME_EMAIL = os.environ.get("HOMELAB_ACME_EMAIL", "admin@majico.xyz").strip()
 ACME_DOMAINS = [
     d.strip()
     for d in os.environ.get(
-        "HOMELAB_ACME_DOMAINS", "majico.d3bu7.com,api.majico.d3bu7.com"
+        "HOMELAB_ACME_DOMAINS", "majico.d3bu7.com,api.majico.d3bu7.com,search.klaut.pro"
     ).split(",")
     if d.strip()
 ]

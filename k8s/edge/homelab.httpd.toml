@@ -2,8 +2,8 @@
 # Merged with majico-staging.httpd.toml on blackpearl — see scripts/edge-lis-apply.sh.
 # Backends: k3s NodePorts on loopback (kube-proxy).
 
+# listen on :80 is per [[site]]; :443 TLS uses gen-https-overlay (second li-httpd).
 [server]
-listen = ":80"
 document_root = "/var/lib/li-httpd/empty"
 
 [health]
@@ -29,6 +29,14 @@ peers = ["http://127.0.0.1:30421"]
 [upstreams.li_swarm_dashboard]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30478"]
+
+[upstreams.searxng]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30479"]
+
+[upstreams.high_fi_demos]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30580"]
 
 [[site]]
 host = "grafana.homelab.lan"
@@ -78,9 +86,15 @@ listen = ":80"
 "GET /*" = "proxy:li_swarm_dashboard"
 "POST /*" = "proxy:li_swarm_dashboard"
 
-[upstreams.high_fi_demos]
-balance = "round_robin"
-peers = ["http://127.0.0.1:30580"]
+[[site]]
+host = "search.klaut.pro"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:searxng"
+"POST /*" = "proxy:searxng"
+"HEAD /*" = "proxy:searxng"
 
 [[site]]
 host = "high-fi-demos.homelab.lan"

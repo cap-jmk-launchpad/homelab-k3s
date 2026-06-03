@@ -23,7 +23,8 @@ li-httpd (blackpearl)
    ├─ signoz.homelab.lan → :30301
    ├─ agents.homelab.lan → :30477
    ├─ api.agents.homelab.lan → :30421
-   └─ li-swarm.homelab.lan → :30478
+   ├─ li-swarm.homelab.lan → :30478
+   └─ search.klaut.pro → :30479 (SearXNG)
 ```
 
 Majico routes: `majico.xyz/deploy/staging/edge/majico-staging.httpd.toml`. This repo adds homelab services; [merge-httpd-config.py](./merge-httpd-config.py) combines both at apply time.
@@ -53,6 +54,8 @@ Point at `192.168.10.41` (Fritz!box or `/etc/hosts`):
 | `grafana.homelab.lan`, `signoz.homelab.lan`, `agents.homelab.lan` |
 | `api.agents.homelab.lan`, `li-swarm.homelab.lan` |
 | `staging.majico.xyz`, `api.staging.majico.xyz` |
+
+Public (WAN DNS, not LAN-only): `search.klaut.pro` — see [k8s/searxng/README.md](../searxng/README.md).
 
 ## Apply
 
