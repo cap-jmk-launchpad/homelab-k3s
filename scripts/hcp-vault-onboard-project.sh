@@ -10,8 +10,9 @@
 #
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# shellcheck source=lib/load-env.sh
-source "$ROOT/scripts/lib/load-env.sh" "$ROOT"
+# shellcheck source=lib/vault-env.sh
+source "$ROOT/scripts/lib/vault-env.sh"
+load_vault_env "$ROOT"
 
 PROJECT="${1:-}"
 ENV="${2:-}"

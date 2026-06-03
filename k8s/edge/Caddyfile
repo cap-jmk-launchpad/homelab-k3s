@@ -45,9 +45,11 @@ http://cwe.klaut.pro {
 	reverse_proxy 127.0.0.1:30483
 }
 
-# HCP Vault is not on-cluster yet — DNS ready; finish VAULT_* bootstrap (docs/hcp-vault.md).
+# HCP Vault is cloud-hosted; status page + ESO health (not the Vault API).
 http://vault.klaut.pro {
-	respond "HCP Vault pending — configure VAULT_ADDR and VAULT_TOKEN in launchpad .env (see homelab-k3s/docs/hcp-vault.md)." 503
+	import /etc/caddy/vault-klaut-health.caddy
+	root * /var/lib/caddy/vault-klaut
+	file_server
 }
 
 # Per-host HTTPS blocks appended by edge-caddy-apply.sh when LE certs exist.

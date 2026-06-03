@@ -204,6 +204,33 @@ For **vault-api**, extend paths to `secret/tenants/{tenant_id}/` and add a Secre
 | [k8s/vault/policies/](../k8s/vault/policies/) | Vault policy HCL templates |
 | [scripts/hcp-vault-*.sh](../scripts/) | Install, auth config, onboard, seed |
 | [scripts/hcp-vault-apply-remote.sh](../scripts/hcp-vault-apply-remote.sh) | Sync to blackpearl + run install steps over SSH |
+| [scripts/hcp-vault-bootstrap-from-portal.sh](../scripts/hcp-vault-bootstrap-from-portal.sh) | One-time portal URL + admin token → launchpad/.env |
+| [scripts/edge-vault-klaut-status.sh](../scripts/edge-vault-klaut-status.sh) | vault.klaut.pro health + status.json from ESO readiness |
+
+## Credential persistence (deploys / updates)
+
+- **Source of truth**: `launchpad/.env` (gitignored). Routine deploys sync it to blackpearl; they do **not** regenerate `VAULT_TOKEN`.
+- **Reuse**: `scripts/lib/vault-env.sh` preserves non-empty `VAULT_*` / `HCP_*`; use `VAULT_REGENERATE=1` only to replace.
+- **Runtime**: ESO uses Kubernetes auth; admin token is bootstrap/rotation only.
+
+```bash
+./scripts/merge-vault-env-from-remote.sh   # PC ← blackpearl
+./scripts/hcp-vault-bootstrap-from-portal.sh   # one-time portal paste
+```
+
+## Admin token rotation (KV data unchanged)
+
+KV lives in HCP cloud — rotating admin tokens does **not** wipe `secret/` paths.
+
+1. HCP portal → generate new admin token.
+2. Update `VAULT_TOKEN` in `launchpad/.env` (or `VAULT_REGENERATE=1` + bootstrap script).
+3. Sync to blackpearl (`hcp-vault-apply-remote.sh` any step, or `scp`).
+4. Re-run `configure-auth` **only** if Kubernetes auth broke.
+5. Revoke old admin token in HCP.
+
+## vault.klaut.pro (status site)
+
+HCP Vault is not a local pod. `vault.klaut.pro` serves status HTML + `/status.json`; `/healthz` is **200** when `ClusterSecretStore/hcp-vault` is Ready.
 
 ## After you paste HCP credentials (one-time)
 

@@ -82,7 +82,9 @@ EOF
 
 ${host} {
 	tls ${cert_dir}/fullchain.pem ${cert_dir}/privkey.pem
-	respond "HCP Vault pending — configure VAULT_ADDR and VAULT_TOKEN in launchpad .env (see homelab-k3s/docs/hcp-vault.md)." 503
+	import /etc/caddy/vault-klaut-health.caddy
+	root * /var/lib/caddy/vault-klaut
+	file_server
 }
 EOF
     fi
@@ -132,6 +134,10 @@ fi
 
 if [[ "$CERTBOT_KLAUT" -eq 1 ]]; then
   run_certbot_standalone "${KLaut_CERTBOT_DOMAINS[@]}"
+fi
+
+if [[ -x "${REPO_ROOT}/scripts/edge-vault-klaut-status.sh" ]]; then
+  sudo REPO_ROOT="$REPO_ROOT" "${REPO_ROOT}/scripts/edge-vault-klaut-status.sh" || true
 fi
 
 TMP="$(mktemp)"
