@@ -16,6 +16,8 @@ blackpearl
 
 # k8s secrets (local only)
 k8s/searxng/secret.yaml
+k8s/supabase/secret.yaml
+k8s/gitlab/secret.yaml
 
 # Vault bootstrap (never commit)
 .vault-token

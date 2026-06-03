@@ -38,6 +38,11 @@ peers = ["http://127.0.0.1:30479"]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30580"]
 
+# Optional WAN GitLab (uncomment site block too). Set GITLAB_PUBLIC_URL=https://gitlab.klaut.pro
+# [upstreams.gitlab]
+# balance = "round_robin"
+# peers = ["http://127.0.0.1:30481"]
+
 [[site]]
 host = "grafana.homelab.lan"
 listen = ":80"
@@ -104,3 +109,12 @@ listen = ":80"
 "GET /health" = "static:healthcheck"
 "GET /*" = "proxy:high_fi_demos"
 "POST /*" = "proxy:high_fi_demos"
+
+# [[site]]
+# host = "gitlab.klaut.pro"
+# listen = ":80"
+#
+# [site.routes]
+# "GET /health" = "static:healthcheck"
+# "GET /*" = "proxy:gitlab"
+# "POST /*" = "proxy:gitlab"

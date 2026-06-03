@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitlab-runner-config
+  labels:
+    app: gitlab-runner
+data:
+  config.toml: |
+    concurrent = 2
+    check_interval = 3
+    log_level = "info"
+    listen_address = ":9252"
+
+    [session_server]
+      session_timeout = 1800

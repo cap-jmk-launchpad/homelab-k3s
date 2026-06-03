@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-runner
+  labels:
+    app: gitlab-runner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gitlab-runner
+  template:
+    metadata:
+      labels:
+        app: gitlab-runner
+    spec:
+      serviceAccountName: gitlab-runner
+      nodeSelector:
+        kubernetes.io/hostname: engine
+      containers:
+        - name: runner
+          image: gitlab/gitlab-runner:v17.11.4
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              if [[ ! -f /etc/gitlab-runner/config.toml ]] || ! grep -q '^\[\[runners\]\]' /etc/gitlab-runner/config.toml; then
+                cp /etc/gitlab-runner-base/config.toml /etc/gitlab-runner/config.toml
+                gitlab-runner register --non-interactive \
+                  --config /etc/gitlab-runner/config.toml \
+                  --url "${GITLAB_URL}" \
+                  --registration-token "${GITLAB_RUNNER_REGISTRATION_TOKEN}" \
+                  --executor kubernetes \
+                  --kubernetes-namespace "${GITLAB_NAMESPACE}" \
+                  --kubernetes-service-account gitlab-runner \
+                  --description "homelab-k8s" \
+                  --tag-list "k8s,homelab" \
+                  --run-untagged=true \
+                  --locked=false
+              fi
+              exec gitlab-runner run --user=gitlab-runner --working-directory=/home/gitlab-runner
+          env:
+            - name: GITLAB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: gitlab-secrets
+                  key: GITLAB_URL
+            - name: GITLAB_RUNNER_REGISTRATION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: gitlab-secrets
+                  key: GITLAB_RUNNER_REGISTRATION_TOKEN
+            - name: GITLAB_NAMESPACE
+              valueFrom:
+                secretKeyRef:
+                  name: gitlab-secrets
+                  key: GITLAB_NAMESPACE
+          volumeMounts:
+            - name: config
+              mountPath: /etc/gitlab-runner
+            - name: runner-base
+              mountPath: /etc/gitlab-runner-base
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: gitlab-runner-config
+        - name: runner-base
+          configMap:
+            name: gitlab-runner-config
