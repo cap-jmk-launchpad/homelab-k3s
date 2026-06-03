@@ -35,7 +35,8 @@ http://search.klaut.pro {
 
 # HTTPS for search — appended by edge-caddy-apply.sh when LE cert exists (copied to /etc/caddy/certs-klaut/).
 
-# Optional WAN (uncomment upstream in homelab.httpd.toml + blocks below after deploy):
-# http://gitlab.klaut.pro { reverse_proxy 127.0.0.1:30481 }
-# http://deps.klaut.pro { reverse_proxy 127.0.0.1:30482 }
-# http://cwe.klaut.pro { reverse_proxy 127.0.0.1:30483 }
+# Optional WAN — workloads run on NodePorts 30481–30483; uncomment + edge-caddy-apply.sh:
+# http://gitlab.klaut.pro { reverse_proxy 127.0.0.1:30481 }   # namespace gitlab
+# http://deps.klaut.pro { reverse_proxy 127.0.0.1:30482 }     # namespace dependency-track
+# http://cwe.klaut.pro { reverse_proxy 127.0.0.1:30483 }      # namespace cwe
+# Inventory: docs/klaut-pro-products.md#homelab-inventory-current

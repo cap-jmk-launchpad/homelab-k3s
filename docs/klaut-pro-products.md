@@ -2,6 +2,34 @@
 
 **klaut.pro products** is the portfolio strategy: identify successful SaaS elsewhere, ship cloned or improved variants under the **klaut.pro** brand, and monetize them. Each sellable surface gets its own **Vault path**, **Supabase `platform_projects` row**, and **GitLab repo** (no shared secret blob across products).
 
+## Homelab inventory (current)
+
+**Edge:** Fritz!Box TCP **80** + **443** → **192.168.10.33** (blackpearl k3s node IP). **SSH/admin** only on **192.168.10.41** — do not point port-forwards at `.41`. WAN TLS/HTTP terminates on **Caddy** on blackpearl; backends are k3s **NodePorts** on loopback.
+
+| Service | Namespace | NodePort | WAN hostname | Status |
+|---------|-----------|----------|--------------|--------|
+| SearXNG | `searxng` | **30479** | `search.klaut.pro` | **Live** — HTTPS on WAN |
+| Supabase (Launchpad) | `supabase` | **30480** | *(internal only)* | **Running** — no `*.klaut.pro` route |
+| GitLab CE | `gitlab` | **30481** | `gitlab.klaut.pro` | **Running** — WAN optional (Caddy/li-httpd uncomment) |
+| Dependency-Track | `dependency-track` | **30482** | `deps.klaut.pro` | **Running** — WAN optional |
+| CWE mirror | `cwe` | **30483** | `cwe.klaut.pro` | **Running** — WAN optional |
+| HCP Vault + ESO | `external-secrets` | — | — | **ESO installed** — set `VAULT_ADDR` + `VAULT_TOKEN` in `.env` to finish HCP bootstrap |
+| k3s WAN edge | blackpearl `.33` | **80** / **443** | Fritz → `.33` | **Caddy** — only `search.klaut.pro` enabled on WAN today |
+
+**LAN-only** (li-httpd `*.homelab.lan`, no klaut WAN): Grafana, SigNoz, agent-swarm, high-fi-demos, etc. — see [k8s/edge/README.md](../k8s/edge/README.md).
+
+### Product ↔ homelab stack
+
+| Product slug | Homelab backing (today) | WAN / API |
+|--------------|-------------------------|-----------|
+| `sec-agent` | Dependency-Track + CWE mirror (+ future GitHub App worker) | `deps.klaut.pro`, `cwe.klaut.pro`, `api.klaut.pro` — optional / planned |
+| `search-api` | SearXNG @ `search.klaut.pro` | Engine **live**; metered gateway `api.search.klaut.pro` — planned |
+| `vault-api` | HCP Vault + ESO | **Pending** — complete [hcp-vault.md](hcp-vault.md) bootstrap |
+
+Port-forwards and DNS: [fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md). Edge routes: [k8s/edge/README.md](../k8s/edge/README.md).
+
+---
+
 | Product | Slug | Model |
 |---------|------|--------|
 | **GitHub security agent** | `sec-agent` | CodeRabbit-style security reviews on PRs; [CWE mirror](cwe-homelab.md) + [Dependency-Track](dependency-track-homelab.md) for taxonomy/CVE context |

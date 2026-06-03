@@ -122,12 +122,15 @@ Suggested hostname: **`cwe.klaut.pro`**.
 
 ## Coexistence
 
-| Service | Namespace | NodePort |
-|---------|-----------|----------|
-| Supabase | `supabase` | 30480 |
-| GitLab | `gitlab` | 30481 |
-| Dependency-Track | `dependency-track` | 30482 |
-| **CWE mirror** | `cwe` | **30483** |
+Homelab NodePort matrix (all deployed on blackpearl): [klaut-pro-products.md](klaut-pro-products.md#homelab-inventory-current).
+
+| Service | Namespace | NodePort | WAN |
+|---------|-----------|----------|-----|
+| SearXNG | `searxng` | 30479 | `search.klaut.pro` (live) |
+| Supabase | `supabase` | 30480 | internal only |
+| GitLab | `gitlab` | 30481 | `gitlab.klaut.pro` optional |
+| Dependency-Track | `dependency-track` | 30482 | `deps.klaut.pro` optional |
+| **CWE mirror** | `cwe` | **30483** | `cwe.klaut.pro` optional |
 
 ## Troubleshooting
 

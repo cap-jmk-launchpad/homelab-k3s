@@ -37,14 +37,14 @@ flowchart TB
 | Control plane | Single k3s server, cluster API on `:6443` |
 | Workers | Linux native, WSL2, or Raspberry Pi agents |
 | GPU worker | Optional NVIDIA workloads via device plugin |
-| Edge node | **blackpearl** â€” li-httpd (LIS) on `:80`; TOML -> NodePort backends |
+| Edge node | **blackpearl** — **Caddy** `:80`/`:443` (WAN `*.klaut.pro`); **li-httpd** for `*.homelab.lan` on `:80` |
 
 ## Quick start
 
 1. **Prepare nodes** â€” [docs/node-prep.md](docs/node-prep.md): SSH key-only auth, passwordless sudo for automation user.
 2. **Install control plane** â€” [docs/k3s-server.md](docs/k3s-server.md): single server, Traefik disabled, UFW for SSH + 6443.
 3. **Join workers** â€” [docs/k3s-workers.md](docs/k3s-workers.md): native Linux, WSL2, or Pi.
-4. **Edge ingress** â€” [docs/edge-ingress.md](docs/edge-ingress.md) / [k8s/edge/README.md](k8s/edge/README.md): **li-httpd** on blackpearl (LIS TOML -> k3s NodePorts).
+4. **Edge ingress** — [docs/edge-ingress.md](docs/edge-ingress.md) / [k8s/edge/README.md](k8s/edge/README.md): **Caddy** on blackpearl for WAN (`search.klaut.pro` live); **li-httpd** for LAN hostnames. Fritz **80+443** → `192.168.10.33` ([fritz-klaut-pro-port-forward.md](docs/fritz-klaut-pro-port-forward.md)).
 5. **GPU workers** (optional) â€” [docs/gpu-workers.md](docs/gpu-workers.md): NVIDIA device plugin and scheduling.
 6. **Secrets (HCP Vault)** (optional) â€” [docs/hcp-vault.md](docs/hcp-vault.md): centralize SaaS secrets, sync to k3s via External Secrets Operator.
 
@@ -85,14 +85,32 @@ kubectl get nodes -o wide
 kubectl get pods -A
 ```
 
-## Application stacks (optional)
+## klaut.pro & homelab services (current)
+
+Master inventory (products + NodePorts + WAN): **[docs/klaut-pro-products.md](docs/klaut-pro-products.md#homelab-inventory-current)**.
+
+| Service | Namespace | NodePort | WAN hostname | Status |
+|---------|-----------|----------|--------------|--------|
+| SearXNG | `searxng` | 30479 | `search.klaut.pro` | Live HTTPS |
+| Supabase | `supabase` | 30480 | internal only | Running |
+| GitLab CE | `gitlab` | 30481 | `gitlab.klaut.pro` (optional) | Running |
+| Dependency-Track | `dependency-track` | 30482 | `deps.klaut.pro` (optional) | Running |
+| CWE mirror | `cwe` | 30483 | `cwe.klaut.pro` (optional) | Running |
+| HCP Vault / ESO | `external-secrets` | — | — | ESO ready; needs `VAULT_*` in `.env` |
+| WAN edge | blackpearl `.33` | 80 / 443 | Fritz → `.33` | Caddy (SSH on `.41` only) |
+
+**Products:** `sec-agent` (DT + CWE), `search-api` (`search.klaut.pro`), `vault-api` (HCP pending) — see [docs/klaut-pro-products.md](docs/klaut-pro-products.md).
 
 | Stack | Doc |
 |-------|-----|
+| klaut.pro products & inventory | [docs/klaut-pro-products.md](docs/klaut-pro-products.md) |
 | Supabase | [docs/supabase-launchpad.md](docs/supabase-launchpad.md) |
 | GitLab CE | [docs/gitlab-homelab.md](docs/gitlab-homelab.md) |
 | OWASP Dependency-Track | [docs/dependency-track-homelab.md](docs/dependency-track-homelab.md) |
+| CWE mirror | [docs/cwe-homelab.md](docs/cwe-homelab.md) |
 | SearXNG | [docs/search-klaut-pro.md](docs/search-klaut-pro.md) |
+| HCP Vault | [docs/hcp-vault.md](docs/hcp-vault.md) |
+| Fritz port-forward | [docs/fritz-klaut-pro-port-forward.md](docs/fritz-klaut-pro-port-forward.md) |
 
 ## License
 

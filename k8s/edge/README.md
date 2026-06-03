@@ -11,12 +11,12 @@ Traffic flow for **WAN** (`*.klaut.pro`, `majico.d3bu7.com`) and **LAN** (`*.hom
 
 **Fritz!Box:** TCP **80** and **443** → **192.168.10.33** — see [docs/fritz-klaut-pro-port-forward.md](../../docs/fritz-klaut-pro-port-forward.md).
 
-| Hostname | Backend | WAN status |
-|----------|---------|------------|
-| `search.klaut.pro` | `127.0.0.1:30479` (SearXNG) | **Enabled** |
-| `gitlab.klaut.pro` | `127.0.0.1:30481` | Optional — uncomment in [Caddyfile](./Caddyfile) + [homelab.httpd.toml](./homelab.httpd.toml) |
-| `deps.klaut.pro` | `127.0.0.1:30482` | Optional |
-| `cwe.klaut.pro` | `127.0.0.1:30483` | Optional |
+| Hostname | Namespace | Backend | WAN status |
+|----------|-----------|---------|------------|
+| `search.klaut.pro` | `searxng` | `127.0.0.1:30479` | **Live** — HTTPS on WAN |
+| `gitlab.klaut.pro` | `gitlab` | `127.0.0.1:30481` | **Running** in cluster; WAN optional (uncomment [Caddyfile](./Caddyfile) + [homelab.httpd.toml](./homelab.httpd.toml)) |
+| `deps.klaut.pro` | `dependency-track` | `127.0.0.1:30482` | **Running**; WAN optional |
+| `cwe.klaut.pro` | `cwe` | `127.0.0.1:30483` | **Running**; WAN optional |
 | `majico.d3bu7.com`, `api.majico.d3bu7.com`, `supabase.majico.d3bu7.com` | Majico NodePorts | Enabled (manual TLS under `/etc/caddy/certs/`) |
 
 **Internal-only** (no `*.klaut.pro` route): `grafana.homelab.lan`, `signoz.homelab.lan`, `agents.homelab.lan`, `api.agents.homelab.lan`, `li-swarm.homelab.lan`, `high-fi-demos.homelab.lan`, Supabase (`db.klaut.pro` out of scope).
@@ -67,13 +67,15 @@ li-httpd :80  ──►  grafana/signoz/agents/… NodePorts
 
 ## NodePort reference
 
-| Service | Port |
-|---------|------|
-| SearXNG | 30479 |
-| Supabase Kong | 30480 |
-| GitLab | 30481 |
-| Dependency-Track | 30482 |
-| CWE mirror | 30483 |
+Canonical inventory: [docs/klaut-pro-products.md](../../docs/klaut-pro-products.md#homelab-inventory-current).
+
+| Service | Namespace | NodePort | WAN |
+|---------|-----------|----------|-----|
+| SearXNG | `searxng` | 30479 | `search.klaut.pro` (live) |
+| Supabase Kong | `supabase` | 30480 | internal only |
+| GitLab | `gitlab` | 30481 | `gitlab.klaut.pro` optional |
+| Dependency-Track | `dependency-track` | 30482 | `deps.klaut.pro` optional |
+| CWE mirror | `cwe` | 30483 | `cwe.klaut.pro` optional |
 
 ## Related
 

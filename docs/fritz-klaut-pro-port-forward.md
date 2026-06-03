@@ -31,16 +31,30 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://search.klaut.pro/healthz
 
 Both should return **200** when SearXNG is running and [edge-caddy-apply.sh](../scripts/edge-caddy-apply.sh) has installed the LE cert.
 
+## Deployed services (k3s, 2026-06)
+
+All backends listen on **NodePorts** on blackpearl loopback; Caddy on **:80** / **:443** proxies WAN hostnames to `127.0.0.1:<port>`. Full matrix: [klaut-pro-products.md](klaut-pro-products.md#homelab-inventory-current).
+
+| Service | Namespace | NodePort | WAN hostname | Status |
+|---------|-----------|----------|--------------|--------|
+| SearXNG | `searxng` | 30479 | `search.klaut.pro` | **Live** HTTPS |
+| Supabase | `supabase` | 30480 | — | Running (LAN / in-cluster only) |
+| GitLab | `gitlab` | 30481 | `gitlab.klaut.pro` | Running; WAN route optional |
+| Dependency-Track | `dependency-track` | 30482 | `deps.klaut.pro` | Running; WAN route optional |
+| CWE mirror | `cwe` | 30483 | `cwe.klaut.pro` | Running; WAN route optional |
+
+Enable optional WAN: uncomment blocks in [k8s/edge/Caddyfile](../k8s/edge/Caddyfile) + upstreams in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml), then `sudo bash scripts/edge-caddy-apply.sh`.
+
 ## DNS
 
 At your **klaut.pro** DNS provider, each public hostname needs an **A** record to the **same WAN IP** Fritz shows under *Internet* → *Online-Monitor* (e.g. `77.x.x.x`).
 
-| Hostname | Purpose |
-|----------|---------|
-| `search.klaut.pro` | SearXNG (enabled on edge) |
-| `gitlab.klaut.pro` | GitLab (optional — see below) |
-| `deps.klaut.pro` | Dependency-Track (optional) |
-| `cwe.klaut.pro` | CWE mirror (optional) |
+| Hostname | Purpose | Edge today |
+|----------|---------|------------|
+| `search.klaut.pro` | SearXNG | **Enabled** (HTTP + HTTPS) |
+| `gitlab.klaut.pro` | GitLab CE | Optional — uncomment Caddy + DNS |
+| `deps.klaut.pro` | Dependency-Track | Optional |
+| `cwe.klaut.pro` | CWE mirror | Optional |
 
 Optional LAN testing before WAN DNS: Fritz **DNS-Rebind** / local DNS or `/etc/hosts` → `192.168.10.33`.
 
