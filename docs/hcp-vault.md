@@ -1,5 +1,7 @@
 # HCP Vault for homelab SaaS secrets
 
+> **Homelab default (2026):** use self-hosted **Vault OSS** on k3s — see **[vault-homelab.md](vault-homelab.md)**. HCP is optional; no portal or `hashicorp.cloud` URL required for OSS mode.
+
 Centralize secrets for k3s workloads (agent-swarm, majico-staging, future SaaS) in **HashiCorp Cloud Platform (HCP) Vault Dedicated**, synced into Kubernetes with **External Secrets Operator (ESO)**.
 
 Apps keep using normal `Secret` refs — no SDK changes. ESO pulls from Vault on a schedule.

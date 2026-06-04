@@ -18,7 +18,7 @@ KLaut_HTTPS_HOSTS=(
   "gitlab.klaut.pro:127.0.0.1:30481"
   "deps.klaut.pro:127.0.0.1:30482"
   "cwe.klaut.pro:127.0.0.1:30483"
-  "vault.klaut.pro:"
+  "vault.klaut.pro:127.0.0.1:30485"
 )
 
 KLaut_CERTBOT_DOMAINS=(
@@ -69,7 +69,19 @@ append_https_blocks() {
     else
       cert_dir="/etc/caddy/certs-klaut/${host}"
     fi
-    if [[ -n "$upstream" ]]; then
+    if [[ "$host" == "vault.klaut.pro" && -n "$upstream" ]]; then
+      cat >>"$TMP" <<EOF
+
+${host} {
+	tls ${cert_dir}/fullchain.pem ${cert_dir}/privkey.pem
+	root * /var/lib/caddy/vault-klaut
+	file_server
+	import /etc/caddy/vault-klaut-health.caddy
+	reverse_proxy /ui* ${upstream}
+	reverse_proxy /v1* ${upstream}
+}
+EOF
+    elif [[ -n "$upstream" ]]; then
       cat >>"$TMP" <<EOF
 
 ${host} {
@@ -146,6 +158,9 @@ if [[ "$DRY" -eq 1 ]]; then
 fi
 
 sudo install -d -m 755 /etc/caddy
+if [[ -x "${REPO_ROOT}/scripts/edge-vault-klaut-status.sh" ]]; then
+  sudo REPO_ROOT="${REPO_ROOT}" "${REPO_ROOT}/scripts/edge-vault-klaut-status.sh" || true
+fi
 sudo cp "$TMP" "$DEST"
 rm -f "$TMP"
 sudo caddy fmt --overwrite "$DEST" 2>/dev/null || true

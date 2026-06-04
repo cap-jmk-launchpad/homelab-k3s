@@ -13,7 +13,7 @@
 | GitLab CE | `gitlab` | **30481** | `gitlab.klaut.pro` | **WAN HTTP/HTTPS** — pod on `engine`; Caddy → NodePort |
 | Dependency-Track | `dependency-track` | **30482** | `deps.klaut.pro` | **WAN HTTP/HTTPS** |
 | CWE mirror | `cwe` | **30483** | `cwe.klaut.pro` | **WAN HTTP/HTTPS** — use `/health`, `/manifest.json` (not `/`) |
-| HCP Vault + ESO | `external-secrets` | — | `vault.klaut.pro` | **DNS + edge 503** — finish `VAULT_*` in `.env` ([hcp-vault.md](hcp-vault.md)) |
+| Vault OSS + ESO | `vault`, `external-secrets` | **30485** | `vault.klaut.pro` | Deploy via [vault-homelab.md](vault-homelab.md) |
 | k3s WAN edge | blackpearl `.33` | **80** / **443** | Fritz → `.33` | **Caddy** — all five `*.klaut.pro` hostnames in [Caddyfile](../k8s/edge/Caddyfile) |
 
 **LAN-only** (li-httpd `*.homelab.lan`, no klaut WAN): Grafana, SigNoz, agent-swarm, high-fi-demos, etc. — see [k8s/edge/README.md](../k8s/edge/README.md).
@@ -24,7 +24,7 @@
 |--------------|-------------------------|-----------|
 | `sec-agent` | Dependency-Track + CWE mirror (+ future GitHub App worker) | `deps.klaut.pro`, `cwe.klaut.pro`, `api.klaut.pro` — optional / planned |
 | `search-api` | SearXNG @ `search.klaut.pro` | Engine **live**; metered gateway `api.search.klaut.pro` — planned |
-| `vault-api` | HCP Vault + ESO | **Pending** — complete [hcp-vault.md](hcp-vault.md) bootstrap |
+| `vault-api` | Vault OSS + ESO | [vault-homelab.md](vault-homelab.md) — self-hosted on k3s |
 
 Port-forwards and DNS: [fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md). Edge routes: [k8s/edge/README.md](../k8s/edge/README.md).
 
@@ -44,7 +44,7 @@ Control-plane architecture (search + secrets API, billing, hostnames) stays in [
 |---------|------|--------------|------------------|
 | **GitHub security agent** | `sec-agent` | Subscription per org/repo; sec review on PRs (CodeRabbit-style for security) | GitHub App, homelab k3s runners, optional Supabase for usage; Vault for app credentials; [CWE mirror](cwe-homelab.md) + [Dependency-Track](dependency-track-homelab.md) |
 | **Monetized search** | `search-api` | Tiered search quota + overage ([search-klaut-pro.md](search-klaut-pro.md#suggested-tiers)) | SearXNG (`search.klaut.pro`), gateway `api.search.klaut.pro`, Redis, Supabase `platform_api_keys` |
-| **Monetized vault** | `vault-api` | Tiered BYOK keys/seats; tenant secrets API | HCP Vault ([hcp-vault.md](hcp-vault.md)), control plane `api.klaut.pro`, ESO for hosted runners |
+| **Monetized vault** | `vault-api` | Tiered BYOK keys/seats; tenant secrets API | Vault OSS ([vault-homelab.md](vault-homelab.md)), control plane `api.klaut.pro`, ESO for hosted runners |
 
 **Rule:** one Vault **project slug** per product for platform ops secrets. Customer BYOK stays under `secret/tenants/{tenant_id}/` (owned by **vault-api**, not mixed into `saas/*`).
 
@@ -69,7 +69,7 @@ KV v2 mount: `secret`. ESO `remoteRef` uses paths **without** the `data/` prefix
 
 ### Onboard each product (policy + ExternalSecret)
 
-Requires `VAULT_ADDR` + `VAULT_TOKEN` in local `.env` ([hcp-vault.md](hcp-vault.md)). **Do not commit tokens or seeded `.env` files.**
+Requires `VAULT_ADDR` + `VAULT_ROOT_TOKEN` (or `VAULT_TOKEN`) in local `.env` ([vault-homelab.md](vault-homelab.md)). **Do not commit tokens or seeded `.env` files.**
 
 ```bash
 cd homelab-k3s

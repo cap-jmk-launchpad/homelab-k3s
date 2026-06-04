@@ -11,12 +11,18 @@
 #
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# shellcheck source=lib/load-env.sh
-source "$ROOT/scripts/lib/load-env.sh" "$ROOT"
+# shellcheck source=lib/vault-env.sh
+source "$ROOT/scripts/lib/vault-env.sh"
+load_vault_env "$ROOT"
 
-: "${VAULT_ADDR:?Set VAULT_ADDR in .env (HCP public cluster URL)}"
-: "${VAULT_TOKEN:?Set VAULT_TOKEN in .env (admin token from HCP portal, bootstrap only)}"
-export VAULT_NAMESPACE="${VAULT_NAMESPACE:-admin}"
+: "${VAULT_ADDR:?Set VAULT_ADDR in launchpad/.env}"
+: "${VAULT_TOKEN:?Set VAULT_TOKEN or VAULT_ROOT_TOKEN in .env (bootstrap only)}"
+if vault_is_hcp; then
+  export VAULT_NAMESPACE="${VAULT_NAMESPACE:-admin}"
+else
+  unset VAULT_NAMESPACE
+  export VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:30485}"
+fi
 
 VAULT_AUTH_SA="${VAULT_AUTH_SA:-vault-auth}"
 VAULT_AUTH_NS="${VAULT_AUTH_NS:-external-secrets}"
@@ -67,7 +73,14 @@ for _ in $(seq 1 30); do
 done
 [[ -n "$TOKEN_REVIEW_JWT" ]] || { echo "ERROR: vault-auth token not ready" >&2; exit 1; }
 
-KUBE_HOST="${KUBE_HOST:-$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')}"
+if [[ -n "${KUBE_HOST:-}" ]]; then
+  :
+elif vault_is_hcp; then
+  KUBE_HOST="$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')"
+else
+  # In-cluster Vault must not use localhost apiserver (127.0.0.1 is the pod, not the node).
+  KUBE_HOST="https://kubernetes.default.svc.cluster.local"
+fi
 KUBE_CA="$(mktemp)"
 kubectl get secret "${VAULT_AUTH_SA}" -n "${VAULT_AUTH_NS}" -o jsonpath='{.data.ca\.crt}' | base64 -d >"$KUBE_CA"
 
@@ -86,12 +99,20 @@ echo "==> Writing policy external-secrets-read"
 vault policy write external-secrets-read "$ROOT/k8s/vault/policies/external-secrets-read.hcl"
 
 echo "==> Creating role ${K8S_AUTH_ROLE} for ESO service account"
-vault write "auth/kubernetes/role/${K8S_AUTH_ROLE}" \
-  bound_service_account_names="$ESO_SA" \
-  bound_service_account_namespaces="$ESO_NS" \
-  policies=external-secrets-read \
-  ttl=1h \
-  audience=vault
+role_args=(
+  bound_service_account_names="$ESO_SA"
+  bound_service_account_namespaces="$ESO_NS"
+  policies=external-secrets-read
+  ttl=1h
+)
+# audience= requires ESO 0.15+ ClusterSecretStore audiences field (Vault 1.21+)
+if [[ -z "${VAULT_K8S_AUTH_AUDIENCE:-}" && ! vault_is_hcp ]]; then
+  VAULT_K8S_AUTH_AUDIENCE=k3s
+fi
+if [[ "${VAULT_K8S_AUTH_AUDIENCE:-}" != "" ]]; then
+  role_args+=(audience="${VAULT_K8S_AUTH_AUDIENCE}")
+fi
+vault write "auth/kubernetes/role/${K8S_AUTH_ROLE}" "${role_args[@]}"
 
 echo "==> Vault Kubernetes auth configured"
 echo "    Next: copy cluster-secret-store.example.yaml → cluster-secret-store.yaml, set VAULT_ADDR, kubectl apply"

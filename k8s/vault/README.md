@@ -1,17 +1,16 @@
-# HCP Vault + External Secrets (k3s)
+# Vault OSS + External Secrets (k3s)
 
-Sync secrets from HCP Vault Dedicated into Kubernetes Secrets. See [docs/hcp-vault.md](../../docs/hcp-vault.md) for portal setup and onboarding.
+Self-hosted Vault (namespace `vault`) and ESO manifests. See [docs/vault-homelab.md](../../docs/vault-homelab.md).
 
 ## Quick apply
 
 ```bash
+./scripts/k8s-vault-oss-apply-remote.sh all
+# or on blackpearl:
+./scripts/k8s-vault-oss-apply.sh && ./scripts/k8s-vault-oss-init.sh
 ./scripts/hcp-vault-install-eso.sh
-./scripts/hcp-vault-configure-k8s-auth.sh   # requires VAULT_ADDR + VAULT_TOKEN in .env
-
-cp external-secrets/cluster-secret-store.example.yaml external-secrets/cluster-secret-store.yaml
-# edit server URL, then:
-kubectl apply -f external-secrets/namespace.yaml
-kubectl apply -f external-secrets/eso-rbac.yaml
+./scripts/hcp-vault-configure-k8s-auth.sh
+./scripts/vault-oss-render-cluster-store.sh
 kubectl apply -f external-secrets/cluster-secret-store.yaml
 ```
 
@@ -19,28 +18,18 @@ kubectl apply -f external-secrets/cluster-secret-store.yaml
 
 | Path | Purpose |
 |------|---------|
+| `server/` | Vault OSS StatefulSet (Raft PVC, NodePort 30485) |
 | `external-secrets/` | ESO namespace, RBAC, ClusterSecretStore template |
-| `policies/` | Vault policy HCL (reference; applied by configure script) |
-| `projects/agent-swarm/` | ExternalSecret for agent-swarm |
-| `projects/majico-staging/` | ExternalSecret for majico staging |
-| `projects/sec-agent/` | GitHub security agent (klaut.pro) |
-| `projects/search-gateway/` | Search API (`search-api` slug) |
-| `projects/klaut-platform/` | Vault API control plane (`vault-api` slug) |
+| `policies/` | Vault policy HCL (applied by configure script) |
+| `projects/` | Per-product ExternalSecret manifests |
 
-## Secret paths (KV v2, mount `secret`)
+## ClusterSecretStore
 
-```
-saas/{project}/{env}     →  keys become K8s secret data
-saas/_shared/homelab     →  optional cross-project keys
-```
+- Name: **`homelab-vault`**
 
-## Per-project ExternalSecret
+- Server: `http://vault.vault.svc:8200` (in-cluster; ESO uses K8s auth)
 
-Copy an example, customize keys, apply:
 
-```bash
-./scripts/hcp-vault-onboard-project.sh majico staging majico-staging
-kubectl apply -f projects/majico-staging/external-secret.yaml
-```
 
-Klaut product manifests are committed under `projects/sec-agent`, `search-gateway`, `klaut-platform`. Other projects may use `.example.yaml` only — run `hcp-vault-onboard-project.sh` to generate `external-secret.yaml`.
+Legacy HCP store name was `hcp-vault` — OSS manifests use `homelab-vault`.
+

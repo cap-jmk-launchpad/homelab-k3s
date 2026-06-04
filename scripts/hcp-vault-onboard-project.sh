@@ -10,8 +10,9 @@
 #
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# shellcheck source=lib/load-env.sh
-source "$ROOT/scripts/lib/load-env.sh" "$ROOT"
+# shellcheck source=lib/vault-env.sh
+source "$ROOT/scripts/lib/vault-env.sh"
+load_vault_env "$ROOT"
 
 PROJECT="${1:-}"
 ENV="${2:-}"
@@ -33,7 +34,14 @@ sed -e "s/PROJECT/${PROJECT}/g" -e "s/ENV/${ENV}/g" \
   "$ROOT/k8s/vault/policies/saas-project-env.hcl.tpl" >"$POLICY_FILE"
 
 if [[ -n "${VAULT_TOKEN:-}" && -n "${VAULT_ADDR:-}" ]]; then
-  export VAULT_NAMESPACE="${VAULT_NAMESPACE:-admin}"
+  # shellcheck source=lib/vault-env.sh
+  source "$ROOT/scripts/lib/vault-env.sh"
+  load_vault_env "$ROOT"
+  if vault_is_hcp; then
+    export VAULT_NAMESPACE="${VAULT_NAMESPACE:-admin}"
+  else
+    unset VAULT_NAMESPACE
+  fi
   echo "==> Writing Vault policy ${POLICY_NAME}"
   vault policy write "$POLICY_NAME" "$POLICY_FILE"
 else
@@ -59,7 +67,7 @@ metadata:
 spec:
   refreshInterval: 1h
   secretStoreRef:
-    name: hcp-vault
+    name: homelab-vault
     kind: ClusterSecretStore
   target:
     name: ${PROJECT}-secrets
