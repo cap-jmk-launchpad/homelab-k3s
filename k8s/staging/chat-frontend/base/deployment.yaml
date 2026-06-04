@@ -20,8 +20,9 @@ spec:
       labels:
         app: obsevia-chat-frontend
     spec:
+      # Default schedule: engine (RAM/GPU worker). Use overlays/blackpearl to pin control plane.
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       containers:
         - name: frontend
           image: docker.io/library/obsevia-frontend-staging:latest

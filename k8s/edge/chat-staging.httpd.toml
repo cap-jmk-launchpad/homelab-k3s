@@ -1,5 +1,5 @@
 # Obsevia chat staging (homelab k3s). Merge into homelab.httpd.toml or pass to merge-httpd-config.py.
-# NodePort 30581 on blackpearl loopback — see docs/staging-chat-homelab.md
+# NodePort 30581 on blackpearl loopback (pods may run on engine) — docs/staging-chat-homelab.md
 
 [upstreams.obsevia_chat_staging]
 balance = "round_robin"

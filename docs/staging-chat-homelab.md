@@ -1,15 +1,23 @@
 # Obsevia chat staging on homelab k3s
 
-Deploy **chatbot-frontend** staging to **blackpearl** (local k3s). Same env contract as VPS3 Docker staging (`docker-compose.staging.yml` / `.env.staging.example` in [chatbot-frontend](https://github.com/obsevia-compliance/chatbot-frontend)).
+Deploy **chatbot-frontend** staging to the homelab **k3s** cluster. Same env contract as VPS3 Docker staging (`docker-compose.staging.yml` / `.env.staging.example` in [chatbot-frontend](https://github.com/obsevia-compliance/chatbot-frontend)).
 
 **Does not change** production VPS3 nginx (`chat.obsevia.com`) or Docker HA on `217.154.167.236`.
 
-## Cluster
+## Cluster nodes
+
+| Host | IP (k3s / SSH) | Role |
+|------|----------------|------|
+| **blackpearl** | `192.168.10.33` (node), `192.168.10.41` (SSH) | k3s **server**, **li-httpd** edge `:80` / LAN DNS |
+| **engine** | `192.168.10.32` | k3s **agent**, GPU, RAM-heavy workloads (GitLab, Prometheus, …) |
+
+**Recommended schedule:** **`engine`** — frees control-plane RAM; same pattern as [gitlab-homelab.md](gitlab-homelab.md) and [scripts/homelab-move-workloads-to-engine.sh](../scripts/homelab-move-workloads-to-engine.sh).
+
+Edge and DNS still target **blackpearl** `192.168.10.33`; NodePort **30581** is reachable on the edge host loopback even when pods run on `engine`.
 
 | Item | Value |
 |------|--------|
-| Control plane | **blackpearl** — API `https://192.168.10.33:6443` (SSH often `192.168.10.41`) |
-| Edge | **li-httpd** on `192.168.10.33:80` → loopback NodePorts |
+| API | `https://192.168.10.41:6443` |
 | Workstation kubeconfig | `scp -i homelab s4il0r@192.168.10.41:~/.kube/config $env:USERPROFILE\.kube\config-homelab` |
 | Apply | `$env:KUBECONFIG = "$env:USERPROFILE\.kube\config-homelab"` |
 
@@ -17,48 +25,56 @@ Deploy **chatbot-frontend** staging to **blackpearl** (local k3s). Same env cont
 
 | Path | Purpose |
 |------|---------|
-| [`k8s/staging/chat-frontend/`](../k8s/staging/chat-frontend/) | Namespace, Deployment (2 replicas), Services, ConfigMap |
+| [`k8s/staging/chat-frontend/`](../k8s/staging/chat-frontend/) | Base: namespace, Deployment, Services, ConfigMap |
+| [`k8s/staging/chat-frontend/overlays/engine/`](../k8s/staging/chat-frontend/overlays/engine/) | **Default** — `nodeSelector: engine` |
+| [`k8s/staging/chat-frontend/overlays/blackpearl/`](../k8s/staging/chat-frontend/overlays/blackpearl/) | Legacy pin to control plane |
 | [`k8s/staging/chat-frontend/secret.example.yaml`](../k8s/staging/chat-frontend/secret.example.yaml) | Copy → `secret.yaml` (gitignored) |
 | [`k8s/edge/chat-staging.httpd.toml`](../k8s/edge/chat-staging.httpd.toml) | Edge snippet (merged into `homelab.httpd.toml`) |
 
 | Resource | Value |
 |----------|--------|
 | Namespace | `obsevia-chat-staging` |
-| NodePort | **30581** |
-| Image | `docker.io/library/obsevia-frontend-staging:latest` (`imagePullPolicy: Never`, sideload) |
-| Schedule | `nodeSelector: kubernetes.io/hostname: blackpearl` |
-| UI | `NEXT_PUBLIC_DEPLOY_ENV=staging` → amber **STAGING** banner; design-system `ObseviaLogo` in app image |
+| NodePort | **30581** (all nodes; edge uses `127.0.0.1:30581` on blackpearl) |
+| Image | `docker.io/library/obsevia-frontend-staging:latest` (`imagePullPolicy: Never`, sideload on **schedule node**) |
+| Schedule | `kubernetes.io/hostname: engine` (default) |
+| UI | `NEXT_PUBLIC_DEPLOY_ENV=staging` → amber **STAGING** banner |
 
 ## URLs (homelab)
 
 | URL | When |
 |-----|------|
 | **http://chat.homelab.lan** | LAN DNS (`*.homelab.lan` → `192.168.10.33`) or [hosts file](homelab-lan-dns.md#option-c--windows-hosts-file-quick-fix) |
-| **http://chat.obsevia.d3bu7.com** | Add **local** override: hosts / Fritz DNS → `192.168.10.33` (see below) |
-| **http://192.168.10.33:30581/login** | NodePort debug (no edge) |
+| **http://chat.obsevia.d3bu7.com** | Local override: hosts / Fritz DNS → **`192.168.10.33`** (edge, not engine) |
+| **http://192.168.10.33:30581/login** | NodePort via blackpearl / edge node |
+| **http://192.168.10.32:30581/login** | NodePort direct on engine (pod locality debug) |
 | `kubectl port-forward -n obsevia-chat-staging svc/obsevia-chat-frontend 3000:3000` | Workstation-only |
 
 ### DNS: `chat.obsevia.d3bu7.com`
 
-Public DNS for this name may point at **VPS3** (`217.154.167.236`) for Docker staging ([obsevia-kubernetes staging-chat](https://github.com/obsevia-compliance/obsevia-kubernetes/blob/main/docs/staging-chat.md)). To use **homelab** instead on your LAN:
+Public DNS may point at **VPS3** for Docker staging. For **homelab** on your LAN:
 
-1. **Split-horizon / Fritz local DNS** — A record `chat.obsevia.d3bu7.com` → `192.168.10.33` on the LAN only, or  
-2. **Windows hosts** (admin): `192.168.10.33 chat.obsevia.d3bu7.com`
+1. **Fritz local DNS** — `chat.obsevia.d3bu7.com` → `192.168.10.33`, or  
+2. **Windows hosts**: `192.168.10.33 chat.obsevia.d3bu7.com`
 
-Homelab edge is **HTTP :80** for this hostname; HTTPS on VPS3 is separate.
+Homelab edge is **HTTP :80** on blackpearl; do not point this hostname at engine unless you run a separate reverse proxy there.
 
-## One-time setup
+## Deploy (engine, default)
 
 ```powershell
-# 1. Secret from chatbot-frontend staging env
-Copy-Item C:\Users\Julian\Documents\Programming\Obsevia\obsevia-compliance\chatbot-frontend\.env.staging `
-  C:\Users\Julian\Documents\Programming\beelink-cleanup\k8s\staging\chat-frontend\secret.yaml
-# Or: copy secret.example.yaml and fill keys
-
-# 2. Build, import image, apply (from beelink-cleanup)
 cd C:\Users\Julian\Documents\Programming\beelink-cleanup
+
+# Secret from chatbot-frontend (one-time)
+Copy-Item C:\Users\Julian\Documents\Programming\Obsevia\obsevia-compliance\chatbot-frontend\.env.staging `
+  k8s\staging\chat-frontend\secret.yaml -ErrorAction SilentlyContinue
+
 .\scripts\deploy-chat-staging-homelab.ps1
+# Same as: .\scripts\deploy-chat-staging-homelab.ps1 -Target engine
+
+# Legacy control-plane schedule + import:
+.\scripts\deploy-chat-staging-homelab.ps1 -Target blackpearl
 ```
+
+Image import runs on the **target node** (`engine` hostname or `192.168.10.41` for blackpearl) because `imagePullPolicy: Never`.
 
 On **blackpearl** after edge TOML changes:
 
@@ -66,8 +82,7 @@ On **blackpearl** after edge TOML changes:
 cd ~/staging/beelink-cleanup
 bash scripts/edge-lis-validate.sh
 sudo bash scripts/edge-lis-apply.sh
-# If using homelab CoreDNS:
-kubectl apply -f k8s/dns/coredns-configmap.yaml
+kubectl apply -f k8s/dns/coredns-configmap.yaml   # if using homelab CoreDNS
 kubectl -n homelab-dns rollout restart daemonset/homelab-lan-coredns
 ```
 
@@ -76,9 +91,9 @@ kubectl -n homelab-dns rollout restart daemonset/homelab-lan-coredns
 ```powershell
 $env:KUBECONFIG = "$env:USERPROFILE\.kube\config-homelab"
 kubectl apply -f k8s/staging/chat-frontend/secret.yaml
-kubectl apply -k k8s/staging/chat-frontend/
+kubectl apply -k k8s/staging/chat-frontend/overlays/engine/
 kubectl -n obsevia-chat-staging rollout status deployment/obsevia-chat-frontend --timeout=180s
-kubectl -n obsevia-chat-staging get pods,svc
+kubectl -n obsevia-chat-staging get pods -o wide
 ```
 
 ## Build args (must match runtime secret)
@@ -93,17 +108,29 @@ From `.env.staging` / `docker-compose.staging.yml`:
 
 Rebuild and re-import the image after changing any `NEXT_PUBLIC_*` build arg.
 
+**Image runtime:** the runner stage must keep `next` after build (see `chatbot-frontend` `Dockerfile` — copy `node_modules` from the builder stage, not `npm prune` on deps alone).
+
 ## Verify
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -H 'Host: chat.homelab.lan' http://192.168.10.33/login
 curl -sS -o /dev/null -w '%{http_code}\n' http://192.168.10.33:30581/login
+curl -sS -o /dev/null -w '%{http_code}\n' http://192.168.10.32:30581/login
 ```
 
-Browser: open **http://chat.homelab.lan/login** — expect STAGING banner when `NEXT_PUBLIC_DEPLOY_ENV=staging` was baked in.
+Browser: **http://chat.homelab.lan/login** — STAGING banner when baked in at build time.
+
+## engine vs blackpearl
+
+| | **engine** (recommended) | **blackpearl** |
+|--|-------------------------|----------------|
+| Role | Worker, more RAM/GPU | Control plane + edge |
+| Why | Same as GitLab/DT/Prometheus placement; avoids starving API/etcd adjacent workloads | Only if engine down or quick local debug |
+| Image import | `ssh s4il0r@engine` | `ssh s4il0r@192.168.10.41` |
+| Edge URL | Unchanged (`192.168.10.33`) | Unchanged |
 
 ## Related
 
 - VPS3 Docker staging: [obsevia-kubernetes/docs/staging-chat.md](https://github.com/obsevia-compliance/obsevia-kubernetes/blob/main/docs/staging-chat.md)
-- DUCA homelab pattern: [Obsevia DUCA-DEMO `k8s/`](https://github.com/obsevia-compliance/DUCAH/tree/main/k8s)
 - Homelab edge: [edge-ingress.md](edge-ingress.md), [homelab-lan-dns.md](homelab-lan-dns.md)
+- SSH: [homelab-ssh-keys.md](homelab-ssh-keys.md)

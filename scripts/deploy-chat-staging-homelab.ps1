@@ -1,7 +1,10 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Build chatbot-frontend staging image, import into k3s on blackpearl, apply homelab manifests.
+  Build chatbot-frontend staging image, import into k3s on the schedule target node, apply homelab manifests.
+
+.PARAMETER Target
+  Kubernetes schedule + image import node: engine (default) or blackpearl.
 
 .PARAMETER ChatFrontendRoot
   Path to chatbot-frontend repo (default: Obsevia/obsevia-compliance/chatbot-frontend).
@@ -16,11 +19,12 @@
   Do not print edge apply reminder.
 #>
 param(
+  [ValidateSet("engine", "blackpearl")]
+  [string] $Target = "engine",
   [string] $ChatFrontendRoot = "C:\Users\Julian\Documents\Programming\Obsevia\obsevia-compliance\chatbot-frontend",
   [switch] $SkipBuild,
   [switch] $SkipImageImport,
   [switch] $SkipEdge,
-  [string] $BlackpearlHost = "192.168.10.41",
   [string] $SshUser = "s4il0r",
   [string] $SshKey = (Join-Path $PSScriptRoot "..\homelab"),
   [string] $ImageName = "obsevia-frontend-staging:latest",
@@ -29,9 +33,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 $BeelinkRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
-$K8sDir = Join-Path $BeelinkRoot "k8s\staging\chat-frontend"
-$SecretPath = Join-Path $K8sDir "secret.yaml"
-$SecretExample = Join-Path $K8sDir "secret.example.yaml"
+$ChatK8sRoot = Join-Path $BeelinkRoot "k8s\staging\chat-frontend"
+$K8sDir = Join-Path $ChatK8sRoot "overlays\$Target"
+$NodeHosts = @{
+  engine     = "engine"          # 192.168.10.32 k3s agent
+  blackpearl = "192.168.10.41"   # SSH; k3s internal 192.168.10.33
+}
+$ImportHost = $NodeHosts[$Target]
+if (-not $ImportHost) { throw "Unknown target: $Target" }
+$SecretPath = Join-Path $ChatK8sRoot "secret.yaml"
+$SecretExample = Join-Path $ChatK8sRoot "secret.example.yaml"
 
 function Get-EnvValue([string] $File, [string] $Name) {
   if (-not (Test-Path $File)) { return $null }
@@ -45,7 +56,7 @@ function Get-EnvValue([string] $File, [string] $Name) {
 }
 
 if (-not (Test-Path $ChatFrontendRoot)) {
-  throw "chatbot-frontend not found at $ChatFrontendRoot — set -ChatFrontendRoot"
+  throw "chatbot-frontend not found at $ChatFrontendRoot - set -ChatFrontendRoot"
 }
 
 $envStaging = Join-Path $ChatFrontendRoot ".env.staging"
@@ -76,13 +87,13 @@ if (-not (Test-Path $SecretPath)) {
     }
     if ($lines.Count -le 8) {
       Copy-Item $SecretExample $SecretPath
-      Write-Warning "secret.yaml created from example — fill Supabase/API keys before apply."
+      Write-Warning "secret.yaml created from example - fill Supabase/API keys before apply."
     } else {
       $lines | Set-Content -Encoding utf8 $SecretPath
     }
   } else {
     Copy-Item $SecretExample $SecretPath
-    Write-Warning "Created secret.yaml from example — copy .env.staging or edit keys."
+    Write-Warning "Created secret.yaml from example - copy .env.staging or edit keys."
   }
 }
 
@@ -97,7 +108,7 @@ $apiUrl = Get-EnvValue $envFile "NEXT_PUBLIC_API_URL"
 $serviceRole = Get-EnvValue $envFile "SUPABASE_SERVICE_ROLE_KEY"
 
 if (-not $supabaseUrl -or -not $supabaseAnon) {
-  Write-Warning "NEXT_PUBLIC_SUPABASE_* missing in $envFile — build may fail or auth will not work."
+  Write-Warning "NEXT_PUBLIC_SUPABASE_* missing in $envFile - build may fail or auth will not work."
 }
 
 if (-not $SkipBuild) {
@@ -137,17 +148,17 @@ if (-not $SkipImageImport) {
   } else {
     docker save -o $tar docker.io/library/obsevia-frontend-staging:latest
   }
-  scp -i $SshKey $tar "${SshUser}@${BlackpearlHost}:/tmp/obsevia-frontend-staging.tar"
-  ssh -i $SshKey "${SshUser}@${BlackpearlHost}" @"
-sudo k3s ctr images import /tmp/obsevia-frontend-staging.tar
-sudo k3s ctr images tag localhost/obsevia-frontend-staging:latest docker.io/library/obsevia-frontend-staging:latest 2>/dev/null || true
-rm -f /tmp/obsevia-frontend-staging.tar
-"@
+  Write-Host "Importing image on $Target ($ImportHost) ..."
+  scp -i $SshKey $tar "${SshUser}@${ImportHost}:/tmp/obsevia-frontend-staging.tar"
+  $importCmd = 'sudo k3s ctr images import /tmp/obsevia-frontend-staging.tar; ' +
+    'sudo k3s ctr images tag localhost/obsevia-frontend-staging:latest docker.io/library/obsevia-frontend-staging:latest 2>/dev/null; ' +
+    'rm -f /tmp/obsevia-frontend-staging.tar'
+  ssh -i $SshKey "${SshUser}@${ImportHost}" $importCmd
   Remove-Item -Force $tar -ErrorAction SilentlyContinue
 }
 
 if (-not (Test-Path $Kubeconfig)) {
-  Write-Warning "Kubeconfig missing at $Kubeconfig — apply manifests manually."
+  Write-Warning "Kubeconfig missing at $Kubeconfig - apply manifests manually."
 } else {
   $env:KUBECONFIG = $Kubeconfig
   Write-Host "Applying Kubernetes manifests..."
@@ -158,14 +169,13 @@ if (-not (Test-Path $Kubeconfig)) {
 }
 
 if (-not $SkipEdge) {
-  Write-Host @"
-
-Edge (one-time on blackpearl after homelab.httpd.toml includes chat routes):
-  cd ~/staging/beelink-cleanup && bash scripts/edge-lis-validate.sh && sudo bash scripts/edge-lis-apply.sh
-
-LAN URL:  http://chat.homelab.lan/login
-Staging:  http://chat.obsevia.d3bu7.com/login  (hosts/DNS -> 192.168.10.33)
-NodePort: http://192.168.10.33:30581/login
-
-"@
+  Write-Host ""
+  Write-Host "Edge (one-time on blackpearl after homelab.httpd.toml includes chat routes):"
+  Write-Host "  cd ~/staging/beelink-cleanup; bash scripts/edge-lis-validate.sh; sudo bash scripts/edge-lis-apply.sh"
+  Write-Host ""
+  Write-Host "LAN URL:  http://chat.homelab.lan/login"
+  Write-Host "Staging:  http://chat.obsevia.d3bu7.com/login  (hosts/DNS -> 192.168.10.33)"
+  Write-Host "NodePort: http://192.168.10.33:30581/login  (pods on $Target)"
+  Write-Host "Engine debug: http://192.168.10.32:30581/login"
+  Write-Host ""
 }
