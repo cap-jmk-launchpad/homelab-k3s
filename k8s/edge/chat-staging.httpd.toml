@@ -1,0 +1,24 @@
+# Obsevia chat staging (homelab k3s). Merge into homelab.httpd.toml or pass to merge-httpd-config.py.
+# NodePort 30581 on blackpearl loopback — see docs/staging-chat-homelab.md
+
+[upstreams.obsevia_chat_staging]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30581"]
+
+[[site]]
+host = "chat.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:obsevia_chat_staging"
+"POST /*" = "proxy:obsevia_chat_staging"
+
+[[site]]
+host = "chat.obsevia.d3bu7.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:obsevia_chat_staging"
+"POST /*" = "proxy:obsevia_chat_staging"

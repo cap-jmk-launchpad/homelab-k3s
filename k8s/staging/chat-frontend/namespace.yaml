@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: obsevia-chat-staging
+  labels:
+    app.kubernetes.io/name: obsevia-chat-frontend
+    app.kubernetes.io/part-of: obsevia
+    app.kubernetes.io/component: staging

@@ -19,6 +19,7 @@ Public DNS (Hostinger, etc.) only serves **`klaut.pro`** → WAN. Internal servi
 | `api.agents.homelab.lan` | `:30421` |
 | `li-swarm.homelab.lan` | `:30478` |
 | `high-fi-demos.homelab.lan` | `:30580` |
+| `chat.homelab.lan` | `:30581` |
 
 Optional (when step-ca / internal CA is deployed): `ca.homelab.lan` → same edge IP.
 
@@ -94,6 +95,9 @@ Edit as Administrator: `C:\Windows\System32\drivers\etc\hosts`
 192.168.10.33 api.agents.homelab.lan
 192.168.10.33 li-swarm.homelab.lan
 192.168.10.33 high-fi-demos.homelab.lan
+192.168.10.33 chat.homelab.lan
+# Optional: homelab copy of VPS staging hostname (LAN-only override)
+192.168.10.33 chat.obsevia.d3bu7.com
 ```
 
 No Fritz change; only fixes **this PC**. Browsers on phones/Mac still need Option A or B.

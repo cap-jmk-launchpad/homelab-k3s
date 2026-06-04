@@ -43,6 +43,10 @@ peers = ["http://127.0.0.1:30479"]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30580"]
 
+[upstreams.obsevia_chat_staging]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30581"]
+
 # Optional WAN GitLab (uncomment site block too). Set GITLAB_PUBLIC_URL=https://gitlab.klaut.pro
 # [upstreams.gitlab]
 # balance = "round_robin"
@@ -128,6 +132,24 @@ listen = ":80"
 "GET /health" = "static:healthcheck"
 "GET /*" = "proxy:high_fi_demos"
 "POST /*" = "proxy:high_fi_demos"
+
+[[site]]
+host = "chat.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:obsevia_chat_staging"
+"POST /*" = "proxy:obsevia_chat_staging"
+
+[[site]]
+host = "chat.obsevia.d3bu7.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:obsevia_chat_staging"
+"POST /*" = "proxy:obsevia_chat_staging"
 
 # [[site]]
 # host = "gitlab.klaut.pro"

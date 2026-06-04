@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: obsevia-chat-frontend
+  namespace: obsevia-chat-staging
+  labels:
+    app: obsevia-chat-frontend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: obsevia-chat-frontend
+  template:
+    metadata:
+      labels:
+        app: obsevia-chat-frontend
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+      containers:
+        - name: frontend
+          image: docker.io/library/obsevia-frontend-staging:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: obsevia-chat-frontend-config
+            - secretRef:
+                name: obsevia-chat-frontend-secrets
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              memory: 1536Mi

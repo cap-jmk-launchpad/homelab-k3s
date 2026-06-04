@@ -104,6 +104,7 @@ Master inventory (products + NodePorts + WAN): **[docs/klaut-pro-products.md](do
 
 | Stack | Doc |
 |-------|-----|
+| Obsevia chat staging (k3s) | [docs/staging-chat-homelab.md](docs/staging-chat-homelab.md) |
 | klaut.pro products & inventory | [docs/klaut-pro-products.md](docs/klaut-pro-products.md) |
 | Supabase | [docs/supabase-launchpad.md](docs/supabase-launchpad.md) |
 | GitLab CE | [docs/gitlab-homelab.md](docs/gitlab-homelab.md) |
