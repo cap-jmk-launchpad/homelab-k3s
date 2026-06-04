@@ -9,6 +9,15 @@ Full stack in Kubernetes (namespace `agent-swarm`):
 
 No host Docker Supabase required. See [db/README.md](./db/README.md).
 
+### Dashboard URL (LAN)
+
+Prefer the edge hostname (li-httpd on `192.168.10.33`):
+
+- **Dashboard:** `http://agents.homelab.lan/`
+- **PostgREST API:** `http://api.agents.homelab.lan/rest/v1/`
+
+Requires `*.homelab.lan` DNS — see [docs/homelab-lan-dns.md](../../docs/homelab-lan-dns.md). NodePort fallbacks (if edge DNS works but you skip hostnames): dashboard `:30477`, API `:30421` on any k3s node.
+
 ### Raspberry Pi **deck**
 
 - Guide: [overlays/deck/README.md](./overlays/deck/README.md)
