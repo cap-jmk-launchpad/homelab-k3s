@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gitlab-backup-prune
+  labels:
+    app: gitlab-backup
+spec:
+  schedule: "15 4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          restartPolicy: OnFailure
+          containers:
+            - name: prune
+              image: alpine:3.21
+              command: [sh, /scripts/prune-backups.sh]
+              env:
+                - name: RETENTION_DAYS
+                  value: "30"
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: gitlab-backups
+            - name: scripts
+              configMap:
+                name: gitlab-backup-scripts
+                defaultMode: 0755

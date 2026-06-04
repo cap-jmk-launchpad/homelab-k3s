@@ -44,6 +44,7 @@ sync_remote() {
     "$ROOT/scripts/k8s-gitlab-secret.sh" \
     "$ROOT/scripts/k8s-gitlab-apply.sh" \
     "$ROOT/scripts/k8s-gitlab-backup.sh" \
+    "$ROOT/scripts/k8s-gitlab-restore.sh" \
     "${STAGING_USER}@${STAGING_HOST}:${REMOTE_DIR}/scripts/"
   if [[ -f "$launchpad_env" ]]; then
     rsync -az -e "ssh ${ssh_opts[*]}" "$launchpad_env" \

@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gitlab-backup
+  labels:
+    app: gitlab-backup
+spec:
+  schedule: "0 4 * * 0"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: gitlab-backup
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: bitnami/kubectl:1.32.3
+              command: [sh, /scripts/backup.sh]
+              env:
+                - name: GITLAB_NAMESPACE
+                  value: gitlab
+                - name: GITLAB_BACKUP_SKIP
+                  value: registry,artifacts,builds,lfs,packages,terraform_state
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: gitlab-backups
+            - name: scripts
+              configMap:
+                name: gitlab-backup-scripts
+                defaultMode: 0755
