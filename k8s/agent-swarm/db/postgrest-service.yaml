@@ -9,6 +9,6 @@ spec:
     # Match local Supabase API port convention (54321).
     - name: http
       port: 54321
-      targetPort: 3000
+      targetPort: 54321
   selector:
-    app: postgrest
+    app: postgrest-proxy

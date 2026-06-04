@@ -8,10 +8,16 @@ kubectl apply -k "$ROOT/k8s/dns/"
 echo "Waiting for homelab-lan-coredns..."
 kubectl -n homelab-dns rollout status daemonset/homelab-lan-coredns --timeout=120s
 
-if command -v ufw >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+if command -v ufw >/dev/null 2>&1; then
   LAN="${HOMELAB_LAN_CIDR:-192.168.10.0/24}"
-  sudo ufw allow from "$LAN" to any port 53 proto udp comment homelab-lan-dns || true
-  sudo ufw allow from "$LAN" to any port 53 proto tcp comment homelab-lan-dns || true
+  if sudo ufw allow from "$LAN" to any port 53 proto udp comment homelab-lan-dns && \
+     sudo ufw allow from "$LAN" to any port 53 proto tcp comment homelab-lan-dns; then
+    echo "UFW: allowed LAN DNS (udp/tcp :53 from ${LAN})"
+  else
+    echo "WARN: could not add UFW rules for port 53 — run manually:" >&2
+    echo "  sudo ufw allow from ${LAN} to any port 53 proto udp comment homelab-lan-dns" >&2
+    echo "  sudo ufw allow from ${LAN} to any port 53 proto tcp comment homelab-lan-dns" >&2
+  fi
 fi
 
 echo "DNS smoke test (127.0.0.1):"
