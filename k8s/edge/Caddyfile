@@ -54,6 +54,16 @@ http://vault.klaut.pro {
 	reverse_proxy /v1* 127.0.0.1:30485
 }
 
+# --- Obsevia chat staging (LAN; Caddy owns :80 — li-httpd :80 not bound) ---
+
+http://chat.homelab.lan {
+	reverse_proxy 127.0.0.1:30581
+}
+
+http://chat.obsevia.d3bu7.com {
+	reverse_proxy 127.0.0.1:30581
+}
+
 # Per-host HTTPS blocks appended by edge-caddy-apply.sh when LE certs exist.
 
 # Inventory: docs/klaut-pro-products.md#homelab-inventory-current

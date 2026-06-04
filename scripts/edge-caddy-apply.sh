@@ -184,7 +184,9 @@ for probe in \
   "gitlab.klaut.pro|/users/sign_in" \
   "deps.klaut.pro|/" \
   "cwe.klaut.pro|/health" \
-  "vault.klaut.pro|/"; do
+  "vault.klaut.pro|/" \
+  "chat.homelab.lan|/login" \
+  "chat.obsevia.d3bu7.com|/login"; do
   host="${probe%%|*}"
   path="${probe#*|}"
   curl -sS -o /dev/null -w "local http ${host} %{http_code}\n" "http://127.0.0.1${path}" -H "Host: ${host}" || true
