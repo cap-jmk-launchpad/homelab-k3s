@@ -17,6 +17,10 @@ source "$ROOT/scripts/lib/load-env.sh" "$ROOT"
 STAGING_USER="${STAGING_USER:-s4il0r}"
 STAGING_HOST="${STAGING_HOST:-blackpearl}"
 STAGING_KEY="${STAGING_KEY:-$ROOT/homelab}"
+# Git Bash on Windows often lacks mDNS; prefer LAN IP from .env when set.
+if ! getent hosts "$STAGING_HOST" >/dev/null 2>&1 && [[ -n "${BLACKPEARL_DHCP_IP:-}" ]]; then
+  STAGING_HOST="${BLACKPEARL_DHCP_IP}"
+fi
 REMOTE_DIR="${HCP_VAULT_REMOTE_DIR:-$HOME/homelab-k3s}"
 LAUNCHPAD_ENV="${LAUNCHPAD_ENV:-$(dirname "$ROOT")/.env}"
 

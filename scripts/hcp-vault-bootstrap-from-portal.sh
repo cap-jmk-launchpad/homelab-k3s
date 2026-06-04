@@ -21,18 +21,31 @@ if [[ -n "${VAULT_ADDR:-}" && -n "${VAULT_TOKEN:-}" && "${VAULT_REGENERATE:-0}" 
 fi
 
 if [[ -z "${VAULT_ADDR:-}" || "${VAULT_REGENERATE:-0}" == 1 ]]; then
-  read -r -p "VAULT_ADDR (HCP public cluster URL): " new_addr
+  new_addr="${VAULT_ADDR:-}"
+  if [[ -z "$new_addr" && -t 0 ]]; then
+    read -r -p "VAULT_ADDR (HCP public cluster URL): " new_addr
+  fi
   new_addr="$(echo "$new_addr" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-  [[ -n "$new_addr" ]] || { echo "ERROR: VAULT_ADDR required" >&2; exit 1; }
+  [[ -n "$new_addr" ]] || {
+    echo "ERROR: VAULT_ADDR required (export VAULT_ADDR= or paste in portal)" >&2
+    exit 1
+  }
   vault_env_upsert "$LAUNCHPAD_ENV" VAULT_ADDR "$new_addr" "${VAULT_REGENERATE:-0}" || true
   export VAULT_ADDR="$new_addr"
 fi
 
 if [[ -z "${VAULT_TOKEN:-}" || "${VAULT_REGENERATE:-0}" == 1 ]]; then
-  read -r -s -p "VAULT_TOKEN (admin, bootstrap only): " new_tok
-  echo ""
-  [[ -n "$new_tok" ]] || { echo "ERROR: VAULT_TOKEN required" >&2; exit 1; }
+  new_tok="${VAULT_TOKEN:-}"
+  if [[ -z "$new_tok" && -t 0 ]]; then
+    read -r -s -p "VAULT_TOKEN (admin, bootstrap only): " new_tok
+    echo ""
+  fi
+  [[ -n "$new_tok" ]] || {
+    echo "ERROR: VAULT_TOKEN required (export VAULT_TOKEN= from HCP portal)" >&2
+    exit 1
+  }
   vault_env_upsert "$LAUNCHPAD_ENV" VAULT_TOKEN "$new_tok" "${VAULT_REGENERATE:-0}" || true
+  export VAULT_TOKEN="$new_tok"
 fi
 
 vault_env_upsert "$LAUNCHPAD_ENV" VAULT_NAMESPACE "${VAULT_NAMESPACE:-admin}" 0 || true
