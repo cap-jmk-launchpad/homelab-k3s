@@ -51,8 +51,8 @@ Provisioned from git via ConfigMap sidecar (`grafana_dashboard=1`):
 
 | Row | Metrics source |
 |-----|----------------|
-| Cluster totals | `node_memory_*`, `node_cpu_seconds_total`, `DCGM_FI_DEV_GPU_UTIL` |
-| Physical storage | `node_filesystem_*` (ext4/xfs/vfat/btrfs; excludes tmpfs, boot, credentials) |
+| Cluster totals | `node_memory_*`, `node_cpu_seconds_total`, `DCGM_FI_DEV_*`, `node_filesystem_*` (12 stat tiles: 2×6 grid, h=3) |
+| Physical storage | Per-node disk timeseries; block devices deduped via `max by (instance, device)` |
 | Per-node memory / CPU | node-exporter + `kube_node_info` join for k8s node names |
 | Network RX/TX | `node_network_*` excluding CNI/veth/docker bridges |
 | GPU | DCGM on `engine` + `desktop` (`node` label from ServiceMonitor) |
