@@ -52,10 +52,11 @@ Provisioned from git via ConfigMap sidecar (`grafana_dashboard=1`):
 | Row | Metrics source |
 |-----|----------------|
 | Cluster totals | `node_memory_*`, `node_cpu_seconds_total`, `DCGM_FI_DEV_GPU_UTIL` |
+| Physical storage | `node_filesystem_*` (ext4/xfs/vfat/btrfs; excludes tmpfs, boot, credentials) |
 | Per-node memory / CPU | node-exporter + `kube_node_info` join for k8s node names |
 | Network RX/TX | `node_network_*` excluding CNI/veth/docker bridges |
 | GPU | DCGM on `engine` + `desktop` (`node` label from ServiceMonitor) |
-| Snapshot table | Instant queries merged by `node` |
+| Snapshot table | Instant queries merged by `node` (includes Disk % / used / total columns) |
 
 Uses **MemAvailable** (not MemFree) for accurate memory %. Does not rely on upstream kube dashboard `$cluster` variable.
 
@@ -117,6 +118,30 @@ In-cluster: `http://prometheus-stack-prometheus.monitoring.svc:9090` (ClusterIP)
 | Host path | `/srv/homelab/prometheus` |
 | PV / StorageClass | `prometheus-engine-tsdb` / `prometheus-engine` ([prometheus-engine-pv.yaml](../k8s/monitoring/prometheus-engine-pv.yaml)) |
 | Free space (typical) | ~320G on `/` — headroom for ~200G TSDB cap plus OS/training data |
+
+### Engine external USB disk
+
+Plugging a USB HDD into **engine** makes it visible to the **host OS** immediately, but **not** to Kubernetes until you mount it at a stable path and (optionally) create a PV.
+
+| Item | Typical value |
+|------|----------------|
+| Block device | `sdb` (internal HDD is `sda`) |
+| Auto-mount | `/media/s4il0r/INTENSO` (vfat; desktop automount — path varies by user) |
+| Grafana | Counts toward **engine** disk totals once mounted (node-exporter reports the mount) |
+| K8s workloads | **Not** available until formatted (prefer ext4/xfs over vfat), mounted e.g. `/srv/homelab/external`, and bound via `hostPath` PV or used directly on the host |
+
+Check on engine:
+
+```bash
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
+df -hT / /media/s4il0r/INTENSO
+```
+
+Cluster inventory from blackpearl:
+
+```bash
+bash scripts/homelab-disk-check.sh
+```
 
 Prepare on engine (once):
 

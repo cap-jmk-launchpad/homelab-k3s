@@ -38,9 +38,11 @@ Uses k3s default in `kube-system`. See [metrics-server-k3s-patch.md](./metrics-s
 | `metrics-server-patch.json` | JSON patch for `--kubelet-insecure-tls` |
 | `metrics-server-pin-control-plane.yaml` | Schedule metrics-server on blackpearl |
 | `homelab-worker-firewall-ds.yaml` | Optional: open ufw/iptables for 9100/10250 on workers |
+| `homelab-cluster-resources-dashboard.json` | Cluster memory, CPU, GPU, and physical disk (node-exporter) |
 
 Docs: [../../docs/homelab-monitoring.md](../../docs/homelab-monitoring.md)
-
+
+
 
 ## Grafana dashboards (sidecar)
 
