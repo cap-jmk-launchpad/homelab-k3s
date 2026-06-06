@@ -121,26 +121,40 @@ In-cluster: `http://prometheus-stack-prometheus.monitoring.svc:9090` (ClusterIP)
 
 ### Engine external USB disk
 
-Plugging a USB HDD into **engine** makes it visible to the **host OS** immediately, but **not** to Kubernetes until you mount it at a stable path and (optionally) create a PV.
+| Item | Value |
+|------|--------|
+| Block device | `sdb1` (internal OS disk is `sda`) |
+| Host mount | `/srv/homelab/external` (ext4, fstab UUID, `nofail`) |
+| K8s StorageClass | `engine-external` |
+| K8s PV | `engine-external-data` (900Gi, hostPath, engine only) |
+| Grafana | Included in **Physical storage** panels on engine |
 
-| Item | Typical value |
-|------|----------------|
-| Block device | `sdb` (internal HDD is `sda`) |
-| Auto-mount | `/media/s4il0r/INTENSO` (vfat; desktop automount — path varies by user) |
-| Grafana | Counts toward **engine** disk totals once mounted (node-exporter reports the mount) |
-| K8s workloads | **Not** available until formatted (prefer ext4/xfs over vfat), mounted e.g. `/srv/homelab/external`, and bound via `hostPath` PV or used directly on the host |
+One-time host prep + PV (formats USB — **wipes disk**):
+
+```bash
+bash scripts/engine-external-disk-apply.sh
+```
+
+Use in workloads (must schedule on **engine**):
+
+```yaml
+storageClassName: engine-external
+```
+
+Smoke test:
+
+```bash
+kubectl apply -f k8s/storage/engine-external-test.yaml
+kubectl -n homelab-storage-test wait --for=condition=Ready pod/engine-external-write-test --timeout=60s
+kubectl -n homelab-storage-test logs engine-external-write-test
+kubectl delete -f k8s/storage/engine-external-test.yaml
+```
 
 Check on engine:
 
 ```bash
-lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
-df -hT / /media/s4il0r/INTENSO
-```
-
-Cluster inventory from blackpearl:
-
-```bash
-bash scripts/homelab-disk-check.sh
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS /dev/sdb
+df -hT /srv/homelab/external
 ```
 
 Prepare on engine (once):
