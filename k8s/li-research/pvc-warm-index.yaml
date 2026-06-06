@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: li-research-warm-index
+  namespace: li-research
+  labels:
+    app: li-research
+    app.kubernetes.io/component: warm-index
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: li-research-bulk
+  volumeName: li-research-warm-index
+  resources:
+    requests:
+      storage: 250Gi

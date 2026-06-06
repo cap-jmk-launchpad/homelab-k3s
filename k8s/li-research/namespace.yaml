@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: li-research
+  labels:
+    app.kubernetes.io/name: li-research
+    app.kubernetes.io/part-of: cap-jmk-launchpad
+    li-langverse.io/cluster: engine

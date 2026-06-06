@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: warm-index-smoke
+  namespace: li-research
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: engine
+  restartPolicy: Never
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: li-research-warm-index
+  containers:
+    - name: smoke
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - df -h /data && touch /data/.write-test && ls -la /data && cat /proc/mounts | grep /data
+      volumeMounts:
+        - name: data
+          mountPath: /data

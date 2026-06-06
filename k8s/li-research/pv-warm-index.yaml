@@ -1,0 +1,28 @@
+# Static PV for warm index on engine external HDD (TOSHIBA @ /srv/homelab/external).
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: li-research-warm-index
+  labels:
+    app: li-research
+    app.kubernetes.io/component: warm-index
+    machine: engine
+spec:
+  capacity:
+    storage: 250Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: li-research-bulk
+  hostPath:
+    path: /srv/homelab/external/li-research/warm-index
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - engine

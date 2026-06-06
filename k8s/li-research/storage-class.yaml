@@ -1,0 +1,8 @@
+# Static bulk storage for li-research warm index on engine external HDD.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: li-research-bulk
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
