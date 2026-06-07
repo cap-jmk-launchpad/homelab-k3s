@@ -60,7 +60,7 @@ Homelab edge is **HTTP :80** on blackpearl; do not point this hostname at engine
 
 ### Edge routing (li-httpd)
 
-Chat hostnames are in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml) → `127.0.0.1:30581` (`chat.homelab.lan`, `chat.obsevia.d3bu7.com`). Li-native policy: [platform-requirements.md](platform-requirements.md).
+Chat hostnames are in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml) → `127.0.0.1:30581` (`chat.homelab.lan`, `chat.obsevia.d3bu7.com`). Li-native policy: [li-native-edge.md](li-native-edge.md).
 
 After changing the TOML:
 
