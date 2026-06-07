@@ -9,7 +9,7 @@ Environment=LIC_ROOT=/home/s4il0r/staging/lic
 Environment=LI_HTTPD_ROOT=/home/s4il0r/staging/li-httpd
 Environment=MAJICO_HTTPD_TOML=/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml
 ExecStartPre=/bin/mkdir -p /run/li-httpd /var/lib/li-httpd/empty
-ExecStartPre=/bin/bash -c 'LIC_ROOT=/home/s4il0r/staging/lic LI_HTTPD_ROOT=/home/s4il0r/staging/li-httpd MAJICO_HTTPD_TOML=/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml /home/s4il0r/staging/beelink-cleanup/scripts/edge-lis-apply.sh --render-only'
+ExecStartPre=/bin/bash -c 'LIC_ROOT=/home/s4il0r/staging/lic LI_HTTPD_ROOT=/home/s4il0r/staging/li-httpd MAJICO_HTTPD_TOML=/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml /home/s4il0r/staging/homelab-k3s/scripts/edge-lis-apply.sh --render-only'
 ExecStart=/usr/local/bin/li-httpd /run/li-httpd/homelab.runtime.conf
 User=root
 Group=root
