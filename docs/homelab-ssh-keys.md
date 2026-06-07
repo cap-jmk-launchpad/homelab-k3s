@@ -38,3 +38,34 @@ Blackpearl keeps a copy at `~/.ssh/homelab` for worker onboarding scripts.
 See [desktop-k3s-worker.md](desktop-k3s-worker.md) for WSL setup and [mac-homelab-client.md](mac-homelab-client.md) for the Mac.
 
 Open **6443/tcp** on blackpearl UFW for agents (`sudo ufw allow 6443/tcp`).
+
+## Windows client — agent safety
+
+Private keys live in `%USERPROFILE%\.ssh\` on Julian's PC (not in git). Cursor agents have deleted or moved them before; use layered protection:
+
+| Layer | Location | What it does |
+|-------|----------|--------------|
+| **User hook** | `%USERPROFILE%\.cursor\hooks.json` | Blocks shell `rm`/`del`/`Remove-Item` and tool `Delete`/`Write` on key paths |
+| **Cursor rule** | `beelink-cleanup/.cursor/rules/protect-local-secrets.mdc` | Tells agents never to touch keys, `.env`, or kubeconfig |
+| **`.cursorignore`** | `beelink-cleanup/.cursorignore` | Keeps agents from indexing private key files |
+| **Read-only ACLs** | `beelink-cleanup/scripts/protect-ssh-keys.ps1` | Run after restoring keys — OS-level delete protection |
+
+After restoring keys from blackpearl or Mac:
+
+```powershell
+cd C:\Users\Julian\Documents\Programming\beelink-cleanup
+.\scripts\verify-local-secrets.ps1
+.\scripts\protect-ssh-keys.ps1
+```
+
+**Offline backup:** copy `%USERPROFILE%\.ssh\homelab` (and `beelink`, `blackpearl`) to a password manager or encrypted USB — not the repo.
+
+### Install user hook (once per PC)
+
+```powershell
+mkdir $env:USERPROFILE\.cursor\hooks -Force
+Copy-Item homelab-k3s\scripts\cursor-protect-homelab-secrets.py $env:USERPROFILE\.cursor\hooks\protect-homelab-secrets.py
+Copy-Item homelab-k3s\scripts\cursor-hooks.example.json $env:USERPROFILE\.cursor\hooks.json
+```
+
+Restart Cursor, then confirm the hook appears under **Settings → Hooks**.

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "python ./hooks/protect-homelab-secrets.py",
+        "failClosed": false
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "python ./hooks/protect-homelab-secrets.py",
+        "matcher": "Delete|Write",
+        "failClosed": true
+      }
+    ]
+  }
+}

@@ -40,6 +40,9 @@ bash scripts/lint-li-native.sh
 - **desktop:** WSL2 k3s agent; Windows scripts are firewall/tray helpers — not edge.
 - Edge uses Linux paths (`/usr/local/bin/li-httpd`, `systemctl`, `ufw`).
 
-## Cursor rule
+## Cursor rules
 
-`.cursor/rules/homelab-edge-platform.mdc` — always-on policy for AI sessions.
+- `.cursor/rules/homelab-edge-platform.mdc` — Li-native edge policy
+- `.cursor/rules/protect-local-secrets.mdc` — never delete/move SSH keys, `.env`, or kubeconfig on the Windows client
+
+User-level hook: `%USERPROFILE%\.cursor\hooks.json` blocks destructive commands on secret paths (all projects).
