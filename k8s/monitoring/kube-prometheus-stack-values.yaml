@@ -130,8 +130,20 @@ kube-state-metrics:
 
 prometheus-node-exporter:
   enabled: true
+  # Do not enable hostRootFsMount or extraHostVolumeMounts here — WSL (desktop) breaks on
+  # bind mounts without rshared /. Engine /srv/homelab USB disks: engine-homelab-fs-exporter.yaml
+  # Desktop WSL: desktop-node-exporter-wsl.yaml (uses /proc/1/root).
   hostRootFsMount:
     enabled: false
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - desktop
   prometheus:
     monitor:
       metricRelabelings:

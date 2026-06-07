@@ -129,6 +129,10 @@ In-cluster: `http://prometheus-stack-prometheus.monitoring.svc:9090` (ClusterIP)
 | K8s PV | `engine-external-data` (900Gi, hostPath, engine only) |
 | Grafana | Included in **Physical storage** panels on engine |
 
+**Prometheus:** Main node-exporter on all nodes (including WSL **desktop**) does not mount `/srv/homelab`. A separate [engine-homelab-fs-exporter.yaml](../k8s/monitoring/engine-homelab-fs-exporter.yaml) DaemonSet on **engine** listens on **9101** and relabels metrics to the main `instance` so Grafana totals include both USB disks without breaking WSL mount propagation.
+
+**Desktop (WSL):** The stock node-exporter DaemonSet is excluded from `desktop` (bind-mount propagation). [desktop-node-exporter-wsl.yaml](../k8s/monitoring/desktop-node-exporter-wsl.yaml) runs instead with `--path.rootfs=/host/proc/1/root`.
+
 One-time host prep + PV (formats USB — **wipes disk**):
 
 ```bash

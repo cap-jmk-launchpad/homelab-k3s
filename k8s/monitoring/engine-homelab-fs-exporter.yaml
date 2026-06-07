@@ -1,0 +1,105 @@
+# Engine-only filesystem metrics for /srv/homelab/* (USB + Intenso disks).
+# WSL workers cannot bind-mount /srv/homelab (mount propagation); keep this off the
+# main prometheus-node-exporter DaemonSet and scrape :9101 here instead.
+# ServiceMonitor relabels instance :9101 -> :9100 so Grafana sums with the main exporter.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: engine-homelab-fs-exporter
+  namespace: monitoring
+  labels:
+    app: engine-homelab-fs-exporter
+spec:
+  selector:
+    matchLabels:
+      app: engine-homelab-fs-exporter
+  template:
+    metadata:
+      labels:
+        app: engine-homelab-fs-exporter
+    spec:
+      hostNetwork: true
+      hostPID: true
+      nodeSelector:
+        kubernetes.io/hostname: engine
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: node-exporter
+          image: quay.io/prometheus/node-exporter:v1.11.1
+          args:
+            - --path.procfs=/host/proc
+            - --path.sysfs=/host/sys
+            - --web.listen-address=:9101
+            - --collector.disable-defaults
+            - --collector.filesystem
+            - --collector.filesystem.mount-points-include=^/srv/homelab(/|$).*
+          ports:
+            - name: metrics
+              containerPort: 9101
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: sys
+              mountPath: /host/sys
+              readOnly: true
+            - name: srv-homelab
+              mountPath: /srv/homelab
+              readOnly: true
+      volumes:
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: srv-homelab
+          hostPath:
+            path: /srv/homelab
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engine-homelab-fs-exporter
+  namespace: monitoring
+  labels:
+    app: engine-homelab-fs-exporter
+spec:
+  selector:
+    app: engine-homelab-fs-exporter
+  ports:
+    - name: metrics
+      port: 9101
+      targetPort: 9101
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: engine-homelab-fs-exporter
+  namespace: monitoring
+  labels:
+    app: engine-homelab-fs-exporter
+    release: prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: engine-homelab-fs-exporter
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+      metricRelabelings:
+        - sourceLabels: [instance]
+          regex: '([^:]+):9101'
+          targetLabel: instance
+          replacement: '${1}:9100'
+        - targetLabel: cluster
+          replacement: homelab

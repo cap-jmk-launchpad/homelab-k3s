@@ -610,7 +610,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "100 * (1 - sum(max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"})) / sum(max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"})))",
+          "expr": "100 * (1 - sum(max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) / sum(max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})))",
           "legendFormat": "disk %",
           "refId": "A"
         }
@@ -661,7 +661,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(sum(max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"})) - sum(max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"}))) / 1024^3",
+          "expr": "(sum(max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) - sum(max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"}))) / 1024^3",
           "legendFormat": "",
           "refId": "A"
         }
@@ -711,7 +711,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"})) / 1024^3",
+          "expr": "sum(max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) / 1024^3",
           "legendFormat": "",
           "refId": "A"
         }
@@ -719,6 +719,232 @@
       "title": "Disk total GB",
       "type": "stat",
       "description": "Per-block-device totals (deduped), all scraped nodes. Engine includes internal HDD + /srv/homelab/external."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Mounted block devices per node (deduped). Unmounted hardware (e.g. engine LUKS NVMe ~930G) is not included until mounted.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Disk %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 70
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Disk total GB"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "decgbytes"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Disk used GB"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "decgbytes"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 6
+      },
+      "id": 114,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Disk total GB"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kube_node_info",
+          "format": "table",
+          "instant": true,
+          "refId": "nodes"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "format": "table",
+          "instant": true,
+          "refId": "total"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "((sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) - sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"}))) / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "format": "table",
+          "instant": true,
+          "refId": "used"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(100 * (1 - (sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) / sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"}))))) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "format": "table",
+          "instant": true,
+          "refId": "pct"
+        }
+      ],
+      "title": "Storage by node",
+      "transformations": [
+        {
+          "id": "seriesToColumns",
+          "options": {
+            "byField": "node"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Value #nodes": true,
+              "__name__": true,
+              "container": true,
+              "endpoint": true,
+              "instance": true,
+              "internal_ip": true,
+              "job": true,
+              "kernel_version": true,
+              "kubelet_version": true,
+              "kubeproxy_version": true,
+              "namespace": true,
+              "os_image": true,
+              "pod": true,
+              "provider_id": true,
+              "service": true,
+              "system_uuid": true,
+              "container_runtime_version": true
+            },
+            "indexByName": {
+              "node": 0,
+              "Value #total": 1,
+              "Value #used": 2,
+              "Value #pct": 3
+            },
+            "renameByName": {
+              "node": "node",
+              "Value #pct": "Disk %",
+              "Value #total": "Disk total GB",
+              "Value #used": "Disk used GB"
+            }
+          }
+        }
+      ],
+      "type": "table"
     },
     {
       "datasource": {
@@ -746,7 +972,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 8,
+        "y": 14,
         "w": 24,
         "h": 8
       },
@@ -773,7 +999,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "(100 * (1 - (sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"})) / sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"}))))) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "expr": "(100 * (1 - (sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) / sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"}))))) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
           "legendFormat": "{{node}}"
         }
       ],
@@ -804,7 +1030,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 16,
+        "y": 22,
         "w": 24,
         "h": 8
       },
@@ -830,7 +1056,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "((sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"})) - sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"}))) / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "expr": "((sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) - sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"}))) / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
           "legendFormat": "{{node}} used"
         }
       ],
@@ -841,7 +1067,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 24,
+        "y": 30,
         "w": 24,
         "h": 1
       },
@@ -876,7 +1102,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 25,
+        "y": 31,
         "w": 24,
         "h": 8
       },
@@ -914,7 +1140,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 33,
+        "y": 39,
         "w": 24,
         "h": 1
       },
@@ -947,7 +1173,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 34,
+        "y": 40,
         "w": 24,
         "h": 8
       },
@@ -985,7 +1211,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 42,
+        "y": 48,
         "w": 24,
         "h": 1
       },
@@ -1015,7 +1241,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 43,
+        "y": 49,
         "w": 12,
         "h": 8
       },
@@ -1070,7 +1296,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 43,
+        "y": 49,
         "w": 12,
         "h": 8
       },
@@ -1107,7 +1333,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 51,
+        "y": 57,
         "w": 24,
         "h": 1
       },
@@ -1139,7 +1365,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 52,
+        "y": 58,
         "w": 8,
         "h": 8
       },
@@ -1194,7 +1420,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 52,
+        "y": 58,
         "w": 8,
         "h": 8
       },
@@ -1249,7 +1475,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 52,
+        "y": 58,
         "w": 8,
         "h": 8
       },
@@ -1286,7 +1512,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 60,
+        "y": 66,
         "w": 24,
         "h": 1
       },
@@ -1607,7 +1833,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 61,
+        "y": 67,
         "w": 24,
         "h": 10
       },
@@ -1735,7 +1961,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(100 * (1 - (sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"})) / sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"}))))) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "expr": "(100 * (1 - (sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) / sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"}))))) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -1746,7 +1972,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "((sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"})) - sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"}))) / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "expr": "((sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) - sum by (instance) (max by (instance, device) (node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"}))) / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -1757,7 +1983,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host\"})) / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
+          "expr": "(sum by (instance) (max by (instance, device) (node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs|ext2|vfat\",mountpoint!~\"/boot.*|/run/credentials.*|/var/lib/kubelet/.*|/mnt/wsl.*|/mnt/c|/mnt/e|/host|/var/lib/docker.*|/run/k3s.*\"})) / 1024^3) * on(instance) group_left(node) label_replace(kube_node_info, \"instance\", \"$1:9100\", \"internal_ip\", \"(.*)\")",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -1879,5 +2105,5 @@
   "timezone": "browser",
   "title": "Homelab Cluster Resources",
   "uid": "homelab-cluster-resources",
-  "version": 5
+  "version": 6
 }
