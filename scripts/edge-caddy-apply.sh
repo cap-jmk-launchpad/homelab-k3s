@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # DEPRECATED â€” homelab edge is li-native. Use scripts/edge-lis-apply.sh instead.
 # See docs/li-native-edge.md. Set LI_NATIVE_ALLOW_CADDY=1 to run this legacy script.
 set -euo pipefail
