@@ -9,7 +9,18 @@ EDGE_DIR="${REPO_ROOT}/k8s/edge"
 bash "${SCRIPT_DIR}/homelab-edge-policy-check.sh"
 
 LIS_ROOT="${LIS_ROOT:-}"
-LIC_ROOT="${LIC_ROOT:-${HOME}/staging/lic}"
+LIC_ROOT="${LIC_ROOT:-}"
+if [[ -z "$LIC_ROOT" ]]; then
+  for candidate in \
+    "${HOME}/staging/lic" \
+    "${REPO_ROOT}/../li/lic" \
+    "/home/s4il0r/staging/lic"; do
+    if [[ -f "${candidate}/scripts/httpd_config.py" ]]; then
+      LIC_ROOT="$candidate"
+      break
+    fi
+  done
+fi
 if [[ -z "$LIS_ROOT" ]]; then
   for candidate in \
     "${HOME}/staging/lis" \
@@ -21,6 +32,7 @@ if [[ -z "$LIS_ROOT" ]]; then
     fi
   done
 fi
+[[ -n "$LIC_ROOT" ]] || LIC_ROOT="${HOME}/staging/lic}"
 export LIS_ROOT LIC_ROOT
 
 MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"

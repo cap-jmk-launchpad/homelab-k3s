@@ -15,9 +15,11 @@ if [[ -f "${LI_HTTPD_ROOT}/scripts/patch-vhost-runtime.py" ]] \
   python3 "${LI_HTTPD_ROOT}/scripts/patch-vhost-runtime.py" "${LIC_ROOT}" || true
 fi
 
-if grep -q '#define HTTPD_MAX_ROUTES 128' "$NET_C"; then
-  sed -i 's/#define HTTPD_MAX_ROUTES 128/#define HTTPD_MAX_ROUTES 256/' "$NET_C"
-fi
+for old in 16 128; do
+  if grep -q "#define HTTPD_MAX_ROUTES ${old}" "$NET_C"; then
+    sed -i "s/#define HTTPD_MAX_ROUTES ${old}/#define HTTPD_MAX_ROUTES 256/" "$NET_C"
+  fi
+done
 
 LIC_ROOT="$(cd "$LIC_ROOT" && pwd)" bash "$BUILD"
 echo "build-edge-li-httpd: installed $(command -v li-httpd)"

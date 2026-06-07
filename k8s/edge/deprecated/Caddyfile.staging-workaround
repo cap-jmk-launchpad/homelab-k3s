@@ -1,3 +1,6 @@
+# DEPRECATED — legacy Caddy :80 workaround (pre multi-site li-httpd vhost flatten).
+# Do not apply. Routes live in homelab.httpd.toml. Policy: docs/li-native-edge.md
+#
 # Homelab staging edge on blackpearl — Caddy :80 workaround when li-httpd prefix routes fail.
 # Apply: LI_NATIVE_ALLOW_CADDY=1 sudo bash scripts/edge-caddy-apply.sh
 # Stops li-httpd-homelab.service; li-httpd-homelab-tls keeps :443. Majico/klaut HTTPS stay on li-httpd TLS overlay.
@@ -61,4 +64,3 @@ http://qroma.homelab.lan {
 http://qroma.obsevia.com {
 	reverse_proxy 127.0.0.1:30584
 }
-

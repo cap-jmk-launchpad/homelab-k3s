@@ -23,15 +23,29 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 EDGE_DIR="${REPO_ROOT}/k8s/edge"
 
+LIC_ROOT="${LIC_ROOT:-}"
+if [[ -z "$LIC_ROOT" ]]; then
+  for candidate in \
+    "${HOME}/staging/lic" \
+    "${REPO_ROOT}/../li/lic" \
+    "/home/s4il0r/staging/lic"; do
+    if [[ -f "${candidate}/scripts/httpd_config.py" ]]; then
+      LIC_ROOT="$candidate"
+      break
+    fi
+  done
+fi
+[[ -n "$LIC_ROOT" ]] || LIC_ROOT="${HOME}/staging/lic}"
 LIS_ROOT="${LIS_ROOT:-${HOME}/staging/lis}"
-LIC_ROOT="${LIC_ROOT:-${HOME}/staging/lic}"
 LI_HTTPD_ROOT="${LI_HTTPD_ROOT:-${HOME}/staging/li-httpd}"
 MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"
-# Multi-site merged TOML needs li-httpd flatten (lic-only flatten is single-site).
+# Prefer li-httpd copy when present; lic flatten supports multi-site [[site]] profiles.
 if [[ -f "${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py" ]]; then
   FLATTEN="${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py"
-else
+elif [[ -f "${LIC_ROOT}/scripts/flatten-httpd-config.py" ]]; then
   FLATTEN="${LIC_ROOT}/scripts/flatten-httpd-config.py"
+else
+  FLATTEN=""
 fi
 SETUP_TLS="${LIC_ROOT}/scripts/setup-tls-httpd.py"
 GEN_HTTPS="${EDGE_DIR}/gen-https-overlay.py"

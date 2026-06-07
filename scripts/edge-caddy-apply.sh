@@ -12,7 +12,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 EDGE_DIR="${REPO_ROOT}/k8s/edge"
-SRC="${EDGE_DIR}/Caddyfile"
+SRC="${EDGE_DIR}/deprecated/Caddyfile.staging-workaround"
 DEST="/etc/caddy/Caddyfile"
 LE_SEARCH="/etc/letsencrypt/live/search.klaut.pro"
 KLaut_CERT="/etc/caddy/certs-klaut/fullchain.pem"

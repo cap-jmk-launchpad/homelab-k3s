@@ -152,7 +152,15 @@ def validate_merged(path: Path) -> None:
         candidates.append(Path(os.environ["LIS_ROOT"]) / "scripts")
     if os.environ.get("LIC_ROOT"):
         candidates.append(Path(os.environ["LIC_ROOT"]) / "scripts")
-    candidates.append(Path(__file__).resolve().parents[3] / "li" / "lis" / "scripts")
+    repo = Path(__file__).resolve().parents[2]
+    candidates.extend(
+        [
+            repo.parent / "li" / "lic" / "scripts",
+            repo.parent / "li" / "lis" / "scripts",
+            Path(__file__).resolve().parents[3] / "li" / "lic" / "scripts",
+            Path(__file__).resolve().parents[3] / "li" / "lis" / "scripts",
+        ]
+    )
 
     for root in candidates:
         if (root / "httpd_config.py").is_file():
