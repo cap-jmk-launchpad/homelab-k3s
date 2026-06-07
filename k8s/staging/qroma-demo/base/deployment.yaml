@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: obsevia-qroma-demo
+  namespace: obsevia-qroma-staging
+  labels:
+    app: obsevia-qroma-demo
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: obsevia-qroma-demo
+  template:
+    metadata:
+      labels:
+        app: obsevia-qroma-demo
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: engine
+      containers:
+        - name: app
+          image: docker.io/library/obsevia-qroma-demo-staging:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: obsevia-qroma-demo-config
+            - secretRef:
+                name: obsevia-qroma-demo-secrets
+          readinessProbe:
+            httpGet:
+              path: /dashboard
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /dashboard
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: obsevia-qroma-demo-config
+  namespace: obsevia-qroma-staging
+  labels:
+    app: obsevia-qroma-demo
+data:
+  NODE_ENV: production
+  NEXT_PUBLIC_APP_URL: https://qroma.obsevia.com
+  NEXT_PUBLIC_SUPABASE_URL: https://supabase.obsevia.com
+  SUPABASE_URL: http://supabase-kong.majico-staging.svc.cluster.local:8000
+  SUPABASE_UPSTREAM_URL: http://supabase-kong.majico-staging.svc.cluster.local:8000

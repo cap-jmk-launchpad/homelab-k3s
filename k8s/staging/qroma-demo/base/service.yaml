@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: obsevia-qroma-demo
+  namespace: obsevia-qroma-staging
+  labels:
+    app: obsevia-qroma-demo
+spec:
+  type: ClusterIP
+  selector:
+    app: obsevia-qroma-demo
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: obsevia-qroma-demo-nodeport
+  namespace: obsevia-qroma-staging
+  labels:
+    app: obsevia-qroma-demo
+spec:
+  type: NodePort
+  selector:
+    app: obsevia-qroma-demo
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+      nodePort: 30584
