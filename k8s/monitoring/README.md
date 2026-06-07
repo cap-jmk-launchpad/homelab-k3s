@@ -51,8 +51,29 @@ Docs: [../../docs/homelab-monitoring.md](../../docs/homelab-monitoring.md)
 
 ## Grafana dashboards (sidecar)
 
+**Preferred** (on blackpearl, updates provisioned UIDs via ConfigMap sidecar):
+
 ```bash
-bash ../../scripts/homelab-deploy-dashboards.sh
+REPO_ROOT=~/staging/beelink-cleanup bash ../../scripts/homelab-deploy-dashboards.sh
 ```
+
+From a dev machine with SSH key or kubeconfig:
+
+```bash
+bash ../../scripts/homelab-deploy-dashboards-remote.sh
+```
+
+**API fallback** (no kubectl; imports editable `-live` copies with node colors):
+
+```bash
+python3 ../../scripts/grafana-api-deploy.py
+```
+
+Live URLs (API-deployed, node colors applied):
+
+- Cluster: http://192.168.10.41:30300/d/homelab-cluster-resources-live/homelab-cluster-resources-live
+- GPU: http://192.168.10.41:30300/d/homelab-gpu-dcgm-live/homelab-gpus-dcgm-live
+
+Provisioned sidecar UIDs (`homelab-cluster-resources`, `homelab-gpu-dcgm`) cannot be overwritten via Grafana API; update their ConfigMaps on the cluster instead.
 
 ConfigMaps need label `grafana_dashboard=1` in `monitoring` namespace.

@@ -35,6 +35,15 @@ fi
 [[ -n "$LIC_ROOT" ]] || LIC_ROOT="${HOME}/staging/lic}"
 export LIS_ROOT LIC_ROOT
 
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON=python3
+elif command -v python >/dev/null 2>&1; then
+  PYTHON=python
+else
+  echo "edge-lis-validate: need python3 or python on PATH" >&2
+  exit 1
+fi
+
 MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"
 MERGED="/tmp/homelab-edge.merged.toml"
 
@@ -46,7 +55,7 @@ else
 fi
 
 export LIS_ROOT LIC_ROOT
-python3 "${EDGE_DIR}/merge-httpd-config.py" "${inputs[@]}" -o "$MERGED" --validate
+"$PYTHON" "${EDGE_DIR}/merge-httpd-config.py" "${inputs[@]}" -o "$MERGED" --validate
 
 validate_root=""
 if [[ -n "$LIS_ROOT" && -f "${LIS_ROOT}/scripts/httpd_config.py" ]]; then
@@ -56,7 +65,7 @@ elif [[ -f "${LIC_ROOT}/scripts/httpd_config.py" ]]; then
 fi
 [[ -n "$validate_root" ]] || { echo "LIS_ROOT/LIC_ROOT not found for validate" >&2; exit 1; }
 export PYTHONPATH="${validate_root}${PYTHONPATH:+:$PYTHONPATH}"
-python3 - <<PY
+"$PYTHON" - <<PY
 from pathlib import Path
 from httpd_config import load_httpd_sites
 sites = load_httpd_sites(Path("${MERGED}"))
