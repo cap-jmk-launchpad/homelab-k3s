@@ -148,6 +148,8 @@ bash scripts/engine-nvme-disk-apply.sh
 
 K8s: `storageClassName: engine-nvme` ([engine-nvme-pv.yaml](../k8s/storage/engine-nvme-pv.yaml)).
 
+**Boot:** all `/srv/homelab/*` data disks are in **fstab** with `nofail` + `engine-homelab-mounts.service` (see [k8s/storage/README.md](../k8s/storage/README.md)).
+
 ### Engine external USB disk
 
 | Item | Value |

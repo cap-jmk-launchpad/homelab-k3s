@@ -50,3 +50,13 @@ bash scripts/engine-nvme-disk-apply.sh
 ```
 
 Use `storageClassName: engine-nvme` for PVCs on engine.
+
+## Boot mounts (all homelab disks on engine)
+
+`/srv/homelab/external`, `/srv/homelab/intenso-research`, and `/srv/homelab/nvme` must survive reboot. From **blackpearl**:
+
+```bash
+bash scripts/engine-homelab-mounts-apply.sh
+```
+
+This writes UUID-based **fstab** lines (`nofail`, long USB timeout) and enables **`engine-homelab-mounts.service`** (runs before `k3s-agent` if a disk is slow to appear).
