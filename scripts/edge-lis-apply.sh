@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Apply native li-httpd as homelab edge ingress on blackpearl (:80 HTTP + :443 TLS).
 set -euo pipefail
 
@@ -80,10 +80,11 @@ fi
 if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then
   install -d /usr/local/bin
   install -m 755 "${LIC_ROOT}/scripts/flatten-httpd-config.sh" /usr/local/bin/flatten-httpd-config.sh 2>/dev/null || true
-  sed "s|/home/s4il0r/staging/beelink-cleanup|${REPO_ROOT}|g" \
-    "${EDGE_DIR}/li-httpd-homelab.service" >/etc/systemd/system/li-httpd-homelab.service
-  sed "s|/home/s4il0r/staging/beelink-cleanup|${REPO_ROOT}|g" \
-    "${EDGE_DIR}/li-httpd-homelab-tls.service" >/etc/systemd/system/li-httpd-homelab-tls.service
+  for unit in li-httpd-homelab.service li-httpd-homelab-tls.service; do
+    sed -e "s|/home/s4il0r/staging/homelab-k3s|${REPO_ROOT}|g" \
+        -e "s|/home/s4il0r/staging/beelink-cleanup|${REPO_ROOT}|g" \
+      "${EDGE_DIR}/${unit}" >/etc/systemd/system/${unit}
+  done
   systemctl daemon-reload
   systemctl disable --now li-httpd-majico-staging.service 2>/dev/null || true
   systemctl disable --now caddy.service 2>/dev/null || true
