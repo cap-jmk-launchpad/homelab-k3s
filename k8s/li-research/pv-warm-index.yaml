@@ -1,4 +1,4 @@
-# Static PV for warm index on engine second Intenso (sdc @ /srv/homelab/intenso-research).
+# Static PV for warm index on engine NVMe (nvme0n1 @ /srv/homelab/nvme).
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -16,7 +16,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: li-research-bulk
   hostPath:
-    path: /srv/homelab/intenso-research/li-research/warm-index
+    path: /srv/homelab/nvme/li-research/warm-index
     type: DirectoryOrCreate
   nodeAffinity:
     required:
