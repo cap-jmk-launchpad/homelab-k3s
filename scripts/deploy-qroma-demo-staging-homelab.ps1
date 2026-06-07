@@ -5,12 +5,21 @@ param(
   [ValidateSet("engine", "blackpearl")]
   [string] $Target = "engine",
   [string] $QromaRoot = "C:\Users\Julian\Documents\Programming\Obsevia\QROMA-DEMO",
-  [string] $SshKey = "C:\Users\Julian\Documents\Programming\beelink-cleanup\homelab",
-  [string] $Kubeconfig = "$env:USERPROFILE\.kube\config-homelab"
+  [string] $SshKey = "",
+  [string] $Kubeconfig = ""
 )
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path $PSScriptRoot -Parent
+$BeelinkRoot = if (Test-Path (Join-Path $RepoRoot "..\beelink-cleanup\.env")) {
+  (Resolve-Path (Join-Path $RepoRoot "..\beelink-cleanup")).Path
+} else {
+  $RepoRoot
+}
+. (Join-Path $RepoRoot "load-env.ps1")
+$dotenv = Get-HomelabDotEnv -BeelinkRoot $BeelinkRoot -RepoRoot $RepoRoot
+if (-not $SshKey) { $SshKey = Get-HomelabEnvPath -Name "HOMELAB_KEY" -Env $dotenv }
+if (-not $Kubeconfig) { $Kubeconfig = Get-HomelabEnvPath -Name "KUBECONFIG_LOCAL" -Env $dotenv }
 $ImageName = "obsevia-qroma-demo-staging:latest"
 $ImportHost = if ($Target -eq "engine") { "engine" } else { "192.168.10.41" }
 $SshUser = "s4il0r"

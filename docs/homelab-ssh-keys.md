@@ -15,11 +15,21 @@ sudo bash scripts/install-homelab-key.sh scripts/homelab.pub
 
 ## Use from your PC
 
+Set key paths in `beelink-cleanup\.env` (see `.env.example`):
+
+```dotenv
+HOMELAB_KEY=C:\Users\Julian\.ssh\homelab
+BEELINK_KEY=C:\Users\Julian\.ssh\beelink
+STAGING_KEY=C:\Users\Julian\.ssh\blackpearl
+KUBECONFIG_LOCAL=C:\Users\Julian\Documents\Programming\beelink-cleanup\.kube\config-homelab
+```
+
 ```powershell
-ssh -i C:\Users\Julian\Documents\Programming\beelink-cleanup\homelab s4il0r@engine
-ssh -i C:\Users\Julian\Documents\Programming\beelink-cleanup\homelab s4il0r@192.168.10.41
-ssh -i C:\Users\Julian\Documents\Programming\beelink-cleanup\homelab root@engine
-ssh -i C:\Users\Julian\Documents\Programming\beelink-cleanup\homelab julian@192.168.10.28
+. homelab-k3s\scripts\load-env.ps1
+$k = (Get-HomelabDotEnv)["HOMELAB_KEY"]
+ssh -i $k s4il0r@192.168.10.41
+ssh -i $k s4il0r@engine
+ssh -i $k julian@192.168.10.28
 ```
 
 Blackpearl keeps a copy at `~/.ssh/homelab` for worker onboarding scripts.
@@ -41,7 +51,7 @@ Open **6443/tcp** on blackpearl UFW for agents (`sudo ufw allow 6443/tcp`).
 
 ## Windows client — agent safety
 
-Private keys live in `%USERPROFILE%\.ssh\` on Julian's PC (not in git). Cursor agents have deleted or moved them before; use layered protection:
+Private keys live at the paths in `beelink-cleanup\.env` (not in git). Cursor agents have deleted or moved them before; use layered protection:
 
 | Layer | Location | What it does |
 |-------|----------|--------------|
@@ -58,7 +68,7 @@ cd C:\Users\Julian\Documents\Programming\beelink-cleanup
 .\scripts\protect-ssh-keys.ps1
 ```
 
-**Offline backup:** copy `%USERPROFILE%\.ssh\homelab` (and `beelink`, `blackpearl`) to a password manager or encrypted USB — not the repo.
+**Offline backup:** copy the files referenced by `HOMELAB_KEY`, `BEELINK_KEY`, and `STAGING_KEY` in `.env` to a password manager or encrypted USB — not the repo.
 
 ### Install user hook (once per PC)
 
