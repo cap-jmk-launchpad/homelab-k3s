@@ -16,7 +16,7 @@
 | Vault OSS + ESO | `vault`, `external-secrets` | **30485** | `vault.klaut.pro` | Deploy via [vault-homelab.md](vault-homelab.md) |
 | k3s WAN edge | blackpearl `.33` | **80** / **443** | Fritz → `.33` | **li-httpd** — all `*.klaut.pro` hostnames in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml) |
 
-**LAN-only** (li-httpd `*.homelab.lan`, no klaut WAN): Grafana, SigNoz, agent-swarm, high-fi-demos, etc. — see [k8s/edge/README.md](../k8s/edge/README.md).
+**LAN-only** (li-httpd `*.homelab.lan`, no klaut WAN): Grafana, SigNoz, agent-swarm, DUCAH (`ducah.homelab.lan`), etc. — see [k8s/edge/README.md](../k8s/edge/README.md).
 
 ### Product ↔ homelab stack
 

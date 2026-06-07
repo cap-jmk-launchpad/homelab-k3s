@@ -23,9 +23,10 @@ Traffic flow for **WAN** (`*.klaut.pro`, `majico.d3bu7.com`) and **LAN** (`*.hom
 | `majico.d3bu7.com`, `api.majico.d3bu7.com`, `supabase.majico.d3bu7.com` | Majico NodePorts | merged TOML | staging |
 | `POST majico.d3bu7.com/deploy/staging` | Shiphook (CI rollout) | `127.0.0.1:3141` | merged TOML |
 | `chat.homelab.lan`, `chat.obsevia.d3bu7.com` | chat staging | `127.0.0.1:30581` | LAN / staging |
+| `demo.homelab.lan`, `ducah.homelab.lan` | DUCAH demo staging | `127.0.0.1:30583` | LAN / staging |
 | `dp.homelab.lan`, `dp.obsevia.com` | DP demo | `127.0.0.1:30582` | LAN / demo |
 
-**Internal-only** (no `*.klaut.pro` route): `grafana.homelab.lan`, `signoz.homelab.lan`, `agents.homelab.lan`, `api.agents.homelab.lan`, `li-swarm.homelab.lan`, `high-fi-demos.homelab.lan`, Supabase (`db.klaut.pro` out of scope).
+**Internal-only** (no `*.klaut.pro` route): `grafana.homelab.lan`, `signoz.homelab.lan`, `agents.homelab.lan`, `api.agents.homelab.lan`, `li-swarm.homelab.lan`, `ducah.homelab.lan`, Supabase (`db.klaut.pro` out of scope).
 
 ### Apply
 
@@ -89,7 +90,7 @@ Point edge traffic at **`192.168.10.33`** (li-httpd on blackpearl). **Recommende
 | Host |
 |------|
 | `grafana.homelab.lan`, `signoz.homelab.lan`, `agents.homelab.lan` |
-| `api.agents.homelab.lan`, `li-swarm.homelab.lan`, `high-fi-demos.homelab.lan` |
+| `api.agents.homelab.lan`, `li-swarm.homelab.lan`, `ducah.homelab.lan` |
 
 ## Validate
 

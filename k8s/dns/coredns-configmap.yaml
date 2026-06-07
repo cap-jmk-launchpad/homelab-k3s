@@ -32,6 +32,8 @@ data:
     192.168.10.33 agents.homelab.lan
     192.168.10.33 api.agents.homelab.lan
     192.168.10.33 li-swarm.homelab.lan
-    192.168.10.33 high-fi-demos.homelab.lan
+    192.168.10.33 ducah.homelab.lan
+    192.168.10.33 demo.homelab.lan
+    192.168.10.33 ducah.homelab.lan
     192.168.10.33 homelab.lan
     192.168.10.33 ca.homelab.lan

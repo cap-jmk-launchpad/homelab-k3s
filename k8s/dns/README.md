@@ -39,4 +39,4 @@ curl -sS -o /dev/null -w '%{http_code}\n' http://grafana.homelab.lan/health
 
 ## Hostnames (edge)
 
-From [homelab.httpd.toml](../edge/homelab.httpd.toml): `grafana`, `signoz`, `agents`, `api.agents`, `li-swarm`, `high-fi-demos` under `.homelab.lan`. Wildcard template covers future edge hosts.
+From [homelab.httpd.toml](../edge/homelab.httpd.toml): `grafana`, `signoz`, `agents`, `api.agents`, `li-swarm`, `ducah` under `.homelab.lan`. Wildcard template covers future edge hosts.

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: obsevia-ducah-staging
+  labels:
+    app.kubernetes.io/name: obsevia-duca-demo
+    app.kubernetes.io/part-of: obsevia-staging
