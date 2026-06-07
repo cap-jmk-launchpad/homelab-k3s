@@ -109,34 +109,44 @@ In-cluster: `http://prometheus-stack-prometheus.monitoring.svc:9090` (ClusterIP)
 
 **Retention:** **180 days** (6 months). TSDB size capped at 200GB (`retentionSize`); time-based cap is `retention: 180d` in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml).
 
-**Storage (engine HDD):**
+**Storage (all nodes):**
+
+| Node | Device | Mounted | In Grafana |
+|------|--------|---------|------------|
+| **blackpearl** | NVMe `nvme0n1p2` → `/` | ~444 GiB | Yes (control-plane SSD) |
+| **deck** | SD `mmcblk0p2` → `/` | ~470 GiB | Yes |
+| **anch0r** | SD `mmcblk0p2` → `/` | ~58 GiB | Yes |
+| **engine** | HDD + 2× USB + NVMe (below) | ~3.2 TiB | Yes |
+| **desktop** | WSL `sde` → `/` | ~1 TiB | Yes |
+
+**Cluster total** on the Grafana **Physical storage** row sums all five nodes (~5.1 TiB mounted). The **Storage by node** table lists each node; footer sums should match **Disk total GB**.
+
+**Engine devices:**
 
 | Device | Size | Mount | In Grafana? | Notes |
 |--------|------|-------|-------------|--------|
 | `sda2` | ~465G | `/` | **Yes** (~433 GiB) | Internal HDD — OS, k3s, Prometheus TSDB PVC, Grafana |
 | `sdb1` | ~932G | `/srv/homelab/external` | **Yes** (~916 GiB) | USB / external data disk |
 | `sdc1` | ~932G | `/srv/homelab/intenso-research` | **Yes** (~916 GiB) | Second USB (Intenso) |
-| `nvme0n1p3` | ~930G | `/srv/homelab/nvme` | **Yes** (after setup) | Was LUKS; wipe + ext4 via `scripts/engine-nvme-disk-apply.sh` |
+| `nvme0n1p3` | ~930G | `/srv/homelab/nvme` | **Yes** (~915 GiB) | Former LUKS; ext4 via `scripts/engine-nvme-disk-apply.sh` |
 
-Engine **Physical storage** in Grafana is the sum of mounted rows above (~3.2 TiB with NVMe). Unmounted disks are omitted until mounted.
+| Item | Value |
+|------|--------|
+| Node | `engine` (`192.168.10.32`) |
+| Internal HDD | `sda` → `sda2` ext4 on `/` |
+| Host path (Prometheus TSDB) | `/srv/homelab/prometheus` |
+| PV / StorageClass | `prometheus-engine-tsdb` / `prometheus-engine` ([prometheus-engine-pv.yaml](../k8s/monitoring/prometheus-engine-pv.yaml)) |
+| Free space (typical) | ~320G on `/` — headroom for ~200G TSDB cap plus OS/training data |
 
-### Engine NVMe (former LUKS)
+### Engine NVMe setup
 
-One-time setup from **blackpearl** (wipes LUKS on `nvme0n1p3`, formats ext4, mounts `/srv/homelab/nvme`):
+One-time from **blackpearl** (wipes LUKS on `nvme0n1p3`, formats ext4, mounts `/srv/homelab/nvme`):
 
 ```bash
 bash scripts/engine-nvme-disk-apply.sh
 ```
 
 K8s: `storageClassName: engine-nvme` ([engine-nvme-pv.yaml](../k8s/storage/engine-nvme-pv.yaml)).
-
-| Item | Value |
-|------|--------|
-| Node | `engine` (`192.168.10.32`) |
-| Internal HDD | `sda` → `sda2` ext4 on `/` (see table above) |
-| Host path (Prometheus TSDB) | `/srv/homelab/prometheus` |
-| PV / StorageClass | `prometheus-engine-tsdb` / `prometheus-engine` ([prometheus-engine-pv.yaml](../k8s/monitoring/prometheus-engine-pv.yaml)) |
-| Free space (typical) | ~320G on `/` — headroom for ~200G TSDB cap plus OS/training data |
 
 ### Engine external USB disk
 

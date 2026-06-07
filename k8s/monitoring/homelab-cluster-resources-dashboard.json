@@ -274,7 +274,7 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 12,
+        "x": 0,
         "y": 4,
         "w": 4,
         "h": 3
@@ -325,7 +325,7 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 16,
+        "x": 4,
         "y": 4,
         "w": 4,
         "h": 3
@@ -375,7 +375,7 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 20,
+        "x": 8,
         "y": 4,
         "w": 4,
         "h": 3
@@ -453,8 +453,8 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 4,
-        "y": 4,
+        "x": 16,
+        "y": 1,
         "w": 4,
         "h": 3
       },
@@ -504,8 +504,8 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 8,
-        "y": 4,
+        "x": 20,
+        "y": 1,
         "w": 4,
         "h": 3
       },
@@ -584,9 +584,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 16,
-        "y": 1,
-        "w": 4,
+        "x": 0,
+        "y": 8,
+        "w": 8,
         "h": 3
       },
       "id": 109,
@@ -617,7 +617,7 @@
       ],
       "title": "Disk used %",
       "type": "gauge",
-      "description": "Cluster-wide physical disk use. Each block device counted once per node (bind mounts excluded)."
+      "description": "Cluster-wide physical disk use. Each block device counted once per node."
     },
     {
       "datasource": {
@@ -635,9 +635,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 20,
-        "y": 1,
-        "w": 4,
+        "x": 8,
+        "y": 8,
+        "w": 8,
         "h": 3
       },
       "id": 110,
@@ -667,7 +667,8 @@
         }
       ],
       "title": "Disk used GB",
-      "type": "stat"
+      "type": "stat",
+      "description": "Cluster sum of used space on all nodes (engine, desktop, blackpearl, deck, anch0r)."
     },
     {
       "datasource": {
@@ -685,9 +686,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 0,
-        "y": 4,
-        "w": 4,
+        "x": 16,
+        "y": 8,
+        "w": 8,
         "h": 3
       },
       "id": 111,
@@ -718,14 +719,14 @@
       ],
       "title": "Disk total GB",
       "type": "stat",
-      "description": "Mounted block devices only (deduped by device). Engine homelab paths scraped via :9101 exporter."
+      "description": "Cluster sum of mounted capacity on all 5 nodes \u2014 includes blackpearl NVMe (~444G), deck Pi SD (~470G), anch0r Pi SD (~58G), plus engine and desktop."
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Mounted block devices per node (deduped). Unmounted disks (e.g. desktop sdd ~1T) omitted. Windows /mnt/c excluded.",
+      "description": "All 5 nodes: engine HDD+USB+NVMe, desktop WSL, blackpearl NVMe SSD, deck/anch0r Pi SD cards. Sum of mounted ext4 block devices (deduped).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -835,7 +836,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 8,
+        "y": 11,
         "w": 24,
         "h": 6
       },
@@ -843,7 +844,15 @@
       "options": {
         "cellHeight": "sm",
         "footer": {
-          "show": false
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": [
+            "Disk total GB",
+            "Disk used GB"
+          ]
         },
         "showHeader": true,
         "sortBy": [
@@ -972,7 +981,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 14,
+        "y": 17,
         "w": 24,
         "h": 8
       },
@@ -1030,7 +1039,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 22,
+        "y": 25,
         "w": 24,
         "h": 8
       },
@@ -1067,7 +1076,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 30,
+        "y": 33,
         "w": 24,
         "h": 1
       },
@@ -1102,7 +1111,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 31,
+        "y": 34,
         "w": 24,
         "h": 8
       },
@@ -1140,7 +1149,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 39,
+        "y": 42,
         "w": 24,
         "h": 1
       },
@@ -1173,7 +1182,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 40,
+        "y": 43,
         "w": 24,
         "h": 8
       },
@@ -1211,7 +1220,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 51,
         "w": 24,
         "h": 1
       },
@@ -1241,7 +1250,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 49,
+        "y": 52,
         "w": 12,
         "h": 8
       },
@@ -1296,7 +1305,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 49,
+        "y": 52,
         "w": 12,
         "h": 8
       },
@@ -1333,7 +1342,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 57,
+        "y": 60,
         "w": 24,
         "h": 1
       },
@@ -1365,7 +1374,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 58,
+        "y": 61,
         "w": 8,
         "h": 8
       },
@@ -1420,7 +1429,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 58,
+        "y": 61,
         "w": 8,
         "h": 8
       },
@@ -1475,7 +1484,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 58,
+        "y": 61,
         "w": 8,
         "h": 8
       },
@@ -1512,7 +1521,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 66,
+        "y": 69,
         "w": 24,
         "h": 1
       },
@@ -1833,7 +1842,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 67,
+        "y": 70,
         "w": 24,
         "h": 10
       },
@@ -2105,5 +2114,5 @@
   "timezone": "browser",
   "title": "Homelab Cluster Resources",
   "uid": "homelab-cluster-resources",
-  "version": 6
+  "version": 7
 }

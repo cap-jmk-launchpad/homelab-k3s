@@ -32,10 +32,13 @@ EXPR = {
 }
 
 STAT_LAYOUT = {
-    1: (0, 1), 2: (4, 1), 3: (8, 1), 4: (12, 1), 109: (16, 1), 110: (20, 1),
-    111: (0, 4), 106: (4, 4), 107: (8, 4), 5: (12, 4), 6: (16, 4), 7: (20, 4),
+    1: (0, 1), 2: (4, 1), 3: (8, 1), 4: (12, 1), 106: (16, 1), 107: (20, 1),
+    5: (0, 4), 6: (4, 4), 7: (8, 4),
 }
+# Physical storage row header at y=7; cluster disk stats sit under that row.
+DISK_STAT_LAYOUT = {109: (0, 8), 110: (8, 8), 111: (16, 8)}
 STAT_W, STAT_H = 4, 3
+DISK_STAT_W = 8
 
 
 def apply_disk_exprs(dash: dict) -> None:
@@ -69,8 +72,8 @@ def storage_table_panel() -> dict:
     return {
         "datasource": {"type": "prometheus", "uid": "prometheus"},
         "description": (
-            "Mounted block devices per node (deduped). "
-            "Unmounted hardware (e.g. engine LUKS NVMe ~930G) is not included until mounted."
+            "All 5 nodes: engine HDD+USB+NVMe, desktop WSL, blackpearl NVMe SSD, "
+            "deck/anch0r Pi SD cards. Sum of mounted ext4 block devices (deduped)."
         ),
         "fieldConfig": {
             "defaults": {
@@ -110,11 +113,16 @@ def storage_table_panel() -> dict:
                 },
             ],
         },
-        "gridPos": {"x": 0, "y": 8, "w": 24, "h": 6},
+        "gridPos": {"x": 0, "y": 11, "w": 24, "h": 6},
         "id": 114,
         "options": {
             "cellHeight": "sm",
-            "footer": {"show": False},
+            "footer": {
+                "show": True,
+                "reducer": ["sum"],
+                "countRows": False,
+                "fields": ["Disk total GB", "Disk used GB"],
+            },
             "showHeader": True,
             "sortBy": [{"desc": True, "displayName": "Disk total GB"}],
         },
@@ -153,41 +161,61 @@ def storage_table_panel() -> dict:
 
 
 def patch_layout(dash: dict) -> None:
+    disk_desc = {
+        109: "Cluster-wide physical disk use. Each block device counted once per node.",
+        110: "Cluster sum of used space on all nodes (engine, desktop, blackpearl, deck, anch0r).",
+        111: (
+            "Cluster sum of mounted capacity on all 5 nodes — includes blackpearl NVMe (~444G), "
+            "deck Pi SD (~470G), anch0r Pi SD (~58G), plus engine and desktop."
+        ),
+    }
     for panel in dash["panels"]:
         pid = panel.get("id")
         if pid in STAT_LAYOUT:
             x, y = STAT_LAYOUT[pid]
             panel["gridPos"] = {"x": x, "y": y, "w": STAT_W, "h": STAT_H}
+        elif pid in DISK_STAT_LAYOUT:
+            x, y = DISK_STAT_LAYOUT[pid]
+            panel["gridPos"] = {"x": x, "y": y, "w": DISK_STAT_W, "h": STAT_H}
+        if pid in disk_desc:
+            panel["description"] = disk_desc[pid]
         if pid == 108:
             panel["gridPos"] = {"x": 0, "y": 7, "w": 24, "h": 1}
-        elif pid in {112, 113}:
-            panel["gridPos"]["y"] += 6
         elif pid == 112:
-            panel["gridPos"] = {"x": 0, "y": 14, "w": 24, "h": 8}
+            panel["gridPos"] = {"x": 0, "y": 17, "w": 24, "h": 8}
         elif pid == 113:
-            panel["gridPos"] = {"x": 0, "y": 22, "w": 24, "h": 8}
+            panel["gridPos"] = {"x": 0, "y": 25, "w": 24, "h": 8}
+        elif pid == 114:
+            panel["gridPos"] = {"x": 0, "y": 11, "w": 24, "h": 6}
+            panel["options"]["footer"] = {
+                "show": True,
+                "reducer": ["sum"],
+                "countRows": False,
+                "fields": ["Disk total GB", "Disk used GB"],
+            }
+            panel["description"] = storage_table_panel()["description"]
         elif pid == 101:
-            panel["gridPos"] = {"x": 0, "y": 30, "w": 24, "h": 1}
+            panel["gridPos"] = {"x": 0, "y": 33, "w": 24, "h": 1}
         elif pid == 10:
-            panel["gridPos"] = {"x": 0, "y": 31, "w": 24, "h": 8}
+            panel["gridPos"] = {"x": 0, "y": 34, "w": 24, "h": 8}
         elif pid == 102:
-            panel["gridPos"] = {"x": 0, "y": 39, "w": 24, "h": 1}
+            panel["gridPos"] = {"x": 0, "y": 42, "w": 24, "h": 1}
         elif pid == 11:
-            panel["gridPos"] = {"x": 0, "y": 40, "w": 24, "h": 8}
+            panel["gridPos"] = {"x": 0, "y": 43, "w": 24, "h": 8}
         elif pid == 103:
-            panel["gridPos"] = {"x": 0, "y": 48, "w": 24, "h": 1}
+            panel["gridPos"] = {"x": 0, "y": 51, "w": 24, "h": 1}
         elif pid == 12:
-            panel["gridPos"] = {"x": 0, "y": 49, "w": 12, "h": 8}
+            panel["gridPos"] = {"x": 0, "y": 52, "w": 12, "h": 8}
         elif pid == 13:
-            panel["gridPos"] = {"x": 12, "y": 49, "w": 12, "h": 8}
+            panel["gridPos"] = {"x": 12, "y": 52, "w": 12, "h": 8}
         elif pid == 104:
-            panel["gridPos"] = {"x": 0, "y": 57, "w": 24, "h": 1}
+            panel["gridPos"] = {"x": 0, "y": 60, "w": 24, "h": 1}
         elif pid in {14, 15, 16}:
-            panel["gridPos"]["y"] = 58
+            panel["gridPos"]["y"] = 61
         elif pid == 105:
-            panel["gridPos"] = {"x": 0, "y": 66, "w": 24, "h": 1}
+            panel["gridPos"] = {"x": 0, "y": 69, "w": 24, "h": 1}
         elif pid == 20:
-            panel["gridPos"] = {"x": 0, "y": 67, "w": 24, "h": 10}
+            panel["gridPos"] = {"x": 0, "y": 70, "w": 24, "h": 10}
 
     if not any(p.get("id") == 114 for p in dash["panels"]):
         idx = next(i for i, p in enumerate(dash["panels"]) if p.get("id") == 112)
