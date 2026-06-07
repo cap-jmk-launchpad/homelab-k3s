@@ -41,6 +41,9 @@ Uses k3s default in `kube-system`. See [metrics-server-k3s-patch.md](./metrics-s
 | `metrics-server-pin-control-plane.yaml` | Schedule metrics-server on blackpearl |
 | `homelab-worker-firewall-ds.yaml` | Optional: open ufw/iptables for 9100/10250 on workers |
 | `homelab-cluster-resources-dashboard.json` | Cluster memory, CPU, GPU, and physical disk (node-exporter) |
+| `homelab-gpu-dashboard.json` | DCGM GPU metrics per node |
+
+**Node colors** (fixed across all panels): blackpearl blue, engine green, desktop orange, deck purple, anch0r yellow. Re-apply after dashboard edits: `python3 scripts/patch-grafana-node-colors.py`.
 
 Docs: [../../docs/homelab-monitoring.md](../../docs/homelab-monitoring.md)
 
