@@ -1,0 +1,40 @@
+---
+description: Linux + Li-native edge — li-httpd only, no Ingress/Traefik/Caddy on ingress path
+alwaysApply: true
+---
+
+# Homelab platform and edge policy
+
+Canonical docs: [docs/li-native-edge.md](docs/li-native-edge.md), [docs/platform-requirements.md](docs/platform-requirements.md).
+
+## Edge ingress (mandatory)
+
+- **All** WAN (`*.klaut.pro`), LAN (`*.homelab.lan`), and staging hostnames: **li-httpd** on Linux **blackpearl**.
+- Routes: `k8s/edge/homelab.httpd.toml` (+ majico merge), apply via `scripts/edge-lis-apply.sh`.
+- Backends: k3s **NodePort** → `127.0.0.1:<port>`.
+
+## Never add
+
+- `kind: Ingress`, IngressClass, Traefik, Caddy, nginx/HAProxy/Envoy on the ingress path
+- `Service` `type: LoadBalancer` for homelab HTTP exposure
+- Edge configs on Windows, IIS, or WSL listeners
+- Active `reverse_proxy` / Caddy blocks outside `k8s/edge/deprecated/`
+
+## Allowed in-cluster only (not edge)
+
+Kong (Supabase), nginx (CWE), GitLab Omnibus nginx — inside pods.
+
+## New hostname workflow
+
+1. NodePort Service
+2. `[upstreams]` + `[[site]]` in `homelab.httpd.toml`
+3. `bash scripts/lint-li-native.sh` then `edge-lis-validate.sh` / `edge-lis-apply.sh`
+4. Update `docs/klaut-pro-products.md`
+
+## k3s
+
+Install with `--disable traefik`. Run `bash scripts/lint-li-native.sh` before claiming edge work is complete.
+
+## Windows scope
+
+`scripts/windows-*.ps1` and WSL desktop worker are host helpers only — never edge ingress.

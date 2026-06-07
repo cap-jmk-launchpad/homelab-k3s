@@ -1,6 +1,8 @@
 # Node preparation
 
-Generic first-boot setup for any cluster node (control plane, worker, or edge). Run on **Debian/Ubuntu** unless noted otherwise.
+Generic first-boot setup for any cluster node (control plane, worker, or edge).
+
+**OS policy:** cluster **server**, **edge**, and standard **worker** nodes require **Debian/Ubuntu** (or Pi arm64). The only Windows-adjacent exception is the optional **WSL2 desktop worker** — see [desktop-k3s-worker.md](desktop-k3s-worker.md). Edge ingress (li-httpd) runs on **Linux blackpearl only** — [platform-requirements.md](platform-requirements.md).
 
 Replace placeholders:
 

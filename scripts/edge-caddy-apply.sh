@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
-# Deploy Caddy WAN edge on blackpearl (:80 + :443 → k3s NodePorts on 127.0.0.1).
-# Prerequisite: Fritz!Box TCP 80,443 → 192.168.10.33; DNS A records → WAN IP.
+# DEPRECATED — homelab edge is li-native. Use scripts/edge-lis-apply.sh instead.
+# See docs/li-native-edge.md. Set LI_NATIVE_ALLOW_CADDY=1 to run this legacy script.
 set -euo pipefail
+
+if [[ "${LI_NATIVE_ALLOW_CADDY:-}" != "1" ]]; then
+  echo "edge-caddy-apply.sh is deprecated — use: sudo bash scripts/edge-lis-apply.sh" >&2
+  echo "Policy: docs/li-native-edge.md" >&2
+  exit 1
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

@@ -37,14 +37,25 @@ flowchart TB
 | Control plane | Single k3s server, cluster API on `:6443` |
 | Workers | Linux native, WSL2, or Raspberry Pi agents |
 | GPU worker | Optional NVIDIA workloads via device plugin |
-| Edge node | **blackpearl** — **Caddy** `:80`/`:443` (WAN `*.klaut.pro` + LE); **li-httpd** for `*.homelab.lan`; **step-ca** internal PKI (LAN) |
+| Edge node | **blackpearl** — **li-httpd** `:80`/`:443` (Li-native WAN + LAN); **step-ca** internal PKI — [li-native-edge.md](docs/li-native-edge.md) |
+
+## Platform requirements
+
+All cluster nodes and edge ingress run on **Linux** (Debian/Ubuntu; Pi arm64 for workers). HTTP(S) terminates on **blackpearl** with the **Li-native** edge stack — **li-httpd** for WAN (`*.klaut.pro`) and LAN (`*.homelab.lan`) — proxying to k3s **NodePort** backends. k3s installs with **`--disable traefik`**; there are no in-cluster `Ingress` resources.
+
+| Allowed on ingress path | Forbidden |
+|-------------------------|-----------|
+| li-httpd on Linux blackpearl (`:80` + `:443`) | Caddy, Kubernetes Ingress, Traefik, nginx/HAProxy/Envoy at edge |
+| NodePort → `127.0.0.1` on edge host | `LoadBalancer` services, Windows/IIS/WSL as edge host |
+
+Policy: **[docs/li-native-edge.md](docs/li-native-edge.md)** · **[docs/platform-requirements.md](docs/platform-requirements.md)** · `bash scripts/lint-li-native.sh`
 
 ## Quick start
 
 1. **Prepare nodes** â€” [docs/node-prep.md](docs/node-prep.md): SSH key-only auth, passwordless sudo for automation user.
 2. **Install control plane** â€” [docs/k3s-server.md](docs/k3s-server.md): single server, Traefik disabled, UFW for SSH + 6443.
 3. **Join workers** â€” [docs/k3s-workers.md](docs/k3s-workers.md): native Linux, WSL2, or Pi.
-4. **Edge ingress** — [docs/edge-ingress.md](docs/edge-ingress.md) / [k8s/edge/README.md](k8s/edge/README.md): **Caddy** on blackpearl for WAN (`search.klaut.pro` live); **li-httpd** for LAN hostnames. Fritz **80+443** → `192.168.10.33` ([fritz-klaut-pro-port-forward.md](docs/fritz-klaut-pro-port-forward.md)).
+4. **Edge ingress** — [docs/li-native-edge.md](docs/li-native-edge.md) / [docs/edge-ingress.md](docs/edge-ingress.md): **li-httpd** on blackpearl for WAN + LAN. Fritz **80+443** → `192.168.10.33` ([fritz-klaut-pro-port-forward.md](docs/fritz-klaut-pro-port-forward.md)).
 5. **GPU workers** (optional) â€” [docs/gpu-workers.md](docs/gpu-workers.md): NVIDIA device plugin and scheduling.
 6. **Secrets (HCP Vault)** (optional) â€” [docs/hcp-vault.md](docs/hcp-vault.md): centralize SaaS secrets, sync to k3s via External Secrets Operator.
 
@@ -98,7 +109,7 @@ Master inventory (products + NodePorts + WAN): **[docs/klaut-pro-products.md](do
 | CWE mirror | `cwe` | 30483 | `cwe.klaut.pro` | WAN HTTPS (`/manifest.json`) |
 | HCP Vault / ESO | `external-secrets` | — | `vault.klaut.pro` | Edge 503; finish `VAULT_*` in `.env` |
 | step-ca (internal PKI) | `step-ca` | 30484 | `ca.homelab.lan` (LAN) | ACME for `*.homelab.lan` — not on WAN DNS |
-| WAN edge | blackpearl `.33` | 80 / 443 | Fritz → `.33` | Caddy — five `*.klaut.pro` hostnames |
+| WAN edge | blackpearl `.33` | 80 / 443 | Fritz → `.33` | li-httpd — `*.klaut.pro` in homelab.httpd.toml |
 
 **Products:** `sec-agent` (DT + CWE), `search-api` (`search.klaut.pro`), `vault-api` (HCP pending) — see [docs/klaut-pro-products.md](docs/klaut-pro-products.md).
 

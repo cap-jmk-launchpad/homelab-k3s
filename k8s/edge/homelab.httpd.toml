@@ -1,6 +1,7 @@
-# Homelab edge routes (beelink-cleanup).
+# Homelab edge routes (beelink-cleanup) — li-native WAN + LAN.
 # Merged with majico-staging.httpd.toml on blackpearl — see scripts/edge-lis-apply.sh.
 # Backends: k3s NodePorts on loopback (kube-proxy).
+# Policy: docs/li-native-edge.md
 
 # listen on :80 is per [[site]]; :443 TLS uses gen-https-overlay (second li-httpd).
 [server]
@@ -34,24 +35,33 @@ peers = ["http://127.0.0.1:30478"]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30479"]
 
-# Optional WAN CWE mirror (uncomment site block too). Set CWE_PUBLIC_URL=https://cwe.klaut.pro
-# [upstreams.cwe_mirror]
-# balance = "round_robin"
-# peers = ["http://127.0.0.1:30483"]
+[upstreams.cwe_mirror]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30483"]
 
 [upstreams.high_fi_demos]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30580"]
 
-# Optional WAN GitLab (uncomment site block too). Set GITLAB_PUBLIC_URL=https://gitlab.klaut.pro
-# [upstreams.gitlab]
-# balance = "round_robin"
-# peers = ["http://127.0.0.1:30481"]
+[upstreams.gitlab]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30481"]
 
-# Optional WAN OWASP Dependency-Track (uncomment site block). Set DEPTRACK_PUBLIC_URL=https://deps.klaut.pro
-# [upstreams.dependency_track]
-# balance = "round_robin"
-# peers = ["http://127.0.0.1:30482"]
+[upstreams.dependency_track]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30482"]
+
+[upstreams.vault]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30485"]
+
+[upstreams.chat_staging]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30581"]
+
+[upstreams.dp_demo]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30582"]
 
 [[site]]
 host = "grafana.homelab.lan"
@@ -101,15 +111,6 @@ listen = ":80"
 "GET /*" = "proxy:li_swarm_dashboard"
 "POST /*" = "proxy:li_swarm_dashboard"
 
-# [[site]]
-# host = "cwe.klaut.pro"
-# listen = ":80"
-#
-# [site.routes]
-# "GET /health" = "static:healthcheck"
-# "GET /*" = "proxy:cwe_mirror"
-# "HEAD /*" = "proxy:cwe_mirror"
-
 [[site]]
 host = "search.klaut.pro"
 listen = ":80"
@@ -121,6 +122,46 @@ listen = ":80"
 "HEAD /*" = "proxy:searxng"
 
 [[site]]
+host = "gitlab.klaut.pro"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:gitlab"
+"POST /*" = "proxy:gitlab"
+
+[[site]]
+host = "deps.klaut.pro"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:dependency_track"
+"POST /*" = "proxy:dependency_track"
+
+[[site]]
+host = "cwe.klaut.pro"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:cwe_mirror"
+"POST /*" = "proxy:cwe_mirror"
+"HEAD /*" = "proxy:cwe_mirror"
+
+[[site]]
+host = "vault.klaut.pro"
+listen = ":80"
+document_root = "/var/lib/li-httpd/vault-klaut"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /ui/*" = "proxy:vault"
+"GET /v1/*" = "proxy:vault"
+"POST /v1/*" = "proxy:vault"
+"HEAD /v1/*" = "proxy:vault"
+
+[[site]]
 host = "high-fi-demos.homelab.lan"
 listen = ":80"
 
@@ -129,20 +170,38 @@ listen = ":80"
 "GET /*" = "proxy:high_fi_demos"
 "POST /*" = "proxy:high_fi_demos"
 
-# [[site]]
-# host = "gitlab.klaut.pro"
-# listen = ":80"
-#
-# [site.routes]
-# "GET /health" = "static:healthcheck"
-# "GET /*" = "proxy:gitlab"
-# "POST /*" = "proxy:gitlab"
+[[site]]
+host = "chat.homelab.lan"
+listen = ":80"
 
-# [[site]]
-# host = "deps.klaut.pro"
-# listen = ":80"
-#
-# [site.routes]
-# "GET /health" = "static:healthcheck"
-# "GET /*" = "proxy:dependency_track"
-# "POST /*" = "proxy:dependency_track"
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:chat_staging"
+"POST /*" = "proxy:chat_staging"
+
+[[site]]
+host = "chat.obsevia.d3bu7.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:chat_staging"
+"POST /*" = "proxy:chat_staging"
+
+[[site]]
+host = "dp.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:dp_demo"
+"POST /*" = "proxy:dp_demo"
+
+[[site]]
+host = "dp.obsevia.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:dp_demo"
+"POST /*" = "proxy:dp_demo"

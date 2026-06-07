@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 
 CERT_DIR = "/var/lib/li-httpd/tls/homelab"
 LETSENCRYPT_LIVE = "/etc/letsencrypt/live/majico.d3bu7.com"
-LISTEN_HTTPS = "0.0.0.0:443"
+LISTEN_HTTPS = ":443"
 ACME_EMAIL = os.environ.get("HOMELAB_ACME_EMAIL", "admin@majico.xyz").strip()
 ACME_DOMAINS = [
     d.strip()

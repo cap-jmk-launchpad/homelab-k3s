@@ -3,8 +3,7 @@
 set -euo pipefail
 
 ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-STATIC_ROOT="${VAULT_KLAUT_STATIC_ROOT:-/var/lib/caddy/vault-klaut}"
-CADDY_SNIP="${VAULT_KLAUT_CADDY_SNIP:-/etc/caddy/vault-klaut-health.caddy}"
+STATIC_ROOT="${VAULT_KLAUT_STATIC_ROOT:-/var/lib/li-httpd/vault-klaut}"
 VAULT_NODEPORT="${VAULT_NODEPORT:-30485}"
 STORE_NAME="${VAULT_CLUSTER_SECRET_STORE:-homelab-vault}"
 
@@ -87,7 +86,7 @@ cat >"${STATIC_ROOT}/index.html" <<EOF
   <p>Self-hosted HashiCorp Vault OSS on k3s (Raft). Apps sync via External Secrets Operator.</p>
   <p class="$( [[ "$http_code" -eq 200 ]] && echo ok || echo warn )"><strong>Status:</strong> ${vault_msg}; ${css_msg}</p>
   <ul>
-    <li><a href="/ui/">Vault UI</a> (via Caddy)</li>
+    <li><a href="/ui/">Vault UI</a> (via li-httpd)</li>
     <li><a href="/status.json">status.json</a></li>
     <li><a href="/healthz">healthz</a> (HTTP ${http_code} when unsealed + ESO store Ready)</li>
   </ul>
@@ -96,17 +95,10 @@ cat >"${STATIC_ROOT}/index.html" <<EOF
 EOF
 
 if [[ "$http_code" -eq 200 ]]; then
-  cat >"$CADDY_SNIP" <<'EOF'
-handle /healthz {
-	respond "ok" 200
-}
-EOF
+  printf 'ok\n' >"${STATIC_ROOT}/healthz"
 else
-  cat >"$CADDY_SNIP" <<EOF
-handle /healthz {
-	respond "${vault_msg}; ${css_msg}" 503
-}
-EOF
+  printf '%s\n' "${vault_msg}; ${css_msg}" >"${STATIC_ROOT}/healthz"
 fi
 
 echo "edge-vault-klaut-status: healthz=${http_code} (${vault_msg}; ${css_msg})"
+echo "edge-vault-klaut-status: static files under ${STATIC_ROOT} — run edge-lis-apply.sh to reload"

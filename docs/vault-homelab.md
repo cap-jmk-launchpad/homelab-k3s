@@ -12,12 +12,12 @@ flowchart LR
   ESO[External Secrets Operator]
   KS[K8s Secret]
   POD[App Pod]
-  Caddy[vault.klaut.pro Caddy]
+  Edge[vault.klaut.pro li-httpd]
 
   Vault -->|K8s auth| ESO
   ESO -->|sync| KS
   KS --> POD
-  Caddy -->|TLS WAN| Vault
+  Edge -->|TLS WAN| Vault
 ```
 
 | Component | Namespace | Node | Notes |
@@ -60,7 +60,7 @@ Steps inside `all`:
 2. ESO Helm install
 3. Vault Kubernetes auth + `external-secrets-read` policy
 4. Onboard sec-agent, search-api, vault-api ExternalSecrets
-5. `vault.klaut.pro` Caddy + `/healthz` (200 when unsealed + `homelab-vault` Ready)
+5. `vault.klaut.pro` li-httpd + `/healthz` (200 when unsealed + `homelab-vault` Ready)
 
 ## Manual steps on blackpearl
 
@@ -82,7 +82,7 @@ kubectl apply -f k8s/vault/projects/search-gateway/external-secret.yaml
 kubectl apply -f k8s/vault/projects/klaut-platform/external-secret.yaml
 
 sudo REPO_ROOT=~/homelab-k3s ./scripts/edge-vault-klaut-status.sh
-sudo bash ./scripts/edge-caddy-apply.sh
+sudo bash ./scripts/edge-lis-apply.sh
 ```
 
 ## Verify

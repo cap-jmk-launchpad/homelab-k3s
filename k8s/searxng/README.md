@@ -1,6 +1,6 @@
 # SearXNG on homelab k3s (`search.klaut.pro`)
 
-Privacy-focused metasearch for humans and AI agents. Exposed via **Caddy** on blackpearl (WAN `:443` → NodePort; not in-cluster Ingress — Traefik is disabled).
+Privacy-focused metasearch for humans and AI agents. Exposed via **li-httpd** on blackpearl (WAN `:443` → NodePort; not in-cluster Ingress — Traefik is disabled).
 
 | Component | Value |
 |-----------|-------|

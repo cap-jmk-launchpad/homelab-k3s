@@ -26,7 +26,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
   --tls-san <lan-ip>" sh -
 ```
 
-Why disable Traefik: this homelab terminates HTTP on **blackpearl** with **li-httpd** (LIS edge TOML -> NodePort backends). See [edge-ingress.md](edge-ingress.md) and [k8s/edge/README.md](../k8s/edge/README.md).
+Why disable Traefik: this homelab terminates HTTP on **blackpearl** with **li-httpd** only (Li-native external edge → NodePort backends). No in-cluster `Ingress`, Caddy, or Traefik on the path. See [li-native-edge.md](li-native-edge.md), [platform-requirements.md](platform-requirements.md), [edge-ingress.md](edge-ingress.md), and [k8s/edge/README.md](../k8s/edge/README.md).
 
 ## Firewall
 

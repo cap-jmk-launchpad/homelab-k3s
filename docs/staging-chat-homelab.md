@@ -58,17 +58,17 @@ Public DNS may point at **VPS3** for Docker staging. For **homelab** on your LAN
 
 Homelab edge is **HTTP :80** on blackpearl; do not point this hostname at engine unless you run a separate reverse proxy there.
 
-### Edge routing (Caddy on :80)
+### Edge routing (li-httpd)
 
-**Caddy** binds **:80** on blackpearl for WAN + LAN hostnames. **li-httpd** homelab units cannot take :80 while Caddy is active, so chat hostnames are routed in [k8s/edge/Caddyfile](../k8s/edge/Caddyfile) → `127.0.0.1:30581` (not via a live li-httpd listener).
+Chat hostnames are in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml) → `127.0.0.1:30581` (`chat.homelab.lan`, `chat.obsevia.d3bu7.com`). Li-native policy: [platform-requirements.md](platform-requirements.md).
 
-`edge-lis-apply.sh` still merges [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml) for when li-httpd runs, but **flatten** on the full multi-site profile can fail (duplicate `listen` / site keys across merged TOML). Prefer **Caddy** for chat until li-httpd multi-site flatten is fixed.
-
-After changing the Caddyfile:
+After changing the TOML:
 
 ```bash
 cd ~/staging/beelink-cleanup   # or homelab-k3s mirror on blackpearl
-sudo bash scripts/edge-caddy-apply.sh
+bash scripts/homelab-edge-policy-check.sh
+bash scripts/edge-lis-validate.sh
+sudo bash scripts/edge-lis-apply.sh
 ```
 
 ## Deploy (engine, default)
@@ -89,13 +89,13 @@ Copy-Item C:\Users\Julian\Documents\Programming\Obsevia\obsevia-compliance\chatb
 
 Image import runs on the **target node** (`engine` hostname or `192.168.10.41` for blackpearl) because `imagePullPolicy: Never`.
 
-On **blackpearl** after edge changes (chat URLs use **Caddy**, not li-httpd :80):
+On **blackpearl** after edge changes:
 
 ```bash
 cd ~/staging/beelink-cleanup
-sudo bash scripts/edge-caddy-apply.sh
-# Optional: validate merged li-httpd TOML only (flatten may still fail on blackpearl)
+bash scripts/homelab-edge-policy-check.sh
 bash scripts/edge-lis-validate.sh
+sudo bash scripts/edge-lis-apply.sh
 kubectl apply -f k8s/dns/coredns-configmap.yaml   # if using homelab CoreDNS
 kubectl -n homelab-dns rollout restart daemonset/homelab-lan-coredns
 ```
@@ -133,7 +133,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' http://192.168.10.33:30581/login
 curl -sS -o /dev/null -w '%{http_code}\n' http://192.168.10.32:30581/login
 ```
 
-Expect **307** (or **302**) on `/login` via Caddy and NodePort when the staging deployment is healthy.
+Expect **307** (or **302**) on `/login` via li-httpd and NodePort when the staging deployment is healthy.
 
 Browser: **http://chat.homelab.lan/login** — STAGING banner when baked in at build time.
 

@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 EDGE_DIR="${REPO_ROOT}/k8s/edge"
 
+bash "${SCRIPT_DIR}/homelab-edge-policy-check.sh"
+
 LIS_ROOT="${LIS_ROOT:-}"
 LIC_ROOT="${LIC_ROOT:-${HOME}/staging/lic}"
 if [[ -z "$LIS_ROOT" ]]; then
