@@ -1,10 +1,10 @@
-#!/usr/bin/env bash
-# DEPRECATED — homelab edge is li-native. Use scripts/edge-lis-apply.sh instead.
+﻿#!/usr/bin/env bash
+# DEPRECATED â€” homelab edge is li-native. Use scripts/edge-lis-apply.sh instead.
 # See docs/li-native-edge.md. Set LI_NATIVE_ALLOW_CADDY=1 to run this legacy script.
 set -euo pipefail
 
 if [[ "${LI_NATIVE_ALLOW_CADDY:-}" != "1" ]]; then
-  echo "edge-caddy-apply.sh is deprecated — use: sudo bash scripts/edge-lis-apply.sh" >&2
+  echo "edge-caddy-apply.sh is deprecated â€” use: sudo bash scripts/edge-lis-apply.sh" >&2
   echo "Policy: docs/li-native-edge.md" >&2
   exit 1
 fi
@@ -66,7 +66,7 @@ append_https_blocks() {
     upstream="${entry#*:}"
     le="/etc/letsencrypt/live/${host}"
     if [[ ! -f "${le}/fullchain.pem" ]]; then
-      echo "edge-caddy-apply: ${host} HTTPS skipped — no ${le}/fullchain.pem" >&2
+      echo "edge-caddy-apply: ${host} HTTPS skipped â€” no ${le}/fullchain.pem" >&2
       continue
     fi
     sync_klaut_cert "$host" || continue
@@ -100,7 +100,7 @@ EOF
 
 ${host} {
 	tls ${cert_dir}/fullchain.pem ${cert_dir}/privkey.pem
-	respond "HCP Vault pending — configure VAULT_ADDR and VAULT_TOKEN in launchpad .env (see homelab-k3s/docs/hcp-vault.md)." 503
+	respond "HCP Vault pending â€” configure VAULT_ADDR and VAULT_TOKEN in launchpad .env (see homelab-k3s/docs/hcp-vault.md)." 503
 }
 EOF
     fi
@@ -139,7 +139,7 @@ run_certbot_standalone() {
     echo "edge-caddy-apply: certbot ${d}"
     sudo certbot certonly --standalone --non-interactive --agree-tos \
       -m "${ACME_EMAIL}" -d "${d}" \
-      || { echo "certbot failed for ${d} (is Fritz TCP 80 → 192.168.10.33 open?)" >&2; exit 1; }
+      || { echo "certbot failed for ${d} (is Fritz TCP 80 â†’ 192.168.10.33 open?)" >&2; exit 1; }
   done
   [[ "${NEED_START:-0}" -eq 1 ]] && sudo systemctl start caddy || true
 }
@@ -154,7 +154,11 @@ fi
 
 TMP="$(mktemp)"
 cp "$SRC" "$TMP"
-append_https_blocks
+if [[ "${CADDY_APPEND_KLAUT_HTTPS:-0}" == "1" ]]; then
+  append_https_blocks
+else
+  echo "edge-caddy-apply: skipping klaut HTTPS append (li-httpd-homelab-tls owns :443)"
+fi
 
 if [[ "$DRY" -eq 1 ]]; then
   echo "--- $DEST (dry-run) ---"
@@ -180,6 +184,8 @@ EOF
   sudo chmod 755 "$HOOK"
 fi
 
+echo "edge-caddy-apply: stopping li-httpd-homelab so Caddy can bind :80"
+sudo systemctl stop li-httpd-homelab.service 2>/dev/null || true
 sudo systemctl enable caddy
 sudo systemctl reload caddy 2>/dev/null || sudo systemctl restart caddy
 echo "edge-caddy-apply: reloaded caddy ($(systemctl is-active caddy))"
@@ -192,7 +198,9 @@ for probe in \
   "cwe.klaut.pro|/health" \
   "vault.klaut.pro|/" \
   "chat.homelab.lan|/login" \
-  "chat.obsevia.d3bu7.com|/login"; do
+  "chat.obsevia.d3bu7.com|/login" \
+  "ducah.homelab.lan|/login" \
+  "ducah.obsevia.d3bu7.com|/login"; do
   host="${probe%%|*}"
   path="${probe#*|}"
   curl -sS -o /dev/null -w "local http ${host} %{http_code}\n" "http://127.0.0.1${path}" -H "Host: ${host}" || true

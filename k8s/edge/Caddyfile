@@ -1,30 +1,9 @@
-# Homelab WAN edge on blackpearl (Caddy holds :443; :80 for ACME + cleartext klaut).
-# Apply: LI_NATIVE_ALLOW_CADDY=1 scripts/edge-caddy-apply.sh
-#
-# Fritz!Box: forward TCP 80 and 443 → 192.168.10.33 (k3s edge IP, not SSH .41).
-# DNS: *.klaut.pro A records → Fritz WAN IP (same as majico.d3bu7.com).
+# Homelab staging edge on blackpearl — Caddy :80 workaround when li-httpd prefix routes fail.
+# Apply: LI_NATIVE_ALLOW_CADDY=1 sudo bash scripts/edge-caddy-apply.sh
+# Stops li-httpd-homelab.service; li-httpd-homelab-tls keeps :443. Majico/klaut HTTPS stay on li-httpd TLS overlay.
 
 {
-	email admin@majico.xyz
-	auto_https disable_redirects
-}
-
-majico.d3bu7.com {
-	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
-	handle /deploy/staging* {
-		reverse_proxy 127.0.0.1:3141
-	}
-	reverse_proxy 127.0.0.1:30080
-}
-
-supabase.majico.d3bu7.com {
-	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
-	reverse_proxy 127.0.0.1:30000
-}
-
-api.majico.d3bu7.com {
-	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
-	reverse_proxy 127.0.0.1:30000
+	auto_https off
 }
 
 http://search.klaut.pro {
