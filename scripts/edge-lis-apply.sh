@@ -39,13 +39,16 @@ fi
 LIS_ROOT="${LIS_ROOT:-${HOME}/staging/lis}"
 LI_HTTPD_ROOT="${LI_HTTPD_ROOT:-${HOME}/staging/li-httpd}"
 MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"
-# Prefer li-httpd copy when present; lic flatten supports multi-site [[site]] profiles.
+# Prefer li-httpd flatten (needs li-httpd/scripts on PYTHONPATH for multi-site).
 if [[ -f "${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py" ]]; then
   FLATTEN="${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py"
+  FLATTEN_PYTHONPATH="${LI_HTTPD_ROOT}/scripts"
 elif [[ -f "${LIC_ROOT}/scripts/flatten-httpd-config.py" ]]; then
   FLATTEN="${LIC_ROOT}/scripts/flatten-httpd-config.py"
+  FLATTEN_PYTHONPATH="${LIC_ROOT}/scripts"
 else
   FLATTEN=""
+  FLATTEN_PYTHONPATH=""
 fi
 SETUP_TLS="${LIC_ROOT}/scripts/setup-tls-httpd.py"
 GEN_HTTPS="${EDGE_DIR}/gen-https-overlay.py"
@@ -72,7 +75,7 @@ fi
 export LIS_ROOT LIC_ROOT LI_HTTPD_ROOT
 python3 "${EDGE_DIR}/merge-httpd-config.py" "${inputs[@]}" -o "$MERGED" --validate
 
-export PYTHONPATH="${LI_HTTPD_ROOT}/scripts:${LIC_ROOT}/scripts${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="${FLATTEN_PYTHONPATH}${PYTHONPATH:+:$PYTHONPATH}"
 python3 "$FLATTEN" "$MERGED" -o "$RUNTIME"
 echo "flatten http: $RUNTIME ($(wc -l <"$RUNTIME") lines)"
 

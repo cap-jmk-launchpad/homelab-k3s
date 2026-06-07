@@ -12,7 +12,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 MON = REPO / "k8s/monitoring"
-GRAF_URL = os.environ.get("GRAF_URL", "http://192.168.10.41:30300").rstrip("/")
+GRAF_URL = os.environ.get(
+    "GRAF_URL",
+    "http://127.0.0.1:30300" if Path("/etc/rancher/k3s/k3s.yaml").exists() else "http://192.168.10.41:30300",
+).rstrip("/")
 GRAFANA_USER = os.environ.get("GRAFANA_USER", "admin")
 GRAFANA_PW = os.environ.get("GRAFANA_PW", "HomelabGraf2026!")
 
