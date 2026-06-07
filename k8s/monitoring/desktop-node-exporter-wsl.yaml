@@ -27,11 +27,19 @@ spec:
       containers:
         - name: node-exporter
           image: quay.io/prometheus/node-exporter:v1.11.1
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            privileged: true
           args:
             - --path.procfs=/host/proc
             - --path.sysfs=/host/sys
             - --path.rootfs=/host/proc/1/root
             - --web.listen-address=:9100
+            - --collector.disable-defaults
+            - --collector.filesystem
+            - --collector.filesystem.mount-points-exclude=^/(mnt/wsl|mnt/wslg|mnt/c|usr/lib/wsl|var/lib/kubelet|run/user).*
+            - --collector.filesystem.fs-types-exclude=^(9p|autofs|tmpfs|devtmpfs|proc|sysfs|fusectl|squashfs|overlay)$
           ports:
             - name: http-metrics
               containerPort: 9100
