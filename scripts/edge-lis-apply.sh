@@ -36,8 +36,27 @@ if [[ -z "$LIC_ROOT" ]]; then
   done
 fi
 [[ -n "$LIC_ROOT" ]] || LIC_ROOT="${HOME}/staging/lic}"
-LIS_ROOT="${LIS_ROOT:-${HOME}/staging/lis}"
-LI_HTTPD_ROOT="${LI_HTTPD_ROOT:-${HOME}/staging/li-httpd}"
+LIS_ROOT="${LIS_ROOT:-}"
+if [[ -z "$LIS_ROOT" ]]; then
+  for candidate in \
+    "${HOME}/staging/lis" \
+    "/home/s4il0r/staging/lis"; do
+    [[ -d "$candidate" ]] && LIS_ROOT="$candidate" && break
+  done
+fi
+[[ -n "$LIS_ROOT" ]] || LIS_ROOT="${HOME}/staging/lis}"
+LI_HTTPD_ROOT="${LI_HTTPD_ROOT:-}"
+if [[ -z "$LI_HTTPD_ROOT" ]]; then
+  for candidate in \
+    "${HOME}/staging/li-httpd" \
+    "/home/s4il0r/staging/li-httpd"; do
+    if [[ -f "${candidate}/scripts/flatten-httpd-config.py" ]]; then
+      LI_HTTPD_ROOT="$candidate"
+      break
+    fi
+  done
+fi
+[[ -n "$LI_HTTPD_ROOT" ]] || LI_HTTPD_ROOT="${HOME}/staging/li-httpd}"
 MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"
 # Prefer li-httpd flatten (needs li-httpd/scripts on PYTHONPATH for multi-site).
 if [[ -f "${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py" ]]; then
