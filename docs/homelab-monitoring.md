@@ -116,9 +116,19 @@ In-cluster: `http://prometheus-stack-prometheus.monitoring.svc:9090` (ClusterIP)
 | `sda2` | ~465G | `/` | **Yes** (~433 GiB) | Internal HDD — OS, k3s, Prometheus TSDB PVC, Grafana |
 | `sdb1` | ~932G | `/srv/homelab/external` | **Yes** (~916 GiB) | USB / external data disk |
 | `sdc1` | ~932G | `/srv/homelab/intenso-research` | **Yes** (~916 GiB) | Second USB (Intenso) |
-| `nvme0n1p3` | ~930G | *(none)* | **No** | **crypto_LUKS — do not format or mount from automation** |
+| `nvme0n1p3` | ~930G | `/srv/homelab/nvme` | **Yes** (after setup) | Was LUKS; wipe + ext4 via `scripts/engine-nvme-disk-apply.sh` |
 
-Engine **Physical storage** in Grafana is the sum of the three **mounted** rows above (~2.26 TiB). The LUKS NVMe is intentionally offline; metrics only count filesystems that are mounted.
+Engine **Physical storage** in Grafana is the sum of mounted rows above (~3.2 TiB with NVMe). Unmounted disks are omitted until mounted.
+
+### Engine NVMe (former LUKS)
+
+One-time setup from **blackpearl** (wipes LUKS on `nvme0n1p3`, formats ext4, mounts `/srv/homelab/nvme`):
+
+```bash
+bash scripts/engine-nvme-disk-apply.sh
+```
+
+K8s: `storageClassName: engine-nvme` ([engine-nvme-pv.yaml](../k8s/storage/engine-nvme-pv.yaml)).
 
 | Item | Value |
 |------|--------|

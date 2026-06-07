@@ -52,6 +52,7 @@ spec:
               readOnly: true
             - name: srv-homelab
               mountPath: /srv/homelab
+              mountPropagation: HostToContainer
               readOnly: true
       volumes:
         - name: proc

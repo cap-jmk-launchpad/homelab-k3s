@@ -718,14 +718,14 @@
       ],
       "title": "Disk total GB",
       "type": "stat",
-      "description": "Mounted block devices only (deduped by device). Includes engine USB disks via :9101 exporter. Excludes unmounted hardware (engine LUKS NVMe ~930G, desktop sdd ~1T) and Windows /mnt/c."
+      "description": "Mounted block devices only (deduped by device). Engine homelab paths scraped via :9101 exporter."
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Mounted block devices per node (deduped). Unmounted hardware (engine LUKS NVMe ~930G, desktop sdd ~1T) is not included until mounted. WSL Windows drives (/mnt/c) are excluded.",
+      "description": "Mounted block devices per node (deduped). Unmounted disks (e.g. desktop sdd ~1T) omitted. Windows /mnt/c excluded.",
       "fieldConfig": {
         "defaults": {
           "color": {
