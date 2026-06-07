@@ -1,33 +1,10 @@
-# Homelab WAN edge on blackpearl (Caddy holds :443; :80 for ACME + cleartext klaut).
-# Apply: scripts/edge-caddy-apply.sh (generates /etc/caddy/Caddyfile, reloads caddy).
-#
-# Fritz!Box: forward TCP 80 and 443 → 192.168.10.33 (k3s edge IP, not SSH .41).
-# DNS: *.klaut.pro A records → Fritz WAN IP (same as majico.d3bu7.com).
+# Homelab staging edge on blackpearl — Caddy :80 workaround when li-httpd prefix routes fail.
+# Apply: LI_NATIVE_ALLOW_CADDY=1 sudo bash scripts/edge-caddy-apply.sh
+# Stops li-httpd-homelab.service; li-httpd-homelab-tls keeps :443. Majico/klaut HTTPS stay on li-httpd TLS overlay.
 
 {
-	email admin@majico.xyz
-	# Majico uses manual TLS; klaut HTTPS blocks added when LE certs exist (see apply script).
-	auto_https disable_redirects
+	auto_https off
 }
-
-# --- Majico staging (manual certs under /etc/caddy/certs/) ---
-
-majico.d3bu7.com {
-	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
-	reverse_proxy 127.0.0.1:30080
-}
-
-supabase.majico.d3bu7.com {
-	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
-	reverse_proxy 127.0.0.1:30000
-}
-
-api.majico.d3bu7.com {
-	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
-	reverse_proxy 127.0.0.1:30000
-}
-
-# --- klaut.pro WAN (HTTP always; HTTPS when /etc/letsencrypt/live/<host>/ exists) ---
 
 http://search.klaut.pro {
 	reverse_proxy 127.0.0.1:30479
@@ -45,7 +22,6 @@ http://cwe.klaut.pro {
 	reverse_proxy 127.0.0.1:30483
 }
 
-# Vault OSS (NodePort 30485) — static status + /healthz from edge-vault-klaut-status.sh
 http://vault.klaut.pro {
 	root * /var/lib/caddy/vault-klaut
 	file_server
@@ -53,8 +29,6 @@ http://vault.klaut.pro {
 	reverse_proxy /ui* 127.0.0.1:30485
 	reverse_proxy /v1* 127.0.0.1:30485
 }
-
-# --- Obsevia chat staging (LAN; Caddy owns :80 — li-httpd :80 not bound) ---
 
 http://chat.homelab.lan {
 	reverse_proxy 127.0.0.1:30581
@@ -64,6 +38,18 @@ http://chat.obsevia.d3bu7.com {
 	reverse_proxy 127.0.0.1:30581
 }
 
-# Per-host HTTPS blocks appended by edge-caddy-apply.sh when LE certs exist.
+http://dp.homelab.lan {
+	reverse_proxy 127.0.0.1:30582
+}
 
-# Inventory: docs/klaut-pro-products.md#homelab-inventory-current
+http://dp.obsevia.com {
+	reverse_proxy 127.0.0.1:30582
+}
+
+http://ducah.homelab.lan {
+	reverse_proxy 127.0.0.1:30583
+}
+
+http://ducah.obsevia.d3bu7.com {
+	reverse_proxy 127.0.0.1:30583
+}

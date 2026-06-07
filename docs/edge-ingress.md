@@ -1,8 +1,10 @@
 # Edge ingress (LIS / li-httpd)
 
-Homelab HTTP(S) terminates on **blackpearl** with native **li-httpd** from `li/lic`. k3s runs with **Traefik disabled**; workloads use **NodePort** (or ClusterIP) and the edge TOML proxies by `Host` to `127.0.0.1:<nodePort>`.
+Homelab HTTP(S) terminates on **blackpearl** (Linux) with native **li-httpd** from `li/lic` for **WAN** (`*.klaut.pro`) and **LAN** (`*.homelab.lan`). k3s runs with **Traefik disabled**; workloads use **NodePort** (or ClusterIP) and the edge TOML proxies by `Host` to `127.0.0.1:<nodePort>`.
 
-No third-party reverse proxies on the ingress path.
+No third-party reverse proxies on the ingress path (no Caddy, in-cluster Ingress, nginx/Traefik/HAProxy/Envoy at edge).
+
+**Policy:** [li-native-edge.md](li-native-edge.md) · enforce with `bash scripts/lint-li-native.sh`
 
 ## Topology
 
@@ -24,6 +26,7 @@ LAN :80 / :443
 
 ```bash
 cd ~/staging/beelink-cleanup
+bash scripts/homelab-edge-policy-check.sh
 bash scripts/edge-lis-validate.sh
 sudo bash scripts/edge-lis-apply.sh --install-systemd
 ```
@@ -76,3 +79,10 @@ curl -k -H 'Host: grafana.homelab.lan' https://127.0.0.1/health
 ```
 
 Fritz!Box: forward **TCP 80** and **TCP 443** → **`192.168.10.33`** (k3s edge node on blackpearl). Plain **:80** remains available when the merged profile includes `:80` sites (separate listener requires a second `li-httpd` instance today). SSH/admin hostname remains **`192.168.10.41`**.
+
+## Related
+
+- [li-native-edge.md](li-native-edge.md) — Li-native edge policy
+- [platform-requirements.md](platform-requirements.md) — Linux host requirements
+- [homelab-lan-dns.md](homelab-lan-dns.md)
+- [k8s/edge/README.md](../k8s/edge/README.md)

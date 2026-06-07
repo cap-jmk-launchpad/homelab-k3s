@@ -25,8 +25,14 @@ EDGE_DIR="${REPO_ROOT}/k8s/edge"
 
 LIS_ROOT="${LIS_ROOT:-${HOME}/staging/lis}"
 LIC_ROOT="${LIC_ROOT:-${HOME}/staging/lic}"
-MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico.xyz/deploy/staging/edge/majico-staging.httpd.toml}"
-FLATTEN="${LIC_ROOT}/scripts/flatten-httpd-config.py"
+LI_HTTPD_ROOT="${LI_HTTPD_ROOT:-${HOME}/staging/li-httpd}"
+MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"
+# Multi-site merged TOML needs li-httpd flatten (lic-only flatten is single-site).
+if [[ -f "${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py" ]]; then
+  FLATTEN="${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py"
+else
+  FLATTEN="${LIC_ROOT}/scripts/flatten-httpd-config.py"
+fi
 SETUP_TLS="${LIC_ROOT}/scripts/setup-tls-httpd.py"
 GEN_HTTPS="${EDGE_DIR}/gen-https-overlay.py"
 RUNTIME_DIR="/run/li-httpd"
@@ -49,10 +55,10 @@ else
   echo "warn: majico TOML not found at ${MAJICO_HTTPD_TOML}" >&2
 fi
 
-export LIS_ROOT LIC_ROOT
+export LIS_ROOT LIC_ROOT LI_HTTPD_ROOT
 python3 "${EDGE_DIR}/merge-httpd-config.py" "${inputs[@]}" -o "$MERGED" --validate
 
-export PYTHONPATH="${LIC_ROOT}/scripts${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="${LI_HTTPD_ROOT}/scripts:${LIC_ROOT}/scripts${PYTHONPATH:+:$PYTHONPATH}"
 python3 "$FLATTEN" "$MERGED" -o "$RUNTIME"
 echo "flatten http: $RUNTIME ($(wc -l <"$RUNTIME") lines)"
 
@@ -80,6 +86,7 @@ if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then
     "${EDGE_DIR}/li-httpd-homelab-tls.service" >/etc/systemd/system/li-httpd-homelab-tls.service
   systemctl daemon-reload
   systemctl disable --now li-httpd-majico-staging.service 2>/dev/null || true
+  systemctl disable --now caddy.service 2>/dev/null || true
   systemctl enable li-httpd-homelab.service li-httpd-homelab-tls.service
 fi
 

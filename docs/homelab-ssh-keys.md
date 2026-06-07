@@ -29,7 +29,7 @@ Blackpearl keeps a copy at `~/.ssh/homelab` for worker onboarding scripts.
 | Host | IP | Status |
 |------|-----|--------|
 | blackpearl | 192.168.10.41 | k3s server |
-| engine | 192.168.10.32 | k3s agent, GPU |
+| engine | 192.168.10.32 | k3s agent, GPU, [Ollama LLM](engine-ollama.md) |
 | desktop | 192.168.10.31 | k3s agent (Ubuntu WSL2), SSH port **2222** |
 | deck | 192.168.10.26 | k3s agent (arm64 Pi) |
 | anch0r | 192.168.10.22 | k3s agent (arm64 Pi) |

@@ -1,0 +1,103 @@
+# WSL2 (desktop): main prometheus-node-exporter bind-mounts /host/root with
+# HostToContainer propagation, which fails without rshared on /. This DaemonSet
+# uses /host/proc/1/root instead (see node_exporter README). Main DS excludes
+# desktop via affinity in kube-prometheus-stack-values.yaml.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: desktop-node-exporter-wsl
+  namespace: monitoring
+  labels:
+    app: desktop-node-exporter-wsl
+spec:
+  selector:
+    matchLabels:
+      app: desktop-node-exporter-wsl
+  template:
+    metadata:
+      labels:
+        app: desktop-node-exporter-wsl
+    spec:
+      hostNetwork: true
+      hostPID: true
+      nodeSelector:
+        kubernetes.io/hostname: desktop
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: node-exporter
+          image: quay.io/prometheus/node-exporter:v1.11.1
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            privileged: true
+          args:
+            - --path.procfs=/host/proc
+            - --path.sysfs=/host/sys
+            - --path.rootfs=/host/proc/1/root
+            - --web.listen-address=:9100
+            - --collector.disable-defaults
+            - --collector.filesystem
+            - --collector.filesystem.mount-points-exclude=^/(mnt/wsl|mnt/wslg|mnt/c|usr/lib/wsl|var/lib/kubelet|run/user).*
+            - --collector.filesystem.fs-types-exclude=^(9p|autofs|tmpfs|devtmpfs|proc|sysfs|fusectl|squashfs|overlay)$
+          ports:
+            - name: http-metrics
+              containerPort: 9100
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: sys
+              mountPath: /host/sys
+              readOnly: true
+      volumes:
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: sys
+          hostPath:
+            path: /sys
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: desktop-node-exporter-wsl
+  namespace: monitoring
+  labels:
+    app: desktop-node-exporter-wsl
+    app.kubernetes.io/name: prometheus-node-exporter
+    app.kubernetes.io/instance: prometheus-stack
+    jobLabel: node-exporter
+spec:
+  selector:
+    app: desktop-node-exporter-wsl
+  ports:
+    - name: http-metrics
+      port: 9100
+      targetPort: 9100
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: desktop-node-exporter-wsl
+  namespace: monitoring
+  labels:
+    app: desktop-node-exporter-wsl
+    release: prometheus-stack
+spec:
+  jobLabel: jobLabel
+  selector:
+    matchLabels:
+      app: desktop-node-exporter-wsl
+  endpoints:
+    - port: http-metrics
+      interval: 30s
+      metricRelabelings:
+        - targetLabel: cluster
+          replacement: homelab

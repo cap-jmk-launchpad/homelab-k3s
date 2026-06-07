@@ -32,10 +32,10 @@ scp_cmd=(scp "${ssh_opts[@]}")
 sync_remote() {
   "${ssh_cmd[@]}" "mkdir -p ${REMOTE_DIR}/k8s/vault ${REMOTE_DIR}/k8s/edge ${REMOTE_DIR}/scripts/lib ~/launchpad"
   "${scp_cmd[@]}" -r "$ROOT/k8s/vault" "${STAGING_USER}@${STAGING_HOST}:${REMOTE_DIR}/k8s/"
-  "${scp_cmd[@]}" "$ROOT/k8s/edge/Caddyfile" "${STAGING_USER}@${STAGING_HOST}:${REMOTE_DIR}/k8s/edge/"
+  "${scp_cmd[@]}" -r "$ROOT/k8s/edge/" "${STAGING_USER}@${STAGING_HOST}:${REMOTE_DIR}/k8s/edge/"
   for f in k8s-vault-oss-apply.sh k8s-vault-oss-apply-remote.sh k8s-vault-oss-init.sh k8s-vault-oss-secret.sh \
     hcp-vault-install-eso.sh hcp-vault-configure-k8s-auth.sh hcp-vault-onboard-project.sh hcp-vault-seed-project.sh \
-    vault-oss-render-cluster-store.sh edge-vault-klaut-status.sh edge-caddy-apply.sh; do
+    vault-oss-render-cluster-store.sh edge-vault-klaut-status.sh edge-lis-apply.sh edge-lis-validate.sh lint-li-native.sh; do
     [[ -f "$ROOT/scripts/$f" ]] && "${scp_cmd[@]}" "$ROOT/scripts/$f" "${STAGING_USER}@${STAGING_HOST}:${REMOTE_DIR}/scripts/"
   done
   for f in load-env.sh vault-env.sh; do
@@ -75,11 +75,11 @@ case "${step}" in
     kubectl apply -f k8s/vault/projects/search-gateway/external-secret.yaml
     kubectl apply -f k8s/vault/projects/klaut-platform/external-secret.yaml
     sudo REPO_ROOT=${REMOTE_DIR} ./scripts/edge-vault-klaut-status.sh
-    sudo bash ./scripts/edge-caddy-apply.sh
+    sudo bash ./scripts/edge-lis-apply.sh
     ;;
   vault-edge)
     sudo REPO_ROOT=${REMOTE_DIR} ./scripts/edge-vault-klaut-status.sh
-    sudo bash ./scripts/edge-caddy-apply.sh
+    sudo bash ./scripts/edge-lis-apply.sh
     ;;
   all)
     ROOT="${REMOTE_DIR}" VAULT_OSS_REMOTE=0 ./scripts/k8s-vault-oss-apply.sh
@@ -95,7 +95,7 @@ case "${step}" in
       k8s/vault/projects/search-gateway/external-secret.yaml \
       k8s/vault/projects/klaut-platform/external-secret.yaml
     sudo REPO_ROOT=${REMOTE_DIR} ./scripts/edge-vault-klaut-status.sh
-    sudo bash ./scripts/edge-caddy-apply.sh
+    sudo bash ./scripts/edge-lis-apply.sh
     ;;
   *) echo "Unknown step: ${step}" >&2; exit 1 ;;
 esac

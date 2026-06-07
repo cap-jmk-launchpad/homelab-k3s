@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: obsevia-duca-demo-config
+  namespace: obsevia-ducah-staging
+  labels:
+    app: obsevia-duca-demo
+data:
+  NODE_ENV: production
+  HOMELAB_DEMO_AUTH: "true"
+  NEXT_PUBLIC_APP_URL: http://ducah.homelab.lan
+  NEXT_PUBLIC_SUPABASE_URL: http://ducah.homelab.lan
+  SUPABASE_URL: http://supabase-kong.majico-staging.svc.cluster.local:8000
+  SUPABASE_UPSTREAM_URL: http://supabase-kong.majico-staging.svc.cluster.local:8000

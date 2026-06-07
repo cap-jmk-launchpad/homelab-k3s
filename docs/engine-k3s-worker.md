@@ -56,3 +56,7 @@ kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.1
 Schedule with `nodeSelector` / affinity for `workload=training` and request `nvidia.com/gpu`. See majico `deploy/training/` when added.
 
 Engine has **no taint** (always welcome training). The daily PC should get `dedicated=training:NoSchedule` when you add it later.
+
+## Ollama LLM service (host GPU)
+
+Bare-metal Ollama on engine (not in k3s): [engine-ollama.md](engine-ollama.md) — `bash scripts/engine-ollama-deploy.sh` from this repo.

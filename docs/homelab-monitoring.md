@@ -51,11 +51,12 @@ Provisioned from git via ConfigMap sidecar (`grafana_dashboard=1`):
 
 | Row | Metrics source |
 |-----|----------------|
-| Cluster totals | `node_memory_*`, `node_cpu_seconds_total`, `DCGM_FI_DEV_GPU_UTIL` |
+| Cluster totals | `node_memory_*`, `node_cpu_seconds_total`, `DCGM_FI_DEV_*`, `node_filesystem_*` (12 stat tiles: 2×6 grid, h=3) |
+| Physical storage | Per-node disk timeseries; block devices deduped via `max by (instance, device)` |
 | Per-node memory / CPU | node-exporter + `kube_node_info` join for k8s node names |
 | Network RX/TX | `node_network_*` excluding CNI/veth/docker bridges |
 | GPU | DCGM on `engine` + `desktop` (`node` label from ServiceMonitor) |
-| Snapshot table | Instant queries merged by `node` |
+| Snapshot table | Instant queries merged by `node` (includes Disk % / used / total columns) |
 
 Uses **MemAvailable** (not MemFree) for accurate memory %. Does not rely on upstream kube dashboard `$cluster` variable.
 
@@ -108,15 +109,88 @@ In-cluster: `http://prometheus-stack-prometheus.monitoring.svc:9090` (ClusterIP)
 
 **Retention:** **180 days** (6 months). TSDB size capped at 200GB (`retentionSize`); time-based cap is `retention: 180d` in [kube-prometheus-stack-values.yaml](../k8s/monitoring/kube-prometheus-stack-values.yaml).
 
-**Storage (engine HDD):**
+**Storage (all nodes):**
+
+| Node | Device | Mounted | In Grafana |
+|------|--------|---------|------------|
+| **blackpearl** | NVMe `nvme0n1p2` → `/` | ~444 GiB | Yes (control-plane SSD) |
+| **deck** | SD `mmcblk0p2` → `/` | ~470 GiB | Yes |
+| **anch0r** | SD `mmcblk0p2` → `/` | ~58 GiB | Yes |
+| **engine** | HDD + 2× USB + NVMe (below) | ~3.2 TiB | Yes |
+| **desktop** | WSL `sde` → `/` | ~1 TiB | Yes |
+
+**Cluster total** on the Grafana **Physical storage** row sums all five nodes (~5.1 TiB mounted). The **Storage by node** table lists each node; footer sums should match **Disk total GB**.
+
+**Engine devices:**
+
+| Device | Size | Mount | In Grafana? | Notes |
+|--------|------|-------|-------------|--------|
+| `sda2` | ~465G | `/` | **Yes** (~433 GiB) | Internal HDD — OS, k3s, Prometheus TSDB PVC, Grafana |
+| `sdb1` | ~932G | `/srv/homelab/external` | **Yes** (~916 GiB) | USB / external data disk |
+| `sdc1` | ~932G | `/srv/homelab/intenso-research` | **Yes** (~916 GiB) | Second USB (Intenso) |
+| `nvme0n1p3` | ~930G | `/srv/homelab/nvme` | **Yes** (~915 GiB) | Former LUKS; ext4 via `scripts/engine-nvme-disk-apply.sh` |
 
 | Item | Value |
 |------|--------|
 | Node | `engine` (`192.168.10.32`) |
-| Disk | `sda2` → `/` (465G HDD; NVMe LUKS is separate and unused) |
-| Host path | `/srv/homelab/prometheus` |
+| Internal HDD | `sda` → `sda2` ext4 on `/` |
+| Host path (Prometheus TSDB) | `/srv/homelab/prometheus` |
 | PV / StorageClass | `prometheus-engine-tsdb` / `prometheus-engine` ([prometheus-engine-pv.yaml](../k8s/monitoring/prometheus-engine-pv.yaml)) |
 | Free space (typical) | ~320G on `/` — headroom for ~200G TSDB cap plus OS/training data |
+
+### Engine NVMe setup
+
+One-time from **blackpearl** (wipes LUKS on `nvme0n1p3`, formats ext4, mounts `/srv/homelab/nvme`):
+
+```bash
+bash scripts/engine-nvme-disk-apply.sh
+```
+
+K8s: `storageClassName: engine-nvme` ([engine-nvme-pv.yaml](../k8s/storage/engine-nvme-pv.yaml)).
+
+**Boot:** all `/srv/homelab/*` data disks are in **fstab** with `nofail` + `engine-homelab-mounts.service` (see [k8s/storage/README.md](../k8s/storage/README.md)).
+
+### Engine external USB disk
+
+| Item | Value |
+|------|--------|
+| Block device | `sdb1` (internal OS disk is `sda`) |
+| Host mount | `/srv/homelab/external` (ext4, fstab UUID, `nofail`) |
+| K8s StorageClass | `engine-external` |
+| K8s PV | `engine-external-data` (900Gi, hostPath, engine only) |
+| Grafana | Included in **Physical storage** panels on engine |
+
+**Prometheus:** Main node-exporter on all nodes (including WSL **desktop**) does not mount `/srv/homelab`. A separate [engine-homelab-fs-exporter.yaml](../k8s/monitoring/engine-homelab-fs-exporter.yaml) DaemonSet on **engine** listens on **9101** and relabels metrics to the main `instance` so Grafana totals include both USB disks without breaking WSL mount propagation.
+
+**Desktop (WSL):** The stock node-exporter DaemonSet is excluded from `desktop` (bind-mount propagation). [desktop-node-exporter-wsl.yaml](../k8s/monitoring/desktop-node-exporter-wsl.yaml) runs instead with `--path.rootfs=/host/proc/1/root`.
+
+One-time host prep + PV (formats USB — **wipes disk**):
+
+```bash
+bash scripts/engine-external-disk-apply.sh
+```
+
+Use in workloads (must schedule on **engine**):
+
+```yaml
+storageClassName: engine-external
+```
+
+Smoke test:
+
+```bash
+kubectl apply -f k8s/storage/engine-external-test.yaml
+kubectl -n homelab-storage-test wait --for=condition=Ready pod/engine-external-write-test --timeout=60s
+kubectl -n homelab-storage-test logs engine-external-write-test
+kubectl delete -f k8s/storage/engine-external-test.yaml
+```
+
+Check on engine:
+
+```bash
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS /dev/sdb
+df -hT /srv/homelab/external
+```
 
 Prepare on engine (once):
 

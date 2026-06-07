@@ -1,6 +1,6 @@
 # search.klaut.pro — SearXNG for agents
 
-Self-hosted [SearXNG](https://github.com/searxng/searxng) metasearch on the homelab k3s cluster, fronted by **Caddy on blackpearl** (WAN `:80` / `:443` → NodePort). LAN-only routing can also use **li-httpd** ([homelab.httpd.toml](../k8s/edge/homelab.httpd.toml)).
+Self-hosted [SearXNG](https://github.com/searxng/searxng) metasearch on the homelab k3s cluster, fronted by **li-httpd on blackpearl** (WAN `:80` / `:443` → NodePort). Routes in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml). Policy: [li-native-edge.md](li-native-edge.md).
 
 ## Architecture
 
@@ -8,20 +8,20 @@ Self-hosted [SearXNG](https://github.com/searxng/searxng) metasearch on the home
 Internet / LAN
       │
       ▼
-search.klaut.pro  →  Fritz :80,:443 → 192.168.10.33 → Caddy → 127.0.0.1:30479
+search.klaut.pro  →  Fritz :80,:443 → 192.168.10.33 → li-httpd → 127.0.0.1:30479
       │
       ▼
 k8s NodePort → searxng pod
 ```
 
-Manifests: [k8s/searxng/](../k8s/searxng/). WAN edge: [k8s/edge/Caddyfile](../k8s/edge/Caddyfile), [scripts/edge-caddy-apply.sh](../scripts/edge-caddy-apply.sh).
+Manifests: [k8s/searxng/](../k8s/searxng/). WAN edge: [k8s/edge/homelab.httpd.toml](../k8s/edge/homelab.httpd.toml), [scripts/edge-lis-apply.sh](../scripts/edge-lis-apply.sh).
 
 ## DNS (manual)
 
 | Step | Action |
 |------|--------|
 | 1 | At your DNS provider for **klaut.pro**, add an **A** (or **AAAA**) record: `search` → your public WAN IP (same as other `*.klaut.pro` services if you already expose the homelab). |
-| 2 | On **Fritz!Box**: forward **TCP 80** and **TCP 443** to **`192.168.10.33`** — step-by-step [fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md). Caddy listens on both ports. |
+| 2 | On **Fritz!Box**: forward **TCP 80** and **TCP 443** to **`192.168.10.33`** — step-by-step [fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md). li-httpd listens on both ports. |
 | 3 | Optional LAN override: `/etc/hosts` or Fritz local DNS `search.klaut.pro` → `192.168.10.33` for testing before public DNS propagates. |
 
 **Host roles:** `192.168.10.33` is blackpearl’s k3s **node IP** (edge / NodePort / li-httpd). `192.168.10.41` is the **SSH admin hostname** for the same machine — use `.41` for `ssh s4il0r@blackpearl`, `.33` for router port-forwards and LAN HTTP(S) curls.
@@ -35,17 +35,15 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://search.klaut.pro/healthz
 
 ## TLS
 
-WAN TLS is terminated on **Caddy** (`:443`). Certificates are issued with **certbot** (HTTP-01 on `:80`) and copied to `/etc/caddy/certs-klaut/` for the `caddy` user.
+WAN TLS is terminated on **li-httpd** (`:443`) via the HTTPS overlay ([gen-https-overlay.py](../k8s/edge/gen-https-overlay.py)) with `[server.tls.lets_encrypt]`. Fritz must forward **TCP 80** (HTTP-01) and **443**.
 
 ```bash
-# After Fritz forwards TCP 80 → 192.168.10.33:
-sudo bash scripts/edge-caddy-apply.sh --certbot-search
-sudo bash scripts/edge-caddy-apply.sh
+# After Fritz forwards TCP 80+443 → 192.168.10.33:
+bash scripts/edge-lis-validate.sh
+sudo bash scripts/edge-lis-apply.sh
 ```
 
-Avoid Caddy **auto-HTTPS** on `search.klaut.pro` without a working WAN **:80** — Caddy 2.6 can panic when ACME fails. Use the repo [Caddyfile](../k8s/edge/Caddyfile) + apply script instead.
-
-LAN li-httpd TLS (optional, separate from WAN): [edge-ingress.md](edge-ingress.md), `edge-lis-apply.sh`.
+Policy: [li-native-edge.md](li-native-edge.md). LAN TLS options: [edge-ingress.md](edge-ingress.md), [internal-ca-homelab.md](internal-ca-homelab.md).
 
 ## Deploy checklist
 
@@ -53,11 +51,8 @@ LAN li-httpd TLS (optional, separate from WAN): [edge-ingress.md](edge-ingress.m
 bash scripts/k8s-searxng-secret.sh
 bash scripts/k8s-searxng-apply.sh
 # rsync k8s/edge + scripts to blackpearl, then:
-sudo bash scripts/edge-caddy-apply.sh --certbot-search   # once Fritz :80 is open
-sudo bash scripts/edge-caddy-apply.sh
-# optional LAN li-httpd:
 bash scripts/edge-lis-validate.sh
-sudo bash scripts/edge-lis-apply.sh --no-reload   # skip if Caddy already owns :80/:443
+sudo bash scripts/edge-lis-apply.sh
 ```
 
 ## Agent / app API

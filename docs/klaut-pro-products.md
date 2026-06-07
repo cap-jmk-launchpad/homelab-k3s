@@ -4,19 +4,19 @@
 
 ## Homelab inventory (current)
 
-**Edge:** Fritz!Box TCP **80** + **443** → **192.168.10.33** (blackpearl k3s node IP). **SSH/admin** only on **192.168.10.41** — do not point port-forwards at `.41`. WAN TLS/HTTP terminates on **Caddy** on blackpearl; backends are k3s **NodePorts** on loopback.
+**Edge:** Fritz!Box TCP **80** + **443** → **192.168.10.33** (blackpearl k3s node IP). **SSH/admin** only on **192.168.10.41** — do not point port-forwards at `.41`. WAN TLS/HTTP terminates on **li-httpd** (li-native) on blackpearl; backends are k3s **NodePorts** on loopback — [platform-requirements.md](platform-requirements.md).
 
 | Service | Namespace | NodePort | WAN hostname | Status |
 |---------|-----------|----------|--------------|--------|
 | SearXNG | `searxng` | **30479** | `search.klaut.pro` | **Live** — HTTPS on WAN |
 | Supabase (Launchpad) | `supabase` | **30480** | *(internal only)* | **Running** — no `*.klaut.pro` route |
-| GitLab CE | `gitlab` | **30481** | `gitlab.klaut.pro` | **WAN HTTP/HTTPS** — pod on `engine`; Caddy → NodePort |
+| GitLab CE | `gitlab` | **30481** | `gitlab.klaut.pro` | **WAN HTTP/HTTPS** — pod on `engine`; li-httpd → NodePort |
 | Dependency-Track | `dependency-track` | **30482** | `deps.klaut.pro` | **WAN HTTP/HTTPS** |
 | CWE mirror | `cwe` | **30483** | `cwe.klaut.pro` | **WAN HTTP/HTTPS** — use `/health`, `/manifest.json` (not `/`) |
 | Vault OSS + ESO | `vault`, `external-secrets` | **30485** | `vault.klaut.pro` | Deploy via [vault-homelab.md](vault-homelab.md) |
-| k3s WAN edge | blackpearl `.33` | **80** / **443** | Fritz → `.33` | **Caddy** — all five `*.klaut.pro` hostnames in [Caddyfile](../k8s/edge/Caddyfile) |
+| k3s WAN edge | blackpearl `.33` | **80** / **443** | Fritz → `.33` | **li-httpd** — all `*.klaut.pro` hostnames in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml) |
 
-**LAN-only** (li-httpd `*.homelab.lan`, no klaut WAN): Grafana, SigNoz, agent-swarm, high-fi-demos, etc. — see [k8s/edge/README.md](../k8s/edge/README.md).
+**LAN-only** (li-httpd `*.homelab.lan`, no klaut WAN): Grafana, SigNoz, agent-swarm, DUCAH (`ducah.homelab.lan`), etc. — see [k8s/edge/README.md](../k8s/edge/README.md).
 
 ### Product ↔ homelab stack
 

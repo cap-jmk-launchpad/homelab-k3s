@@ -1,0 +1,26 @@
+# One-shot host prep for engine USB disk. Delete after success.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: engine-disk-setup
+  namespace: kube-system
+spec:
+  nodeName: engine
+  restartPolicy: Never
+  hostPID: true
+  hostNetwork: true
+  tolerations:
+    - operator: Exists
+  containers:
+    - name: setup
+      image: ubuntu:24.04
+      command: ["sleep", "600"]
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: host
+          mountPath: /host
+  volumes:
+    - name: host
+      hostPath:
+        path: /

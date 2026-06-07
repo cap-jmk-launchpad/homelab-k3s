@@ -1,0 +1,37 @@
+# Static PV for engine USB/external disk at /srv/homelab/external.
+# Prepare the host first: bash scripts/engine-external-disk-setup.sh (on engine).
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: engine-external
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: engine-external-data
+  labels:
+    app: homelab
+    machine: engine
+    tier: external-usb
+spec:
+  capacity:
+    storage: 900Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: engine-external
+  hostPath:
+    path: /srv/homelab/external
+    type: Directory
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - engine

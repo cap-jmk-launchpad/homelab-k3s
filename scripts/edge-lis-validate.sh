@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 EDGE_DIR="${REPO_ROOT}/k8s/edge"
 
+bash "${SCRIPT_DIR}/homelab-edge-policy-check.sh"
+
 LIS_ROOT="${LIS_ROOT:-}"
 LIC_ROOT="${LIC_ROOT:-${HOME}/staging/lic}"
 if [[ -z "$LIS_ROOT" ]]; then
@@ -21,7 +23,7 @@ if [[ -z "$LIS_ROOT" ]]; then
 fi
 export LIS_ROOT LIC_ROOT
 
-MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico.xyz/deploy/staging/edge/majico-staging.httpd.toml}"
+MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"
 MERGED="/tmp/homelab-edge.merged.toml"
 
 inputs=("${EDGE_DIR}/homelab.httpd.toml")

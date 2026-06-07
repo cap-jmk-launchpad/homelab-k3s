@@ -1,0 +1,47 @@
+# Quick smoke test PVC for engine external USB (optional).
+# kubectl apply -f engine-external-test-pvc.yaml
+# kubectl apply -f engine-external-test-pod.yaml
+# kubectl -n homelab-storage-test logs engine-external-write-test
+# kubectl delete ns homelab-storage-test
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: homelab-storage-test
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: external-smoke
+  namespace: homelab-storage-test
+spec:
+  storageClassName: engine-external
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: engine-external-write-test
+  namespace: homelab-storage-test
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: engine
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - echo ok-$(date -Iseconds) > /data/smoke.txt && cat /data/smoke.txt && sleep 5
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: external-smoke
