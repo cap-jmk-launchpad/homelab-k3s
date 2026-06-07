@@ -51,7 +51,7 @@ bash scripts/edge-lis-validate.sh
 sudo bash scripts/edge-lis-apply.sh --install-systemd
 ```
 
-Requires `~/staging/lic` (build via `lic/scripts/build-li-httpd.sh`).
+Requires `~/staging/lic` (build via `lic/scripts/build-li-httpd.sh`) and `~/staging/li-httpd` (multi-site flatten scripts for merged edge TOML).
 
 WAN Let's Encrypt: li-httpd `[server.tls.lets_encrypt]` in the HTTPS overlay ([gen-https-overlay.py](../k8s/edge/gen-https-overlay.py)). Fritz must forward **TCP 80** and **443** → **192.168.10.33** ([fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md)).
 

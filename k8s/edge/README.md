@@ -21,6 +21,7 @@ Traffic flow for **WAN** (`*.klaut.pro`, `majico.d3bu7.com`) and **LAN** (`*.hom
 | `cwe.klaut.pro` | `cwe` | `127.0.0.1:30483` | **WAN** |
 | `vault.klaut.pro` | `vault` | static + `127.0.0.1:30485` | **WAN** |
 | `majico.d3bu7.com`, `api.majico.d3bu7.com`, `supabase.majico.d3bu7.com` | Majico NodePorts | merged TOML | staging |
+| `POST majico.d3bu7.com/deploy/staging` | Shiphook (CI rollout) | `127.0.0.1:3141` | merged TOML |
 | `chat.homelab.lan`, `chat.obsevia.d3bu7.com` | chat staging | `127.0.0.1:30581` | LAN / staging |
 | `dp.homelab.lan`, `dp.obsevia.com` | DP demo | `127.0.0.1:30582` | LAN / demo |
 
@@ -46,7 +47,7 @@ Legacy Caddy config: [deprecated/Caddyfile.legacy](./deprecated/Caddyfile.legacy
 |-------|-----------|
 | k3s | `--disable traefik` ([docs/k3s-server.md](../../docs/k3s-server.md)) |
 | Edge | `li-httpd` + [homelab.httpd.toml](./homelab.httpd.toml) |
-| Majico | merged from `majico.xyz/deploy/staging/edge/majico-staging.httpd.toml` |
+| Majico + Shiphook | merged from `majico-deploy/deploy/staging/edge/majico-staging.httpd.toml` |
 | Validate | [scripts/edge-lis-validate.sh](../../scripts/edge-lis-validate.sh) (LIS + lint-li-native) |
 
 ## Topology

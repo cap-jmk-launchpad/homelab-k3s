@@ -23,7 +23,7 @@ if [[ -z "$LIS_ROOT" ]]; then
 fi
 export LIS_ROOT LIC_ROOT
 
-MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico.xyz/deploy/staging/edge/majico-staging.httpd.toml}"
+MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"
 MERGED="/tmp/homelab-edge.merged.toml"
 
 inputs=("${EDGE_DIR}/homelab.httpd.toml")
