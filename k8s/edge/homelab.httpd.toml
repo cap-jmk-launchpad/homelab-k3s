@@ -139,6 +139,15 @@ listen = ":80"
 "POST /*" = "proxy:gitlab"
 
 [[site]]
+host = "gitlab.lilangverse.xyz"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:gitlab"
+"POST /*" = "proxy:gitlab"
+
+[[site]]
 host = "deps.klaut.pro"
 listen = ":80"
 

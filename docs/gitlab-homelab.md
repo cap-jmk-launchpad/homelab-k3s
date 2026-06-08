@@ -28,16 +28,24 @@ Git over SSH (optional): NodePort **30222** — requires Fritz/TCP forward or LA
 
 ## Public edge (optional)
 
-Suggested hostname: **`gitlab.klaut.pro`**.
+Live hostnames (same Omnibus pod, NodePort **30481**):
 
-1. Set in launchpad `.env`:
-   - `GITLAB_PUBLIC_URL=https://gitlab.klaut.pro`
-   - `GITLAB_EXTERNAL_URL=https://gitlab.klaut.pro` (then re-run `k8s-gitlab-secret.sh` and restart GitLab)
-2. Uncomment the `gitlab` upstream + `[[site]]` block in [k8s/edge/homelab.httpd.toml](../k8s/edge/homelab.httpd.toml).
-3. DNS: **A** record `gitlab.klaut.pro` → WAN IP (Fritz forwards **443** → `192.168.10.33`, same as [search.klaut.pro](search-klaut-pro.md)).
-4. On blackpearl: rsync edge config, `bash scripts/edge-lis-apply.sh`.
+| Hostname | Docs / deploy |
+|----------|----------------|
+| `gitlab.klaut.pro` | [fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md) |
+| `gitlab.d3bu7.com` | [beelink-cleanup/docs/gitlab-d3bu7-setup.md](https://github.com/cap-jmk-launchpad/beelink-cleanup/blob/master/docs/gitlab-d3bu7-setup.md) |
+| `gitlab.lilangverse.xyz` | [beelink-cleanup/docs/gitlab-lilangverse-setup.md](https://github.com/cap-jmk-launchpad/beelink-cleanup/blob/master/docs/gitlab-lilangverse-setup.md) |
 
-Until then, keep **`GITLAB_EXTERNAL_URL=http://127.0.0.1:30481`** for loopback/NodePort (proto-friendly).
+1. Set in launchpad `.env` (pick **one** canonical URL):
+   - `GITLAB_PUBLIC_URL=https://<hostname>`
+   - `GITLAB_EXTERNAL_URL=https://<hostname>` (then re-run `k8s-gitlab-secret.sh` and restart GitLab)
+2. Ensure `[[site]] host = "<hostname>"` → `proxy:gitlab` in [k8s/edge/homelab.httpd.toml](../k8s/edge/homelab.httpd.toml).
+3. DNS: **A** record → WAN `77.23.124.82` (Fritz forwards **80+443** → `192.168.10.33`).
+4. On blackpearl: rsync edge config, `bash scripts/edge-lis-apply.sh` (include hostname in `HOMELAB_ACME_DOMAINS`).
+
+Until a public hostname is chosen, keep **`GITLAB_EXTERNAL_URL=http://127.0.0.1:30481`** for loopback/NodePort (proto-friendly).
+
+**Do not** deploy a second GitLab (e.g. Helm `gitlab-lilangverse` in `lis-work`) on engine without a migration plan — RAM and PVC conflict with this Omnibus install.
 
 ## Credentials (launchpad `.env`)
 

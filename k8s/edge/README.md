@@ -17,6 +17,7 @@ Traffic flow for **WAN** (`*.klaut.pro`, `majico.d3bu7.com`) and **LAN** (`*.hom
 |----------|-----------|---------|------------|
 | `search.klaut.pro` | `searxng` | `127.0.0.1:30479` | **Live** |
 | `gitlab.klaut.pro` | `gitlab` | `127.0.0.1:30481` | **WAN** |
+| `gitlab.lilangverse.xyz` | `gitlab` | `127.0.0.1:30481` | **WAN** (Li platform) |
 | `deps.klaut.pro` | `dependency-track` | `127.0.0.1:30482` | **WAN** |
 | `cwe.klaut.pro` | `cwe` | `127.0.0.1:30483` | **WAN** |
 | `vault.klaut.pro` | `vault` | static + `127.0.0.1:30485` | **WAN** |
@@ -75,7 +76,7 @@ Canonical inventory: [docs/klaut-pro-products.md](../../docs/klaut-pro-products.
 |---------|-----------|----------|-----|
 | SearXNG | `searxng` | 30479 | `search.klaut.pro` |
 | Supabase Kong | `supabase` | 30480 | internal only |
-| GitLab | `gitlab` | 30481 | `gitlab.klaut.pro` |
+| GitLab | `gitlab` | 30481 | `gitlab.klaut.pro`, `gitlab.lilangverse.xyz` |
 | Dependency-Track | `dependency-track` | 30482 | `deps.klaut.pro` |
 | CWE mirror | `cwe` | 30483 | `cwe.klaut.pro` |
 
