@@ -143,6 +143,41 @@ curl -N -X POST "http://127.0.0.1/deploy/staging/qroma" \
   -d '{"env":{"GH_TOKEN":"..."}}'
 ```
 
+## Async staging deploy (li-httpd timeout fix)
+
+Homelab **li-httpd** closes idle upstream connections at ~3m36s. Obsevia demo docker builds take 4–6 minutes, so synchronous `?format=json` through the WAN edge fails with `curl: (52) Empty reply from server` even though Shiphook on `:3141` completes the deploy.
+
+**Fix (Option A):** Shiphook on blackpearl accepts `?format=json&async=1` and returns **HTTP 202** immediately:
+
+```json
+{"status":"accepted","jobId":"<uuid>","app":"qroma-staging"}
+```
+
+The docker build + k3s import runs in the background. GitHub Actions `scripts/ci/trigger-shiphook-staging.sh` uses async mode with a 60s curl timeout and treats `202` + `status=accepted` as success.
+
+**li-httpd edge quirk:** `X-Shiphook-Secret` is not forwarded to upstream; use `Authorization: Bearer <secret>` from CI through `shiphook.obsevia.d3bu7.com`. Direct `:3141` accepts either header.
+
+Apply or re-apply the server patch on blackpearl:
+
+```bash
+python3 ~/staging/homelab-k3s/scripts/patch-shiphook-async.py
+sudo systemctl restart shiphook-staging.service
+```
+
+Verify through the edge (should return in &lt;1s):
+
+```bash
+SECRET="$(cat ~/staging/shiphook-server/.shiphook.staging.secret)"
+curl -sS -m 30 -X POST "http://127.0.0.1:80/deploy/staging/qroma?format=json&async=1" \
+  -H "Host: shiphook.obsevia.d3bu7.com" \
+  -H "X-Shiphook-Secret: ${SECRET}" \
+  -H "Content-Type: application/json" \
+  -d '{"env":{"SKIP_BUILD":"1","SKIP_IMAGE_IMPORT":"1"}}' \
+  -w "\nHTTP:%{http_code}\n"
+```
+
+Direct `:3141` still supports synchronous `?format=json` for interactive debugging.
+
 ## Workflows
 
 Each demo repo has `.github/workflows/ci-deploy.yml`:
