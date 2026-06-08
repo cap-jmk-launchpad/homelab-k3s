@@ -60,7 +60,7 @@ $mapping = [ordered]@{
 }
 
 $gh = Get-Command gh -ErrorAction SilentlyContinue
-if (-not $gh -and -not $DryRun) { throw "gh CLI not found — install GitHub CLI" }
+if (-not $gh -and -not $DryRun) { throw "gh CLI not found - install GitHub CLI" }
 
 $target = "obsevia-compliance/$Repo"
 Write-Host "Syncing GitHub Actions secrets for $target from $EnvFile"
@@ -70,7 +70,7 @@ Write-Host ""
 # Fixed URL per repo
 Write-Host "  SHIPHOOK_STAGING_URL"
 if ($DryRun) {
-  Write-Host "    gh secret set SHIPHOOK_STAGING_URL --repo $target --body <url>"
+  Write-Host ('    gh secret set SHIPHOOK_STAGING_URL --repo ' + $target + ' --body [url]')
 } else {
   $shiphookUrls[$Repo] | gh secret set SHIPHOOK_STAGING_URL --repo $target
 }
@@ -86,7 +86,7 @@ foreach ($secretName in $mapping.Keys) {
   }
   Write-Host "  $secretName"
   if ($DryRun) {
-    Write-Host "    gh secret set $secretName --repo $target --body <redacted>"
+    Write-Host ('    gh secret set ' + $secretName + ' --repo ' + $target + ' --body [redacted]')
   } else {
     $val | gh secret set $secretName --repo $target
   }
@@ -94,8 +94,8 @@ foreach ($secretName in $mapping.Keys) {
 
 Write-Host ""
 Write-Host "Manual secrets (not in Obsevia/.env):"
-Write-Host "  SHIPHOOK_STAGING_SECRET  — from blackpearl ~/staging/shiphook-server/.shiphook.staging.secret"
-Write-Host "  VPS1_SSH_PRIVATE_KEY     — OpenSSH private key for root@VPS1 (e.g. obsevia_deploy)"
+Write-Host "  SHIPHOOK_STAGING_SECRET  - from blackpearl ~/staging/shiphook-server/.shiphook.staging.secret"
+Write-Host "  VPS1_SSH_PRIVATE_KEY     - OpenSSH private key for root@VPS1 (e.g. obsevia_deploy)"
 Write-Host ""
 Write-Host "Vault optional: seed KV then re-run after exporting to .env"
 Write-Host "  VAULT_ADDR=https://vault.klaut.pro  vault kv get secret/saas/obsevia/staging/"
