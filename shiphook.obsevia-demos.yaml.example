@@ -1,0 +1,26 @@
+# Merge these apps[] into ~/staging/shiphook-server/shiphook.yaml on blackpearl.
+# See docs/obsevia-demo-ci-shiphook.md for one-time setup.
+#
+# port: 3141   # shared with majico-staging if already running
+# apps:
+#   - name: qroma-staging
+#     host: shiphook.obsevia.d3bu7.com
+#     path: /deploy/staging/qroma
+#     repoPath: /home/s4il0r/staging/homelab-k3s
+#     runScript: bash scripts/obsevia-shiphook-deploy.sh qroma
+#     runTimeoutMs: 1800000
+#     secret: <same as GitHub SHIPHOOK_STAGING_SECRET>
+#   - name: ducah-staging
+#     host: shiphook.obsevia.d3bu7.com
+#     path: /deploy/staging/ducah
+#     repoPath: /home/s4il0r/staging/homelab-k3s
+#     runScript: bash scripts/obsevia-shiphook-deploy.sh ducah
+#     runTimeoutMs: 1800000
+#     secret: <same as GitHub SHIPHOOK_STAGING_SECRET>
+#   - name: dp-staging
+#     host: shiphook.obsevia.d3bu7.com
+#     path: /deploy/staging/dp
+#     repoPath: /home/s4il0r/staging/homelab-k3s
+#     runScript: bash scripts/obsevia-shiphook-deploy.sh dp
+#     runTimeoutMs: 1800000
+#     secret: <same as GitHub SHIPHOOK_STAGING_SECRET>

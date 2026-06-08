@@ -1,0 +1,18 @@
+# Merge into homelab.httpd.toml on blackpearl (edge-lis-apply.sh).
+# Routes WAN/LAN Shiphook webhooks for Obsevia demo CI → shiphook-staging :3141
+
+[upstreams.shiphook_obsevia]
+balance = "round_robin"
+peers = ["http://127.0.0.1:3141"]
+
+[[site]]
+host = "shiphook.obsevia.d3bu7.com"
+listen = ":80"
+
+[site.routes]
+"POST /deploy/staging/qroma" = "proxy:shiphook_obsevia"
+"POST /deploy/staging/ducah" = "proxy:shiphook_obsevia"
+"POST /deploy/staging/dp" = "proxy:shiphook_obsevia"
+"POST /deploy/prod/qroma" = "proxy:shiphook_obsevia"
+"POST /deploy/prod/ducah" = "proxy:shiphook_obsevia"
+"POST /deploy/prod/dp" = "proxy:shiphook_obsevia"
