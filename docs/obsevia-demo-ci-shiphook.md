@@ -155,7 +155,9 @@ Homelab **li-httpd** closes idle upstream connections at ~3m36s. Obsevia demo do
 
 The docker build + k3s import runs in the background. GitHub Actions `scripts/ci/trigger-shiphook-staging.sh` uses async mode with a 60s curl timeout and treats `202` + `status=accepted` as success.
 
-**li-httpd edge quirk:** `X-Shiphook-Secret` is not forwarded to upstream; use `Authorization: Bearer <secret>` from CI through `shiphook.obsevia.d3bu7.com`. Direct `:3141` accepts either header.
+**li-httpd edge quirks:**
+- Use `Authorization: Bearer <secret>` from CI (more reliable than `X-Shiphook-Secret` through the edge).
+- Do **not** send a JSON POST body through the edge — li-httpd deadlocks on proxied bodies. CI triggers with an empty POST; blackpearl reads `GH_TOKEN` and Supabase keys from `~/staging/secrets/obsevia.env` inside `obsevia-shiphook-deploy.sh`.
 
 Apply or re-apply the server patch on blackpearl:
 
