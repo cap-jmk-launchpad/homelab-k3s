@@ -1,0 +1,57 @@
+# One-shot: pull gitlab-runner-helper directly into engine containerd via ctr.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pull-gitlab-runner-helper
+  namespace: gitlab
+  labels:
+    app.kubernetes.io/name: gitlab-runner
+    li-langverse.io/one-shot: pull-image
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 2
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: engine
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      restartPolicy: Never
+      containers:
+        - name: pull
+          image: alpine:3.21
+          securityContext:
+            privileged: true
+          env:
+            - name: HELPER_IMAGE
+              value: "registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.11.4"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eux
+              if [ -x /host/usr/local/bin/k3s ]; then
+                /host/usr/local/bin/k3s ctr -n k8s.io images pull "$HELPER_IMAGE"
+                /host/usr/local/bin/k3s ctr -n k8s.io images ls | grep -E 'gitlab-runner-helper|gitlab-org/gitlab-runner' || true
+                echo "pull complete via k3s ctr"
+                exit 0
+              fi
+              CTR=/host/var/lib/rancher/k3s/data/current/bin/ctr
+              $CTR -n k8s.io images pull "$HELPER_IMAGE"
+              $CTR -n k8s.io images ls | grep -E 'gitlab-runner-helper|gitlab-org/gitlab-runner' || true
+              echo "pull complete"
+          volumeMounts:
+            - name: host-root
+              mountPath: /host
+              readOnly: true
+            - name: containerd-sock
+              mountPath: /run/k3s/containerd
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
+            type: Directory
+        - name: containerd-sock
+          hostPath:
+            path: /run/k3s/containerd
+            type: Directory

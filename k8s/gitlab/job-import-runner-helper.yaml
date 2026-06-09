@@ -1,0 +1,49 @@
+# One-shot: import gitlab-runner-helper onto engine node containerd when registry pull fails.
+# Prerequisite: tarball served at IMPORT_URL (default blackpearl :18765).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: import-gitlab-runner-helper
+  namespace: gitlab
+  labels:
+    app.kubernetes.io/name: gitlab-runner
+    li-langverse.io/one-shot: import-image
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 2
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: engine
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      restartPolicy: Never
+      containers:
+        - name: import
+          image: alpine:3.21
+          securityContext:
+            privileged: true
+          env:
+            - name: IMPORT_URL
+              value: "http://192.168.10.33:18765/gitlab-runner-helper-v17.11.4.tar"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eux
+              apk add --no-cache curl
+              curl -fSL "$IMPORT_URL" -o /tmp/gitlab-runner-helper.tar
+              CTR=/usr/local/bin/ctr
+              if [ ! -x "$CTR" ]; then CTR=/host/usr/local/bin/ctr; fi
+              $CTR -n k8s.io images import /tmp/gitlab-runner-helper.tar
+              $CTR -n k8s.io images ls | grep -E 'gitlab-runner-helper|gitlab-org/gitlab-runner' || true
+              echo "import complete"
+          volumeMounts:
+            - name: host-root
+              mountPath: /host
+              readOnly: true
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
+            type: Directory

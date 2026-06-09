@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: runner-cfg-wipe
+  namespace: gitlab
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: engine
+  restartPolicy: Never
+  containers:
+    - name: w
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          rm -f /cfg/config.toml
+          ls -la /cfg/
+      volumeMounts:
+        - name: cfg
+          mountPath: /cfg
+  volumes:
+    - name: cfg
+      persistentVolumeClaim:
+        claimName: gitlab-runner-config
