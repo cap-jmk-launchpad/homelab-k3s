@@ -17,6 +17,7 @@ except ModuleNotFoundError:
 
 CERT_DIR = "/var/lib/li-httpd/tls/homelab"
 LETSENCRYPT_LIVE = "/etc/letsencrypt/live/majico.d3bu7.com"
+GITLAB_TLS_LIVE = Path("/etc/letsencrypt/live/gitlab.lilangverse.xyz")
 HOMELAB_EDGE_TLS_LIVE = os.environ.get(
     "HOMELAB_EDGE_TLS_LIVE", "/etc/letsencrypt/live/homelab-edge"
 ).strip()
@@ -112,6 +113,18 @@ def _tls_block(http: dict[str, Any]) -> dict[str, Any]:
             sans = _cert_sans(cert)
             if wan_hosts and sans and all(h in sans for h in wan_hosts):
                 return _manual_tls_block(cert, key)
+    lilang_hosts = [h for h in wan_hosts if h.endswith(".lilangverse.xyz")]
+    g_cert = GITLAB_TLS_LIVE / "fullchain.pem"
+    g_key = GITLAB_TLS_LIVE / "privkey.pem"
+    if lilang_hosts and g_cert.is_file() and g_key.is_file():
+        sans = _cert_sans(g_cert)
+        if sans and all(h in sans for h in lilang_hosts):
+            print(
+                "gen-https-overlay: using gitlab.lilangverse.xyz LE cert "
+                "(homelab-edge / full WAN cert not available)",
+                file=sys.stderr,
+            )
+            return _manual_tls_block(g_cert, g_key)
     le_cert = Path(LETSENCRYPT_LIVE) / "fullchain.pem"
     le_key = Path(LETSENCRYPT_LIVE) / "privkey.pem"
     if le_cert.is_file() and le_key.is_file():

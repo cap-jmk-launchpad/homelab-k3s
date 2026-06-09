@@ -2,6 +2,14 @@
 # Rebuild /usr/local/bin/li-httpd on blackpearl for multi-site vhost edge routing.
 set -euo pipefail
 
+if [[ -n "${SUDO_USER:-}" ]] && [[ "$(id -u)" -eq 0 ]]; then
+  _home="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+  if [[ -n "$_home" ]]; then
+    HOME="$_home"
+    export HOME
+  fi
+fi
+
 LIC_ROOT="${LIC_ROOT:-${HOME}/staging/lic}"
 LI_HTTPD_ROOT="${LI_HTTPD_ROOT:-${HOME}/staging/li-httpd}"
 NET_C="${LIC_ROOT}/runtime/li_rt_net.c"
