@@ -3,7 +3,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APPLY="${SCRIPT_DIR}/edge-lis-apply.sh"
+APPLY="${EDGE_LIS_APPLY:-${SCRIPT_DIR}/edge-lis-apply.sh}"
+if [[ ! -f "$APPLY" ]]; then
+  APPLY="/home/s4il0r/staging/homelab-k3s/scripts/edge-lis-apply.sh"
+fi
 HOST="${EDGE_WATCHDOG_HOST:-gitlab.lilangverse.xyz}"
 PATH_PROBE="${EDGE_WATCHDOG_PATH:-/users/sign_in}"
 LOCAL_RESOLVE="${HOST}:443:127.0.0.1"
@@ -32,14 +35,14 @@ write_streak() {
 http_code() {
   local url="$1"
   local resolve="${2:-}"
-  if command -v curl >/dev/null 2>&1; then
-    if [[ -n "$resolve" ]]; then
-      curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 10 --max-time 20 \
-        -k --resolve "$resolve" "$url" 2>/dev/null || echo "000"
-    else
-      curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 10 --max-time 20 \
-        -k "$url" 2>/dev/null || echo "000"
-    fi
+  local -a args=( -s -o /dev/null -w '%{http_code}' --connect-timeout 10 --max-time 20 -k )
+  if [[ -n "$resolve" ]]; then
+    args+=( --resolve "$resolve" )
+  fi
+  local code=""
+  code=$(curl "${args[@]}" "$url" 2>/dev/null) || true
+  if [[ -n "$code" ]]; then
+    echo "$code"
   else
     echo "000"
   fi
