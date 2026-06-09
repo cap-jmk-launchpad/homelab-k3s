@@ -136,7 +136,26 @@ listen = ":80"
 [site.routes]
 "GET /health" = "static:healthcheck"
 "GET /*" = "proxy:gitlab"
+"HEAD /*" = "proxy:gitlab"
 "POST /*" = "proxy:gitlab"
+"PUT /*" = "proxy:gitlab"
+"PATCH /*" = "proxy:gitlab"
+"DELETE /*" = "proxy:gitlab"
+"OPTIONS /*" = "proxy:gitlab"
+
+[[site]]
+host = "gitlab.d3bu7.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:gitlab"
+"HEAD /*" = "proxy:gitlab"
+"POST /*" = "proxy:gitlab"
+"PUT /*" = "proxy:gitlab"
+"PATCH /*" = "proxy:gitlab"
+"DELETE /*" = "proxy:gitlab"
+"OPTIONS /*" = "proxy:gitlab"
 
 [[site]]
 host = "gitlab.lilangverse.xyz"
@@ -145,7 +164,26 @@ listen = ":80"
 [site.routes]
 "GET /health" = "static:healthcheck"
 "GET /*" = "proxy:gitlab"
+"HEAD /*" = "proxy:gitlab"
 "POST /*" = "proxy:gitlab"
+"PUT /*" = "proxy:gitlab"
+"PATCH /*" = "proxy:gitlab"
+"DELETE /*" = "proxy:gitlab"
+"OPTIONS /*" = "proxy:gitlab"
+
+[[site]]
+host = "registry.gitlab.lilangverse.xyz"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:gitlab"
+"HEAD /*" = "proxy:gitlab"
+"POST /*" = "proxy:gitlab"
+"PUT /*" = "proxy:gitlab"
+"PATCH /*" = "proxy:gitlab"
+"DELETE /*" = "proxy:gitlab"
+"OPTIONS /*" = "proxy:gitlab"
 
 [[site]]
 host = "deps.klaut.pro"
