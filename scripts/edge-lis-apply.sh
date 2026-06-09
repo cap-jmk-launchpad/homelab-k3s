@@ -127,6 +127,11 @@ render_edge_configs() {
   echo "edge-lis-apply: render-ready $(cat "$RENDER_READY")"
 }
 
+RUNTIME_PRE="${RUNTIME}.pre-apply"
+RUNTIME_TLS_PRE="${RUNTIME_TLS}.pre-apply"
+if [[ -f "$RUNTIME" ]]; then cp -a "$RUNTIME" "$RUNTIME_PRE"; else : >"$RUNTIME_PRE"; fi
+if [[ -f "$RUNTIME_TLS" ]]; then cp -a "$RUNTIME_TLS" "$RUNTIME_TLS_PRE"; else : >"$RUNTIME_TLS_PRE"; fi
+
 (
   flock -w 300 9 || { echo "timeout waiting for $EDGE_APPLY_LOCK (parallel edge-lis-apply?)" >&2; exit 1; }
   render_edge_configs
@@ -151,6 +156,12 @@ if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then
   systemctl disable --now caddy.service 2>/dev/null || true
   systemctl enable li-httpd-homelab.service li-httpd-homelab-tls.service
   systemctl enable li-httpd-edge-watchdog.timer
+fi
+
+if [[ "$RELOAD" -eq 1 ]] && [[ -f "$RUNTIME_PRE" ]] && [[ -f "$RUNTIME_TLS_PRE" ]] \
+  && cmp -s "$RUNTIME_PRE" "$RUNTIME" && cmp -s "$RUNTIME_TLS_PRE" "$RUNTIME_TLS"; then
+  echo "edge-lis-apply: runtime conf unchanged - skip li-httpd restart"
+  RELOAD=0
 fi
 
 if [[ "$RELOAD" -eq 1 ]]; then

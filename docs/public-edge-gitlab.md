@@ -134,3 +134,8 @@ Do **not** publish NodePort 30481 on Fritz. Production path is always **443 → 
 - [gitlab-homelab.md](gitlab-homelab.md) — Omnibus deploy, runner, backups
 - [li-native-edge.md](li-native-edge.md) — edge policy, rebuild, watchdog
 - [edge-ingress.md](edge-ingress.md) — topology and apply
+
+## edge-lis-apply and loopback 000
+
+`sudo diff` of `/run/li-httpd/homelab.runtime.conf` and `homelab.tls.runtime.conf` before vs after `edge-lis-apply.sh --render-only` is empty when TOML/lic flatten output is unchanged; post-apply loopback `000` is from li-httpd restart windows, not config drift. When runtime files are unchanged, `edge-lis-apply.sh` skips `systemctl restart`. Prefer `--render-only` or that skip path during watchdog/apply; restart only when flattened runtime changes or `/usr/local/bin/li-httpd` is rebuilt.
+
