@@ -26,24 +26,26 @@ Login: **`root`** / password in launchpad `.env` (`GITLAB_ROOT_PASSWORD`).
 
 Git over SSH (optional): NodePort **30222** — requires Fritz/TCP forward or LAN-only use; HTTP(S) clone works without SSH.
 
-## Public edge (optional)
+## Public edge (default for Li platform)
 
-Live hostnames (same Omnibus pod, NodePort **30481**):
+**No VPN** — use `https://gitlab.lilangverse.xyz` for web, API, and `git clone`/`git push` over HTTPS. Full runbook: **[public-edge-gitlab.md](public-edge-gitlab.md)** (Fritz forwards, TLS, curl/git checks, emergency NodePort).
 
-| Hostname | Docs / deploy |
-|----------|----------------|
+Live hostnames (same Omnibus pod, NodePort **30481** behind li-httpd):
+
+| Hostname | Docs |
+|----------|------|
+| **`gitlab.lilangverse.xyz`** | [public-edge-gitlab.md](public-edge-gitlab.md) |
 | `gitlab.klaut.pro` | [fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md) |
 | `gitlab.d3bu7.com` | [beelink-cleanup/docs/gitlab-d3bu7-setup.md](https://github.com/cap-jmk-launchpad/beelink-cleanup/blob/master/docs/gitlab-d3bu7-setup.md) |
-| `gitlab.lilangverse.xyz` | [beelink-cleanup/docs/gitlab-lilangverse-setup.md](https://github.com/cap-jmk-launchpad/beelink-cleanup/blob/master/docs/gitlab-lilangverse-setup.md) |
 
-1. Set in launchpad `.env` (pick **one** canonical URL):
-   - `GITLAB_PUBLIC_URL=https://<hostname>`
-   - `GITLAB_EXTERNAL_URL=https://<hostname>` (then re-run `k8s-gitlab-secret.sh` and restart GitLab)
-2. Ensure `[[site]] host = "<hostname>"` → `proxy:gitlab` in [k8s/edge/homelab.httpd.toml](../k8s/edge/homelab.httpd.toml).
-3. DNS: **A** record → WAN `77.23.124.82` (Fritz forwards **80+443** → `192.168.10.33`).
-4. On blackpearl: rsync edge config, `bash scripts/edge-lis-apply.sh` (include hostname in `HOMELAB_ACME_DOMAINS`).
+Quick checklist:
 
-Until a public hostname is chosen, keep **`GITLAB_EXTERNAL_URL=http://127.0.0.1:30481`** for loopback/NodePort (proto-friendly).
+1. `GITLAB_EXTERNAL_URL` / `GITLAB_PUBLIC_URL` = `https://gitlab.lilangverse.xyz` in launchpad `.env`; re-run `k8s-gitlab-secret.sh` + restart GitLab if changed.
+2. `[[site]]` routes in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml) → `proxy:gitlab` (already wired).
+3. DNS **A** → `77.23.124.82`; Fritz **80+443** → **`192.168.10.33`** only.
+4. On blackpearl: `build-edge-li-httpd.sh` + `edge-lis-apply.sh` (see public-edge doc).
+
+NodePort **30481** is **emergency/LAN debug only** — not exposed on Fritz.
 
 **Do not** deploy a second GitLab (e.g. Helm `gitlab-lilangverse` in `lis-work`) on engine without a migration plan — RAM and PVC conflict with this Omnibus install.
 

@@ -28,6 +28,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/apply-edge-tls-patch.sh" ]]; then
   bash "${SCRIPT_DIR}/apply-edge-tls-patch.sh"
 fi
+if [[ -f "${SCRIPT_DIR}/apply-edge-proxy-patch.sh" ]]; then
+  bash "${SCRIPT_DIR}/apply-edge-proxy-patch.sh"
+fi
 
 if grep -qE '^#define HTTPD_MAX_ROUTES ' "$NET_C"; then
   echo "build-edge-li-httpd: $NET_C still uses fixed HTTPD_MAX_ROUTES; upgrade lic for dynamic route table" >&2
