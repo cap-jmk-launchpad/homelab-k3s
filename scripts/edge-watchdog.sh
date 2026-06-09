@@ -61,7 +61,7 @@ fi
 local="$(http_code "$LOCAL_URL" "$LOCAL_RESOLVE")"
 wan="$(http_code "$WAN_URL")"
 
-if [[ "$local" == "200" || "$local" == "302" ]]; then
+if [[ "$local" == "200" || "$local" == "302" || "$local" == "307" ]]; then
   write_streak 0
   if [[ "$wan" == "200" ]]; then
     log "OK local=${local} wan=${wan} (wan informational only)"
