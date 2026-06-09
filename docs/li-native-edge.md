@@ -53,7 +53,7 @@ sudo bash scripts/edge-lis-apply.sh --install-systemd
 
 Requires `~/staging/lic`, `~/staging/li-httpd` (multi-site flatten), and a vhost-capable `li-httpd` binary. Set `LI_HTTPD_ROOT=~/staging/li-httpd` on systemd render-only restarts so flatten uses the synced li-httpd scripts (pool|vhost routes, `upstream_peer=pool|host|port`). After upgrading `lic` or adding many `[[site]]` blocks, rebuild on blackpearl:
 
-**MUST** rebuild blackpearl edge with [scripts/build-edge-li-httpd.sh](../scripts/build-edge-li-httpd.sh) � not plain `lic/scripts/build-li-httpd.sh`. The edge script applies vhost/TLS proxy patches and requires a lic build with a **dynamic** route table (`HTTPD_ROUTES_INIT_CAP` in `li_rt_net.c`, no fixed `HTTPD_MAX_ROUTES`). The homelab flattened config has 200+ routes; default `[limits] max_routes` is **unlimited** (`0` / omitted). Set `max_routes = N` in TOML to pre-allocate and hard-cap; config load fails if flatten emits more than `N` routes. Older lic builds with a fixed route cap silently drop excess routes (404 on `/users/sign_in` while `/health` may still pass).
+**MUST** rebuild blackpearl edge with [scripts/build-edge-li-httpd.sh](../scripts/build-edge-li-httpd.sh) � not plain `lic/scripts/build-li-httpd.sh`. The edge script applies vhost/TLS proxy patches and requires a lic build with a **dynamic** route table (`HTTPD_ROUTES_INIT_CAP` in `li_rt_net.c`, no fixed `HTTPD_MAX_ROUTES`). The homelab flattened config has 200+ routes; default `[limits] max_routes` is **unlimited** (`0` / omitted). Set `max_routes = N` in TOML to pre-allocate and hard-cap; config load fails if flatten emits more than `N` routes. Older lic builds with a fixed route cap silently drop excess routes (404 on `/users/sign_in` while `/health` may still pass).
 
 ```bash
 bash scripts/build-edge-li-httpd.sh
@@ -69,8 +69,16 @@ WAN Let's Encrypt: li-httpd `[server.tls.lets_encrypt]` in the HTTPS overlay ([g
 |-----------|---------|
 | `flock` on `/run/li-httpd/edge-apply.lock` | Serialize config render (HTTP + TLS share runtime files) |
 | `.render-ready` marker | TLS unit waits for HTTP render — **never** run `--render-only` from both units |
-| `li-httpd-edge-watchdog.timer` | Every 5 min: probe `gitlab.lilangverse.xyz` HTTPS, auto-heal |
-| `edge-health-probe.sh` | ExecStartPost on :80/:443 units |
+| `li-httpd-edge-watchdog.timer` | Every 5 min: local `--resolve` probe; heal after 3 local failures (WAN logged only) |
+| `edge-health-probe.sh` | ExecStartPost on :80/:443 units (local `--resolve` to 127.0.0.1) |
+
+### Public URL vs LAN hairpin
+
+- **Developers and CI** should use the **public** hostname (e.g. `https://gitlab.lilangverse.xyz`) — that is the supported ingress path through Fritz port-forward to blackpearl.
+- **Fritz!Box** must forward **TCP 80** and **443** only to **192.168.10.33** (blackpearl). Any other target on those ports (e.g. nginx on another host) yields small **404** bodies and is not li-httpd.
+- From **inside the LAN**, curling the public hostname may hit **NAT hairpin** and fail or reach the wrong server. That is outside li-httpd; do not treat WAN probe failures on blackpearl as edge outages.
+- **On blackpearl**, health checks and the edge watchdog use `curl --resolve gitlab.lilangverse.xyz:443:127.0.0.1` so probes always hit local li-httpd. The watchdog restarts edge only after **three consecutive local probe failures**, not WAN failures.
+- **Workstation testing from LAN**: use split-horizon DNS (public name → `192.168.10.33`) or a hosts-file override if you need the public URL to behave like off-LAN clients.
 
 **Never** run debug `li-httpd` from `/tmp` or an interactive shell on blackpearl — orphan processes bind :80/:443 and break production edge + ACME.
 

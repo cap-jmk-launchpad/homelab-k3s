@@ -1,5 +1,5 @@
 [Unit]
-Description=Homelab li-httpd edge watchdog (GitLab WAN probe)
+Description=Homelab li-httpd edge watchdog (GitLab local HTTPS probe (WAN logged only))
 After=network-online.target li-httpd-homelab.service li-httpd-homelab-tls.service
 
 [Service]
