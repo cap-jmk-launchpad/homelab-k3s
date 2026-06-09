@@ -101,8 +101,10 @@ echo "flatten http: $RUNTIME ($(wc -l <"$RUNTIME") lines)"
 
 python3 "$GEN_HTTPS" "$MERGED" -o "$MERGED_TLS"
 
-if [[ -f "$SETUP_TLS" ]]; then
+if [[ -f "$SETUP_TLS" ]] && ! grep -q 'mode = "lets_encrypt"' "$MERGED_TLS"; then
   python3 "$SETUP_TLS" "$MERGED_TLS"
+elif grep -q 'mode = "lets_encrypt"' "$MERGED_TLS"; then
+  echo "warn: skipping setup-tls for lets_encrypt overlay (use certbot + homelab-edge manual cert)" >&2
 else
   echo "warn: missing $SETUP_TLS — TLS certs must exist under $TLS_CERT_DIR" >&2
 fi

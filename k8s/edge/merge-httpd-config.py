@@ -19,6 +19,27 @@ class MergeError(Exception):
     pass
 
 
+
+
+ACME_WEBROOT_ROUTE = "GET /.well-known/acme-challenge/**"
+ACME_WEBROOT_STATIC = "static:.well-known/acme-challenge"
+
+
+def _inject_acme_webroot_routes(sites: list[dict[str, Any]]) -> None:
+    """Serve certbot webroot on :80 before proxy catch-alls."""
+    for site in sites:
+        if not isinstance(site, dict):
+            continue
+        listen = str(site.get("listen", ":80")).strip()
+        if listen not in (":80", "80"):
+            continue
+        routes = site.get("routes")
+        if not isinstance(routes, dict):
+            continue
+        if any("acme-challenge" in str(k) for k in routes):
+            continue
+        site["routes"] = {ACME_WEBROOT_ROUTE: ACME_WEBROOT_STATIC, **routes}
+
 def _site_host(site: dict[str, Any]) -> str:
     host = site.get("host")
     if not host:
@@ -81,6 +102,7 @@ def merge_files(paths: list[Path]) -> dict[str, Any]:
         raise MergeError("first file must define [server]")
     if upstreams:
         merged["upstreams"] = upstreams
+    _inject_acme_webroot_routes(sites)
     merged["site"] = sites
     return merged
 

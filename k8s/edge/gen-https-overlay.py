@@ -17,6 +17,12 @@ except ModuleNotFoundError:
 
 CERT_DIR = "/var/lib/li-httpd/tls/homelab"
 LETSENCRYPT_LIVE = "/etc/letsencrypt/live/majico.d3bu7.com"
+HOMELAB_EDGE_TLS_LIVE = os.environ.get(
+    "HOMELAB_EDGE_TLS_LIVE", "/etc/letsencrypt/live/homelab-edge"
+).strip()
+HOMELAB_EDGE_TLS_LIVE = os.environ.get(
+    "HOMELAB_EDGE_TLS_LIVE", "/etc/letsencrypt/live/homelab-edge"
+).strip()
 LISTEN_HTTPS = ":443"
 ACME_EMAIL = os.environ.get("HOMELAB_ACME_EMAIL", "admin@majico.xyz").strip()
 
@@ -84,23 +90,38 @@ def _write_inline_table(name: str, table: dict[str, Any]) -> list[str]:
     return lines
 
 
+
+def _manual_tls_block(cert: Path, key: Path) -> dict[str, Any]:
+    return {
+        "mode": "manual",
+        "cert_dir": CERT_DIR,
+        "min_protocol": "1.3",
+        "terminate": True,
+        "manual": {"cert": str(cert), "key": str(key)},
+    }
+
+
 def _tls_block(http: dict[str, Any]) -> dict[str, Any]:
-    """Prefer a LE cert on disk only when it covers all WAN site hosts; else ACME via li-httpd."""
-    le_cert = Path(LETSENCRYPT_LIVE) / "fullchain.pem"
-    le_key = Path(LETSENCRYPT_LIVE) / "privkey.pem"
+    """Prefer a LE cert on disk when it covers all WAN site hosts; else certbot + homelab-edge."""
     wan_hosts = _wan_site_hosts(http)
     acme_domains = sorted(set(ACME_DOMAINS) | set(wan_hosts))
+    for live_dir in (Path(HOMELAB_EDGE_TLS_LIVE), Path(LETSENCRYPT_LIVE)):
+        cert = live_dir / "fullchain.pem"
+        key = live_dir / "privkey.pem"
+        if cert.is_file() and key.is_file():
+            sans = _cert_sans(cert)
+            if wan_hosts and sans and all(h in sans for h in wan_hosts):
+                return _manual_tls_block(cert, key)
+    le_cert = Path(LETSENCRYPT_LIVE) / "fullchain.pem"
+    le_key = Path(LETSENCRYPT_LIVE) / "privkey.pem"
     if le_cert.is_file() and le_key.is_file():
-        sans = _cert_sans(le_cert)
-        if wan_hosts and sans and all(h in sans for h in wan_hosts):
-            return {
-                "mode": "manual",
-                "cert_dir": CERT_DIR,
-                "min_protocol": "1.3",
-                "terminate": True,
-                "manual": {"cert": str(le_cert), "key": str(le_key)},
-            }
-    if ACME_EMAIL and acme_domains:
+        print(
+            "gen-https-overlay: warn: no LE cert covers all WAN hosts; "
+            "using partial majico cert until homelab-edge is issued",
+            file=sys.stderr,
+        )
+        return _manual_tls_block(le_cert, le_key)
+    if ACME_EMAIL and acme_domains and os.environ.get("HOMELAB_ACME_VIA_OVERLAY") == "1":
         return {
             "mode": "lets_encrypt",
             "cert_dir": CERT_DIR,
