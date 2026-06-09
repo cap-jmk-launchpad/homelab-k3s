@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gitlab-runner
+  namespace: gitlab
   labels:
     app: gitlab-runner
 spec:
@@ -28,9 +29,10 @@ spec:
             - -c
             - |
               set -euo pipefail
-              echo "Waiting for GitLab API at ${GITLAB_URL}..."
+              RUNNER_URL="${GITLAB_RUNNER_URL:-http://gitlab.gitlab.svc.cluster.local}"
+              echo "Waiting for GitLab API at ${RUNNER_URL}..."
               for i in $(seq 1 120); do
-                if wget -q -O /dev/null "${GITLAB_URL}/-/health" 2>/dev/null; then
+                if wget -q -O /dev/null "${RUNNER_URL}/users/sign_in" 2>/dev/null; then
                   break
                 fi
                 sleep 10
@@ -39,23 +41,20 @@ spec:
                 cp /etc/gitlab-runner-base/config.toml /etc/gitlab-runner/config.toml
                 gitlab-runner register --non-interactive \
                   --config /etc/gitlab-runner/config.toml \
-                  --url "${GITLAB_URL}" \
+                  --url "${RUNNER_URL}" \
                   --registration-token "${GITLAB_RUNNER_REGISTRATION_TOKEN}" \
                   --executor kubernetes \
                   --kubernetes-namespace "${GITLAB_NAMESPACE}" \
                   --kubernetes-service-account gitlab-runner \
                   --description "homelab-k8s" \
-                  --tag-list "k8s,homelab" \
+                  --tag-list "homelab-k8s" \
                   --run-untagged=true \
                   --locked=false
               fi
               exec gitlab-runner run --user=gitlab-runner --working-directory=/home/gitlab-runner
           env:
-            - name: GITLAB_URL
-              valueFrom:
-                secretKeyRef:
-                  name: gitlab-secrets
-                  key: GITLAB_URL
+            - name: GITLAB_RUNNER_URL
+              value: "http://gitlab.gitlab.svc.cluster.local"
             - name: GITLAB_RUNNER_REGISTRATION_TOKEN
               valueFrom:
                 secretKeyRef:
