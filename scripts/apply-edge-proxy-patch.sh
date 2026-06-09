@@ -34,7 +34,15 @@ old_lb = """  int32_t peer_port = httpd_route_pool_port_for_request(g_slots[slot
 new_lb = """  int32_t peer_port = httpd_route_pool_port_for_request(g_slots[slot].buf, hdr_end, req);
   /* edge: vhost routes must not fall back to global LB */"""
 if old_lb in text:
-    text = text.replace(old_lb, new_lb, 1)
+    text = text.replace(old_lb, new_lb)
+old_acquire_lb = """  int32_t peer_port = httpd_route_pool_port_for_request(g_slots[slot].buf, hdr_end, &req);
+  if (peer_port <= 0) {
+    peer_port = httpd_lb_pick_port_for_request(slot, g_slots[slot].buf, hdr_end);
+  }"""
+new_acquire_lb = """  int32_t peer_port = httpd_route_pool_port_for_request(g_slots[slot].buf, hdr_end, &req);
+  /* edge: vhost routes must not fall back to global LB */"""
+if old_acquire_lb in text:
+    text = text.replace(old_acquire_lb, new_acquire_lb)
 if text != orig:
     net.write_text(text, encoding="utf-8", newline="\n")
 elif "no cross-pool fallback" not in text:
