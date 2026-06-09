@@ -105,6 +105,18 @@ curl -skI -H 'Host: gitlab.lilangverse.xyz' \
 
 Hairpin from inside the LAN may differ from WAN; the edge watchdog probes with `--resolve gitlab.lilangverse.xyz:443:127.0.0.1` so restarts are not triggered by Fritz hairpin failures.
 
+## Isolated acceptance before deploy
+
+On blackpearl, stop the edge watchdog and kill orphan `/tmp/li-httpd` processes before testing. Rebuild with `build-edge-li-httpd.sh`, restart `li-httpd-homelab` then `li-httpd-homelab-tls`, then run **10× each** (2s spacing) without WAN traffic:
+
+| Test | Command pattern | Pass |
+|------|-----------------|------|
+| A | `curl -H 'Host: gitlab.lilangverse.xyz' http://127.0.0.1:30481/users/sign_in` + same-host CSS | sign 200/302, CSS **835437** bytes |
+| B | same paths on `http://127.0.0.1:80` | same |
+| C | `curl -k --resolve gitlab.lilangverse.xyz:443:127.0.0.1 https://gitlab.lilangverse.xyz/...` | same |
+
+Require **C = 10/10** before `edge-lis-apply.sh` or re-enabling `li-httpd-edge-watchdog.timer`. If C fails, fix `lic`, rebuild on blackpearl only — do not deploy WAN probes in parallel with debug sessions.
+
 ## Emergency only — NodePort 30481
 
 If the public hostname fails but GitLab is healthy in-cluster:

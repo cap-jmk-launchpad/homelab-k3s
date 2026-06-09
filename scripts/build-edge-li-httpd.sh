@@ -28,6 +28,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/apply-edge-tls-patch.sh" ]]; then
   bash "${SCRIPT_DIR}/apply-edge-tls-patch.sh"
 fi
+if [[ -f "${SCRIPT_DIR}/apply-edge-vhost-patch.sh" ]]; then
+  bash "${SCRIPT_DIR}/apply-edge-vhost-patch.sh"
+fi
 if [[ -f "${SCRIPT_DIR}/apply-edge-proxy-patch.sh" ]]; then
   bash "${SCRIPT_DIR}/apply-edge-proxy-patch.sh"
 fi
