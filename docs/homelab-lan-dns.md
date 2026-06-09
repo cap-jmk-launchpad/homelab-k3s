@@ -157,4 +157,22 @@ The edge watchdog treats **WAN** probe failures as **informational only** (local
 curl.exe --ssl-no-revoke --resolve gitlab.lilangverse.xyz:443:192.168.10.33 https://gitlab.lilangverse.xyz/users/sign_in
 ```
 
-Do **not** treat intermittent workstation WAN curls as edge failures (Schannel revocation / parallel probes); blackpearl acceptance uses **10/10** local `--resolve` to `127.0.0.1` and **10/10** hostname curls with hosts->``192.168.10.33`` before re-enabling `li-httpd-edge-watchdog.timer`.
+### Windows Schannel + large asset downloads (2026-06-09)
+
+Path isolation on blackpearl shows the edge is healthy; workstation `curl.exe` (Schannel) is not a reliable acceptance probe for large static assets.
+
+| Probe path | Typical pass rate | Notes |
+|------------|-------------------|-------|
+| blackpearl `--resolve …:127.0.0.1` | **10/10** | loopback li-httpd |
+| blackpearl `--resolve …:192.168.10.33` | **10/10** | same TLS path as LAN clients |
+| Windows `--resolve …:192.168.10.33` | **~2–4/10** | HTTP **200**, `Content-Length: 835437`, but `size_download` truncated |
+
+Truncation is **client-side Schannel read behavior** (not li-httpd route loss): headers are complete while the TLS body stream stops early. `--http1.1`, `--no-sessionid`, `--no-keepalive`, and longer spacing do not fix it reliably.
+
+**Workarounds for LAN developers:**
+
+1. **Browsers** with split-DNS (`192.168.10.33 gitlab.lilangverse.xyz` in hosts or CoreDNS DHCP) — normal GitLab UI use.
+2. **Acceptance / watchdog gate** — run [scripts/edge-css-probe.sh](../scripts/edge-css-probe.sh) on blackpearl only (10/10 loopback + 10/10 LAN resolve).
+3. **Windows reporting** — [scripts/edge-css-probe.ps1](../scripts/edge-css-probe.ps1) documents pass rate; do not block edge deploy on workstation curl alone.
+
+Do **not** treat intermittent workstation WAN curls as edge failures; blackpearl acceptance uses **10/10** local `--resolve` to `127.0.0.1` and **10/10** `--resolve` to `192.168.10.33` before re-enabling `li-httpd-edge-watchdog.timer`.

@@ -115,7 +115,7 @@ On blackpearl, stop the edge watchdog and kill orphan `/tmp/li-httpd` processes 
 | B | same paths on `http://127.0.0.1:80` | same |
 | C | `curl -k --resolve gitlab.lilangverse.xyz:443:127.0.0.1 https://gitlab.lilangverse.xyz/...` | same |
 
-Require **local C = 10/10** and **hostname (split-DNS) = 10/10** (sign-in **200/302**, GitLab CSS **835437** bytes) before `edge-lis-apply.sh` or re-enabling `li-httpd-edge-watchdog.timer`. Acceptance gate runs on **blackpearl only** - not from a Windows workstation. If C or hostname curls fail, fix `lic`, rebuild on blackpearl only - do not deploy WAN probes in parallel with debug sessions.
+Require **local C = 10/10** and **LAN resolve D = 10/10** (`--resolve gitlab.lilangverse.xyz:443:192.168.10.33`, sign-in **200/302**, CSS **835437** bytes) before `edge-lis-apply.sh` or re-enabling `li-httpd-edge-watchdog.timer`. Use [scripts/edge-css-probe.sh](../scripts/edge-css-probe.sh) on blackpearl. Acceptance gate runs on **blackpearl only** — not from a Windows workstation (`curl.exe`/Schannel truncates large TLS bodies despite HTTP 200). If C or D fail on blackpearl, fix `lic`, rebuild on blackpearl only — do not deploy WAN probes in parallel with debug sessions.
 
 ## Emergency only — NodePort 30481
 
