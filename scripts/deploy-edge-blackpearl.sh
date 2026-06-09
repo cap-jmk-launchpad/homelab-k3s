@@ -10,9 +10,8 @@ EDGE="${REPO_ROOT}/k8s/edge"
 git -C "${REPO_ROOT}" checkout -- scripts/reorder-edge-upstream-peers.py scripts/edge-health-probe.sh scripts/edge-watchdog.sh scripts/edge-lis-apply.sh scripts/deploy-edge-blackpearl.sh 2>/dev/null || true
 sed -i 's/\r$//' "${REPO_ROOT}"/scripts/*.sh 2>/dev/null || true
 
-install -m 755 "${REPO_ROOT}/scripts/edge-lis-apply.sh" "${REPO_ROOT}/scripts/edge-health-probe.sh"
-install -m 755 "${REPO_ROOT}/scripts/edge-watchdog.sh" "${REPO_ROOT}/scripts/reorder-edge-upstream-peers.py"
 install -m 755 "${REPO_ROOT}/scripts/edge-health-probe.sh" /usr/local/bin/edge-health-probe.sh
+install -m 755 "${REPO_ROOT}/scripts/edge-watchdog.sh" /usr/local/bin/edge-watchdog.sh
 
 HOME=/home/s4il0r LIC_ROOT=/home/s4il0r/staging/lic LI_HTTPD_ROOT=/home/s4il0r/staging/li-httpd \
   bash "${REPO_ROOT}/scripts/edge-lis-apply.sh" --install-systemd
