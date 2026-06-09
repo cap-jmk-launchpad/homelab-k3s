@@ -31,6 +31,9 @@ bash scripts/edge-lis-validate.sh
 sudo bash scripts/edge-lis-apply.sh --install-systemd
 ```
 
+
+Do not wrap `edge-lis-apply.sh` in `flock` from systemd or cron; the script already serializes render on `/run/li-httpd/edge-apply.lock`.
+
 Requires `~/staging/lic` (build via `deploy/staging/scripts/build-li-httpd.sh` or `lic/scripts/build-li-httpd.sh`).
 
 ## k3s install

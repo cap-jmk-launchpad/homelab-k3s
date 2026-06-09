@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Apply native li-httpd as homelab edge ingress on blackpearl (:80 HTTP + :443 TLS).
 #
+# Do NOT wrap this script in flock (systemd ExecStartPre, cron, or shell wrappers).
+# Serialization uses flock(2) on edge-apply.lock inside this script only; an outer flock deadlocks.
+#
 # Render uses flock(2) on /run/li-httpd/edge-apply.lock so li-httpd-homelab and
 # li-httpd-homelab-tls can restart together without corrupting shared runtime configs.
 #

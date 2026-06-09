@@ -117,6 +117,17 @@ ok "k3s-server.md documents --disable traefik"
 [[ -f "${SCRIPT_DIR}/edge-lis-apply.sh" ]] || die "missing edge-lis-apply.sh"
 grep -qE '/etc/|/usr/local/' "${SCRIPT_DIR}/edge-lis-apply.sh" || note "edge-lis-apply.sh does not reference expected Linux install paths"
 
+
+for unit in li-httpd-homelab.service li-httpd-homelab-tls.service; do
+  uf="${EDGE_DIR}/${unit}"
+  [[ -f "$uf" ]] || die "missing k8s/edge/${unit}"
+  grep -qF "edge-lis-apply.sh" "$uf" || die "${unit} ExecStartPre must call edge-lis-apply.sh"
+  if grep -qE "ExecStartPre=.*/flock[[:space:]]" "$uf" || grep -qE "ExecStartPre=.*[[:space:]]flock[[:space:]]" "$uf"; then
+    die "${unit} must not wrap edge-lis-apply.sh in flock (deadlocks with internal edge-apply.lock)"
+  fi
+done
+ok "li-httpd-homelab systemd units invoke edge-lis-apply directly (no outer flock)"
+
 if [[ "$fail" -ne 0 ]]; then
   echo "homelab-edge-policy-check: FAILED — see docs/platform-requirements.md" >&2
   exit 1
