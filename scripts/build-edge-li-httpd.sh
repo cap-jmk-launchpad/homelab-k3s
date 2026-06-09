@@ -11,8 +11,14 @@ BUILD_LI="${LIC_ROOT}/scripts/build-li-httpd.sh"
 [[ -f "$BUILD_LI" ]] || { echo "missing $BUILD_LI" >&2; exit 1; }
 
 if [[ -f "${LI_HTTPD_ROOT}/scripts/patch-vhost-runtime.py" ]] \
-  && [[ -d "${LIC_ROOT}/.git" ]]; then
+  && [[ -d "${LIC_ROOT}/.git" ]] \
+  && ! grep -q 'httpd_req_vhost_matches' "$NET_C"; then
   python3 "${LI_HTTPD_ROOT}/scripts/patch-vhost-runtime.py" "${LIC_ROOT}" || true
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/apply-edge-tls-patch.sh" ]]; then
+  bash "${SCRIPT_DIR}/apply-edge-tls-patch.sh"
 fi
 
 for old in 16 128; do
