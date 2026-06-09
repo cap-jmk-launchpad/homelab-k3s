@@ -48,7 +48,7 @@ On the daily-driver PC, run `scripts\desktop-gpu-tray\run.bat` for a system-tray
 ## What was installed
 
 1. **Ubuntu-24.04** WSL distro (default)
-2. **`%USERPROFILE%\.wslconfig`** — `networkingMode=mirrored` so WSL gets `192.168.10.31` on `eth0`
+2. **`%USERPROFILE%.wslconfig`** — `networkingMode=mirrored` so WSL gets `192.168.10.31` on `eth0` ([setup-desktop-wsl-network.ps1](../scripts/setup-desktop-wsl-network.ps1) writes this and restarts WSL)
 3. **`/etc/wsl.conf`** — `systemd=true`, default user `s4il0r`
 4. **k3s agent** — same version as blackpearl (`v1.35.5+k3s1`), `--node-ip 192.168.10.31`
 5. **OpenSSH in WSL** on port **2222** (Windows OpenSSH keeps port 22)
