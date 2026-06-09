@@ -56,7 +56,7 @@ balance = "round_robin"
 peers = ["http://127.0.0.1:30583"]
 
 [upstreams.gitlab]
-balance = "round_robin"
+policy = "ip_hash"
 peers = ["http://127.0.0.1:30481"]
 
 [upstreams.dependency_track]
