@@ -37,7 +37,7 @@ while IFS= read -r path; do
     fi
     clen=$(grep -i '^content-length:' "$hdr" 2>/dev/null | tail -1 | awk '{print $2}' | tr -d '\r')
     first=$(head -c 1 "$out" 2>/dev/null | od -An -tx1 | tr -d ' \n' || echo x)
-    echo "${code} ${wire} ${clen} ${first} ${path}" > "$res"
+    echo "${code}|${wire}|${clen}|${first}|${path}" > "$res"
   ) &
   pids="${pids} $!"
 done < "$ASSETS"
@@ -46,7 +46,7 @@ cat "${tmpdir}"/*.result > "$results" 2>/dev/null || true
 
 pass=0
 fail=0
-while read -r code wire clen first path; do
+while IFS='|' read -r code wire clen first path; do
   if [[ "$code" == "200" && -n "$clen" && "$wire" == "$clen" && "$first" != "3c" ]]; then
     pass=$((pass + 1))
   else
