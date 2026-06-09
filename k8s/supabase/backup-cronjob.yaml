@@ -15,7 +15,7 @@ spec:
       template:
         spec:
           nodeSelector:
-            kubernetes.io/hostname: blackpearl
+            kubernetes.io/hostname: engine
           restartPolicy: OnFailure
           containers:
             - name: backup

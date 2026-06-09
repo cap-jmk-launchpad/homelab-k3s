@@ -17,7 +17,7 @@ spec:
         app: auth
     spec:
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       initContainers:
         - name: wait-db
           image: postgres:15-alpine

@@ -17,7 +17,7 @@ spec:
         app: studio
     spec:
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       containers:
         - name: studio
           image: supabase/studio:2026.04.27-sha-5f60601

@@ -17,7 +17,7 @@ spec:
         app: kong
     spec:
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       initContainers:
         - name: wait-studio
           image: curlimages/curl:8.12.1
@@ -81,7 +81,7 @@ spec:
             - name: KONG_PROXY_LISTEN
               value: 0.0.0.0:8000
             - name: KONG_NGINX_WORKER_PROCESSES
-              value: "1"
+              value: "2"
           readinessProbe:
             tcpSocket:
               port: http
@@ -92,7 +92,7 @@ spec:
               cpu: 50m
               memory: 256Mi
             limits:
-              memory: 768Mi
+              memory: 2Gi
           volumeMounts:
             - name: kong-out
               mountPath: /kong-out

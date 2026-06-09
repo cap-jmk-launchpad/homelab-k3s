@@ -16,7 +16,7 @@ spec:
         app: db
     spec:
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       containers:
         - name: postgres
           image: supabase/postgres:15.8.1.085
