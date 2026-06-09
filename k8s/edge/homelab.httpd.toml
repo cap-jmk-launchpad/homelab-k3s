@@ -11,6 +11,12 @@ document_root = "/var/lib/li-httpd/empty"
 max_fails = 3
 fail_timeout = "10s"
 
+[limits]
+# GitLab Omnibus: git push/LFS uploads + webpack assets through edge proxy
+max_body = "512m"
+max_header = "32k"
+proxy_max_response_body = "64m"
+
 [upstreams.grafana]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30300"]
