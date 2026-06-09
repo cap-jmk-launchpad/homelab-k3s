@@ -13,7 +13,13 @@ def reorder(path: Path) -> None:
     other = [line for line in lines if line not in peers and line not in balances]
     prio = [line for line in peers if line.startswith("upstream_peer=gitlab|")]
     rest = [line for line in peers if line not in prio]
-    path.write_text("\n".join(other + prio + rest + balances) + "\n", encoding="utf-8")
+    ordered = other + prio + rest + balances
+    path.write_text("\n".join(ordered) + "\n", encoding="utf-8")
+    gitlab_n = len(prio)
+    print(
+        f"reorder-upstream-peers: gitlab first ({gitlab_n}/{len(peers)} peers) -> {path}",
+        file=sys.stderr,
+    )
 
 
 def main() -> int:

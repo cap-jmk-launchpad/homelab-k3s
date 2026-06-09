@@ -61,6 +61,27 @@ sudo HOME=/home/s4il0r LIC_ROOT=~/staging/lic LI_HTTPD_ROOT=~/staging/li-httpd \
 
 WAN Let's Encrypt: li-httpd `[server.tls.lets_encrypt]` in the HTTPS overlay ([gen-https-overlay.py](../k8s/edge/gen-https-overlay.py)). Fritz must forward **TCP 80** and **443** → **192.168.10.33** ([fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md)).
 
+## Edge reliability (blackpearl)
+
+| Mechanism | Purpose |
+|-----------|---------|
+| `flock` on `/run/li-httpd/edge-apply.lock` | Serialize config render (HTTP + TLS share runtime files) |
+| `.render-ready` marker | TLS unit waits for HTTP render — **never** run `--render-only` from both units |
+| `li-httpd-edge-watchdog.timer` | Every 5 min: probe `gitlab.lilangverse.xyz` HTTPS, auto-heal |
+| `edge-health-probe.sh` | ExecStartPost on :80/:443 units |
+
+**Never** run debug `li-httpd` from `/tmp` or an interactive shell on blackpearl — orphan processes bind :80/:443 and break production edge + ACME.
+
+After edge changes:
+
+```bash
+sudo bash scripts/edge-lis-apply.sh --install-systemd
+sudo systemctl restart li-httpd-homelab.service
+sleep 2
+sudo systemctl restart li-httpd-homelab-tls.service
+sudo systemctl enable --now li-httpd-edge-watchdog.timer
+```
+
 ## Validate
 
 ```bash

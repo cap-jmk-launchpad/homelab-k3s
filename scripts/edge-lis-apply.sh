@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 # Apply native li-httpd as homelab edge ingress on blackpearl (:80 HTTP + :443 TLS).
 #
-# Do NOT wrap this script in flock (systemd ExecStartPre, cron, or shell wrappers).
-# Serialization uses flock(2) on edge-apply.lock inside this script only; an outer flock deadlocks.
+# Serialization: flock(2) on /run/li-httpd/edge-apply.lock inside this script only.
+# Do NOT wrap invocations in an outer flock (systemd/cron) — that deadlocks with inner flock.
 #
-# Render uses flock(2) on /run/li-httpd/edge-apply.lock so li-httpd-homelab and
-# li-httpd-homelab-tls can restart together without corrupting shared runtime configs.
-#
-# Manual restarts: prefer `bash scripts/edge-lis-apply.sh` (restarts HTTP then TLS).
-# Or: systemctl restart li-httpd-homelab.service && systemctl restart li-httpd-homelab-tls.service
+# Only li-httpd-homelab.service runs --render-only on start. TLS waits for .render-ready.
+# Manual: bash scripts/edge-lis-apply.sh  (single render + sequential HTTP then TLS restart)
 set -euo pipefail
 
 RENDER_ONLY=0
@@ -66,9 +63,8 @@ if [[ -z "$LI_HTTPD_ROOT" ]]; then
   done
 fi
 [[ -n "$LI_HTTPD_ROOT" ]] || LI_HTTPD_ROOT="${HOME}/staging/li-httpd}"
-# systemd ExecStartPre (--render-only) must use the synced li-httpd tree, not lic/scripts.
 MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"
-# Prefer li-httpd flatten (needs li-httpd/scripts on PYTHONPATH for multi-site).
+
 if [[ -f "${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py" ]]; then
   FLATTEN="${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py"
   FLATTEN_PYTHONPATH="${LI_HTTPD_ROOT}/scripts"
@@ -82,50 +78,58 @@ fi
 SETUP_TLS="${LIC_ROOT}/scripts/setup-tls-httpd.py"
 GEN_HTTPS="${EDGE_DIR}/gen-https-overlay.py"
 RUNTIME_DIR="/run/li-httpd"
+EDGE_APPLY_LOCK="${RUNTIME_DIR}/edge-apply.lock"
+RENDER_READY="${RUNTIME_DIR}/.render-ready"
 MERGED="${RUNTIME_DIR}/homelab.httpd.toml"
 MERGED_TLS="${RUNTIME_DIR}/homelab.https.httpd.toml"
 RUNTIME="${RUNTIME_DIR}/homelab.runtime.conf"
 RUNTIME_TLS="${RUNTIME_DIR}/homelab.tls.runtime.conf"
 TLS_CERT_DIR="/var/lib/li-httpd/tls/homelab"
 
-EDGE_APPLY_LOCK="${RUNTIME_DIR}/edge-apply.lock"
-mkdir -p "$RUNTIME_DIR" /var/lib/li-httpd/empty "$TLS_CERT_DIR"
-(
-  flock -w 300 9 || { echo "timeout waiting for $EDGE_APPLY_LOCK (parallel edge-lis-apply?)" >&2; exit 1; }
-
 [[ -f "${EDGE_DIR}/homelab.httpd.toml" ]] || { echo "missing ${EDGE_DIR}/homelab.httpd.toml" >&2; exit 1; }
 [[ -f "$FLATTEN" ]] || { echo "missing flatten script at $FLATTEN (sync lic to ~/staging/lic)" >&2; exit 1; }
-[[ -f /usr/local/bin/li-httpd ]] || { echo "missing /usr/local/bin/li-httpd — run lic build-li-httpd.sh first" >&2; exit 1; }
+[[ -f /usr/local/bin/li-httpd ]] || { echo "missing /usr/local/bin/li-httpd — run build-edge-li-httpd.sh first" >&2; exit 1; }
 
-inputs=("${EDGE_DIR}/homelab.httpd.toml")
-if [[ -f "$MAJICO_HTTPD_TOML" ]]; then
-  inputs+=("$MAJICO_HTTPD_TOML")
-else
-  echo "warn: majico TOML not found at ${MAJICO_HTTPD_TOML}" >&2
-fi
+mkdir -p "$RUNTIME_DIR" /var/lib/li-httpd/empty "$TLS_CERT_DIR"
 
-export LIS_ROOT LIC_ROOT LI_HTTPD_ROOT
-python3 "${EDGE_DIR}/merge-httpd-config.py" "${inputs[@]}" -o "$MERGED" --validate
+render_edge_configs() {
+  rm -f "$RENDER_READY"
+  local inputs=("${EDGE_DIR}/homelab.httpd.toml")
+  if [[ -f "$MAJICO_HTTPD_TOML" ]]; then
+    inputs+=("$MAJICO_HTTPD_TOML")
+  else
+    echo "warn: majico TOML not found at ${MAJICO_HTTPD_TOML}" >&2
+  fi
 
-export PYTHONPATH="${FLATTEN_PYTHONPATH}${PYTHONPATH:+:$PYTHONPATH}"
-python3 "$FLATTEN" "$MERGED" -o "$RUNTIME"
-python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME"
-echo "flatten http: $RUNTIME ($(wc -l <"$RUNTIME") lines)"
+  export LIS_ROOT LIC_ROOT LI_HTTPD_ROOT
+  python3 "${EDGE_DIR}/merge-httpd-config.py" "${inputs[@]}" -o "$MERGED" --validate
 
-python3 "$GEN_HTTPS" "$MERGED" -o "$MERGED_TLS"
+  export PYTHONPATH="${FLATTEN_PYTHONPATH}${PYTHONPATH:+:$PYTHONPATH}"
+  python3 "$FLATTEN" "$MERGED" -o "$RUNTIME"
+  python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME"
+  echo "flatten http: $RUNTIME ($(wc -l <"$RUNTIME") lines)"
 
-if [[ -f "$SETUP_TLS" ]] && ! grep -q 'mode = "lets_encrypt"' "$MERGED_TLS"; then
-  python3 "$SETUP_TLS" "$MERGED_TLS"
-elif grep -q 'mode = "lets_encrypt"' "$MERGED_TLS"; then
-  echo "warn: skipping setup-tls for lets_encrypt overlay (use certbot + homelab-edge manual cert)" >&2
-else
-  echo "warn: missing $SETUP_TLS — TLS certs must exist under $TLS_CERT_DIR" >&2
-fi
+  python3 "$GEN_HTTPS" "$MERGED" -o "$MERGED_TLS"
 
-python3 "$FLATTEN" "$MERGED_TLS" -o "$RUNTIME_TLS"
-python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME_TLS"
-echo "flatten tls: $RUNTIME_TLS ($(wc -l <"$RUNTIME_TLS") lines)"
+  if [[ -f "$SETUP_TLS" ]] && ! grep -q 'mode = "lets_encrypt"' "$MERGED_TLS"; then
+    python3 "$SETUP_TLS" "$MERGED_TLS"
+  elif grep -q 'mode = "lets_encrypt"' "$MERGED_TLS"; then
+    echo "warn: skipping setup-tls for lets_encrypt overlay (use certbot + homelab-edge manual cert)" >&2
+  else
+    echo "warn: missing $SETUP_TLS — TLS certs must exist under $TLS_CERT_DIR" >&2
+  fi
 
+  python3 "$FLATTEN" "$MERGED_TLS" -o "$RUNTIME_TLS"
+  python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME_TLS"
+  echo "flatten tls: $RUNTIME_TLS ($(wc -l <"$RUNTIME_TLS") lines)"
+
+  date -u +%Y-%m-%dT%H:%M:%SZ >"$RENDER_READY"
+  echo "edge-lis-apply: render-ready $(cat "$RENDER_READY")"
+}
+
+(
+  flock -w 300 9 || { echo "timeout waiting for $EDGE_APPLY_LOCK (parallel edge-lis-apply?)" >&2; exit 1; }
+  render_edge_configs
 ) 9>"$EDGE_APPLY_LOCK" || exit 1
 
 if [[ "$RENDER_ONLY" -eq 1 ]]; then
@@ -134,8 +138,10 @@ fi
 
 if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then
   install -d /usr/local/bin
+  install -m 755 "${SCRIPT_DIR}/edge-health-probe.sh" /usr/local/bin/edge-health-probe.sh
   install -m 755 "${LIC_ROOT}/scripts/flatten-httpd-config.sh" /usr/local/bin/flatten-httpd-config.sh 2>/dev/null || true
-  for unit in li-httpd-homelab.service li-httpd-homelab-tls.service; do
+  for unit in li-httpd-homelab.service li-httpd-homelab-tls.service \
+    li-httpd-edge-watchdog.service li-httpd-edge-watchdog.timer; do
     sed -e "s|/home/s4il0r/staging/homelab-k3s|${REPO_ROOT}|g" \
         -e "s|/home/s4il0r/staging/beelink-cleanup|${REPO_ROOT}|g" \
       "${EDGE_DIR}/${unit}" >/etc/systemd/system/${unit}
@@ -144,20 +150,24 @@ if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then
   systemctl disable --now li-httpd-majico-staging.service 2>/dev/null || true
   systemctl disable --now caddy.service 2>/dev/null || true
   systemctl enable li-httpd-homelab.service li-httpd-homelab-tls.service
+  systemctl enable li-httpd-edge-watchdog.timer
 fi
 
 if [[ "$RELOAD" -eq 1 ]]; then
-  # Sequential: HTTP then TLS (ExecStartPre render is flock-serialized).
-  for unit in li-httpd-homelab.service li-httpd-homelab-tls.service; do
-    if systemctl is-active --quiet "$unit" 2>/dev/null; then
-      systemctl restart "$unit"
-    elif [[ -f "/etc/systemd/system/$unit" ]]; then
-      systemctl enable --now "$unit"
-    else
-      echo "run: sudo bash scripts/edge-lis-apply.sh --install-systemd" >&2
-      exit 1
-    fi
-  done
+  if systemctl is-active --quiet li-httpd-homelab.service 2>/dev/null; then
+    systemctl restart li-httpd-homelab.service
+  elif [[ -f /etc/systemd/system/li-httpd-homelab.service ]]; then
+    systemctl enable --now li-httpd-homelab.service
+  else
+    echo "run: sudo bash scripts/edge-lis-apply.sh --install-systemd" >&2
+    exit 1
+  fi
+  sleep 2
+  if systemctl is-active --quiet li-httpd-homelab-tls.service 2>/dev/null; then
+    systemctl restart li-httpd-homelab-tls.service
+  elif [[ -f /etc/systemd/system/li-httpd-homelab-tls.service ]]; then
+    systemctl enable --now li-httpd-homelab-tls.service
+  fi
 fi
 
 echo "edge-lis-apply: done (li-httpd :80 + :443)"
