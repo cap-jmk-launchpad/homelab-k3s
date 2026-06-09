@@ -19,10 +19,47 @@ CERT_DIR = "/var/lib/li-httpd/tls/homelab"
 LETSENCRYPT_LIVE = "/etc/letsencrypt/live/majico.d3bu7.com"
 LISTEN_HTTPS = ":443"
 ACME_EMAIL = os.environ.get("HOMELAB_ACME_EMAIL", "admin@majico.xyz").strip()
+
+WAN_TLS_SUFFIXES = (".klaut.pro", ".d3bu7.com", ".lilangverse.xyz", ".obsevia.com")
+
+
+def _wan_site_hosts(http: dict[str, Any]) -> list[str]:
+    hosts: list[str] = []
+    for site in http.get("site") or []:
+        if not isinstance(site, dict):
+            continue
+        host = str(site.get("host", "")).strip().lower()
+        if not host or host.endswith(".homelab.lan"):
+            continue
+        if any(host.endswith(suffix) for suffix in WAN_TLS_SUFFIXES):
+            hosts.append(host)
+    return sorted(set(hosts))
+
+
+def _cert_sans(cert_path: Path) -> set[str]:
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            ["openssl", "x509", "-in", str(cert_path), "-noout", "-ext", "subjectAltName"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return set()
+    sans: set[str] = set()
+    for token in proc.stdout.replace("DNS:", " ").replace(",", " ").split():
+        name = token.strip().lower()
+        if name and name not in {"subject", "alternativename", "name"} and not name.startswith("x509v3"):
+            sans.add(name.lstrip("*."))
+    return sans
+
+
 ACME_DOMAINS = [
     d.strip()
     for d in os.environ.get(
-        "HOMELAB_ACME_DOMAINS", "majico.d3bu7.com,api.majico.d3bu7.com,search.klaut.pro"
+        "HOMELAB_ACME_DOMAINS", "majico.d3bu7.com,api.majico.d3bu7.com,supabase.majico.d3bu7.com,search.klaut.pro,gitlab.klaut.pro,gitlab.lilangverse.xyz,registry.gitlab.lilangverse.xyz"
     ).split(",")
     if d.strip()
 ]
@@ -47,19 +84,23 @@ def _write_inline_table(name: str, table: dict[str, Any]) -> list[str]:
     return lines
 
 
-def _tls_block() -> dict[str, Any]:
-    """Prefer Let's Encrypt on disk; else request LIS/li-httpd lets_encrypt (HTTP-01 on :80)."""
+def _tls_block(http: dict[str, Any]) -> dict[str, Any]:
+    """Prefer a LE cert on disk only when it covers all WAN site hosts; else ACME via li-httpd."""
     le_cert = Path(LETSENCRYPT_LIVE) / "fullchain.pem"
     le_key = Path(LETSENCRYPT_LIVE) / "privkey.pem"
+    wan_hosts = _wan_site_hosts(http)
+    acme_domains = sorted(set(ACME_DOMAINS) | set(wan_hosts))
     if le_cert.is_file() and le_key.is_file():
-        return {
-            "mode": "manual",
-            "cert_dir": CERT_DIR,
-            "min_protocol": "1.3",
-            "terminate": True,
-            "manual": {"cert": str(le_cert), "key": str(le_key)},
-        }
-    if ACME_EMAIL and ACME_DOMAINS:
+        sans = _cert_sans(le_cert)
+        if wan_hosts and sans and all(h in sans for h in wan_hosts):
+            return {
+                "mode": "manual",
+                "cert_dir": CERT_DIR,
+                "min_protocol": "1.3",
+                "terminate": True,
+                "manual": {"cert": str(le_cert), "key": str(le_key)},
+            }
+    if ACME_EMAIL and acme_domains:
         return {
             "mode": "lets_encrypt",
             "cert_dir": CERT_DIR,
@@ -67,7 +108,7 @@ def _tls_block() -> dict[str, Any]:
             "terminate": True,
             "lets_encrypt": {
                 "email": ACME_EMAIL,
-                "domains": ACME_DOMAINS,
+                "domains": acme_domains,
                 "environment": "production",
             },
         }
@@ -88,7 +129,7 @@ def build_overlay(http: dict[str, Any]) -> dict[str, Any]:
         "server": {
             "listen": LISTEN_HTTPS,
             "document_root": str(root),
-            "tls": _tls_block(),
+            "tls": _tls_block(http),
         },
     }
 
