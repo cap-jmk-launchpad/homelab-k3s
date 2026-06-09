@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # 10x GitLab CSS acceptance probe â€” sign_in + CSS size (default 835437).
 set -euo pipefail
 

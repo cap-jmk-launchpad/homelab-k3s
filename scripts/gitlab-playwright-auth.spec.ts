@@ -35,17 +35,15 @@ test.describe("GitLab Playwright auth", () => {
     const rootPassword = readRootPasswordFromK8s();
     expect(rootPassword.length, "root password from K8s secret").toBeGreaterThan(8);
 
-    const response = await page.goto(env.signInUrl, { waitUntil: "commit", timeout: 120_000 });
+    const response = await page.goto(env.signInUrl, {
+      waitUntil: env.useNodeport ? "domcontentloaded" : "commit",
+      timeout: 120_000,
+    });
     expect(response?.status(), "sign_in HTTP status").toBeLessThan(500);
 
-    const userField = page.locator('#login_field, input[name="user[login]"], input[autocomplete="username"]').first();
-    const passField = page.locator('#login_password, input[name="user[password]"], input[type="password"]').first();
-    const formVisible = await userField.isVisible({ timeout: 30_000 }).catch(() => false);
-    test.skip(
-      !formVisible,
-      "sign-in form not visible (edge assets/JS likely broken) — use npm run gitlab:auth (mint-pat) instead",
-    );
-    await expect(userField, "username field").toBeVisible();
+    const userField = page.getByTestId("username-field");
+    const passField = page.getByTestId("password-field");
+    await expect(userField, "username field").toBeVisible({ timeout: env.useNodeport ? 30_000 : 90_000 });
     await expect(passField, "password field").toBeVisible();
 
     await userField.fill("root");
