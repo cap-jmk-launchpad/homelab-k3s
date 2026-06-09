@@ -79,7 +79,7 @@ WAN Let's Encrypt: li-httpd `[server.tls.lets_encrypt]` in the HTTPS overlay ([g
 - From **inside the LAN**, curling the public hostname may hit **NAT hairpin** and fail or reach the wrong server. That is outside li-httpd; do not treat WAN probe failures on blackpearl as edge outages.
 - **On blackpearl**, health checks and the edge watchdog use `curl --resolve gitlab.lilangverse.xyz:443:127.0.0.1` so probes always hit local li-httpd. The watchdog restarts edge only after **three consecutive local probe failures**, not WAN failures.
 - **LAN users** (`gitlab.lilangverse.xyz`): point the name at **`192.168.10.33`** via Fritz local DNS / DHCP DNS ([homelab-lan-dns.md](homelab-lan-dns.md)) or per-host **`/etc/hosts`** (same line as blackpearl).
-- **Workstation HTTPS checks (Windows)**: Schannel certificate revocation and concurrent probes are flaky; **do not** use the desktop as the acceptance gate. For manual curls use **curl.exe --ssl-no-revoke** and either split DNS/hosts to .33 or explicit **--resolve gitlab.lilangverse.xyz:443:192.168.10.33**. On blackpearl, gate with local **--resolve gitlab.lilangverse.xyz:443:127.0.0.1** plus WAN curls when /etc/hosts maps the public name to **192.168.10.33**.
+- **Workstation HTTPS checks (Windows)**: Schannel certificate revocation and concurrent probes are flaky; **do not** use the desktop as the acceptance gate. On blackpearl, run [scripts/edge-acceptance-gate.sh](../scripts/edge-acceptance-gate.sh) — parallel **18/18**, sequential **18/18**, CSS **10/10** loopback + LAN resolve. **TESTED** or **NOT TESTED** only.
 
 **Never** run debug `li-httpd` from `/tmp` or an interactive shell on blackpearl — orphan processes bind :80/:443 and break production edge + ACME.
 

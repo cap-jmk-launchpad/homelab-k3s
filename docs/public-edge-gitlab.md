@@ -105,9 +105,29 @@ curl -skI -H 'Host: gitlab.lilangverse.xyz' \
 
 Hairpin from inside the LAN may differ from WAN; the edge watchdog probes with `--resolve gitlab.lilangverse.xyz:443:127.0.0.1` so restarts are not triggered by Fritz hairpin failures.
 
+## Acceptance gate (TESTED / NOT TESTED)
+
+There is **no partial success**. Either the full gate passes on **blackpearl** or the edge is **NOT TESTED** — do not report fixed, merged, or deployed-success.
+
+**TESTED** requires **all** of the following on blackpearl:
+
+| Check | Requirement |
+|-------|-------------|
+| Parallel edge `127.0.0.1` | 18/18 sign_in CSS/JS assets (`200`, `size_download == Content-Length`, body not HTML) |
+| Parallel edge `192.168.10.33` | 18/18 (same criteria, `--resolve gitlab.lilangverse.xyz:443:192.168.10.33`) |
+| Sequential edge | 18/18 (same assets, one curl at a time) |
+| CSS probe loopback | 10/10 via [edge-css-probe.sh](../scripts/edge-css-probe.sh) with `--resolve …:127.0.0.1` |
+| CSS probe LAN | 10/10 via [edge-css-probe.sh](../scripts/edge-css-probe.sh) with `--resolve …:192.168.10.33` |
+
+Run the combined gate: [scripts/edge-acceptance-gate.sh](../scripts/edge-acceptance-gate.sh). Parallel probe only: [scripts/edge-parallel-18-probe.sh](../scripts/edge-parallel-18-probe.sh).
+
+**NOT TESTED** = any check below the above thresholds. Browser styling alone, sequential-only, or NodePort parallel success does **not** qualify.
+
+Workstation `curl.exe` (Schannel) is not an acceptance probe for large TLS bodies. Fix `lic`, rebuild on blackpearl, re-run the gate — do not enable `li-httpd-edge-watchdog.timer` until **TESTED**.
+
 ## Isolated acceptance before deploy
 
-On blackpearl, stop the edge watchdog and kill orphan `/tmp/li-httpd` processes before testing. Rebuild with `build-edge-li-httpd.sh`, restart `li-httpd-homelab` then `li-httpd-homelab-tls`, then run **10× each** (**3s** spacing, **120s** curl timeout) for test **C** (local `--resolve`); with `/etc/hosts` on blackpearl mapping the public name to **`192.168.10.33`**, also run **10x** hostname HTTPS curls (split-DNS path):
+On blackpearl, stop the edge watchdog and kill orphan `/tmp/li-httpd` processes before testing. Rebuild with `build-edge-li-httpd.sh`, restart `li-httpd-homelab` then `li-httpd-homelab-tls`, then run [scripts/edge-acceptance-gate.sh](../scripts/edge-acceptance-gate.sh). The sequential CSS/JS checks (tests A–C below) remain useful for bisecting upstream vs edge; the **parallel 18/18** probes above are the hard gate.
 
 | Test | Command pattern | Pass |
 |------|-----------------|------|
@@ -115,7 +135,7 @@ On blackpearl, stop the edge watchdog and kill orphan `/tmp/li-httpd` processes 
 | B | same paths on `http://127.0.0.1:80` | same |
 | C | `curl -k --resolve gitlab.lilangverse.xyz:443:127.0.0.1 https://gitlab.lilangverse.xyz/...` | same |
 
-Require **local C = 10/10** and **LAN resolve D = 10/10** (`--resolve gitlab.lilangverse.xyz:443:192.168.10.33`, sign-in **200/302**, CSS **835437** bytes) before `edge-lis-apply.sh` or re-enabling `li-httpd-edge-watchdog.timer`. Use [scripts/edge-css-probe.sh](../scripts/edge-css-probe.sh) on blackpearl. Acceptance gate runs on **blackpearl only** — not from a Windows workstation (`curl.exe`/Schannel truncates large TLS bodies despite HTTP 200). If C or D fail on blackpearl, fix `lic`, rebuild on blackpearl only — do not deploy WAN probes in parallel with debug sessions.
+If any gate check fails on blackpearl, fix `lic`, rebuild on blackpearl only — do not deploy WAN probes in parallel with debug sessions.
 
 ## Emergency only — NodePort 30481
 

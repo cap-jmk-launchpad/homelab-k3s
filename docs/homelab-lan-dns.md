@@ -172,7 +172,7 @@ Truncation is **client-side Schannel read behavior** (not li-httpd route loss): 
 **Workarounds for LAN developers:**
 
 1. **Browsers** with split-DNS (`192.168.10.33 gitlab.lilangverse.xyz` in hosts or CoreDNS DHCP) — normal GitLab UI use.
-2. **Acceptance / watchdog gate** — run [scripts/edge-css-probe.sh](../scripts/edge-css-probe.sh) on blackpearl only (10/10 loopback + 10/10 LAN resolve).
-3. **Windows reporting** — [scripts/edge-css-probe.ps1](../scripts/edge-css-probe.ps1) documents pass rate; do not block edge deploy on workstation curl alone.
+2. **Acceptance gate** — on blackpearl only, run [scripts/edge-acceptance-gate.sh](../scripts/edge-acceptance-gate.sh): parallel **18/18** on `127.0.0.1` and `192.168.10.33`, sequential **18/18**, plus CSS probe **10/10** each. **TESTED** or **NOT TESTED** — no partial success.
+3. **Windows reporting** — [scripts/edge-css-probe.ps1](../scripts/edge-css-probe.ps1) is informational only; never the deploy gate.
 
-Do **not** treat intermittent workstation WAN curls as edge failures; blackpearl acceptance uses **10/10** local `--resolve` to `127.0.0.1` and **10/10** `--resolve` to `192.168.10.33` before re-enabling `li-httpd-edge-watchdog.timer`.
+Do **not** treat intermittent workstation WAN curls as edge failures. Do **not** re-enable `li-httpd-edge-watchdog.timer` until blackpearl reports **TESTED**.
