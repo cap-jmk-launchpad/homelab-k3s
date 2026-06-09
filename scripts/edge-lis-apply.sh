@@ -57,6 +57,7 @@ if [[ -z "$LI_HTTPD_ROOT" ]]; then
   done
 fi
 [[ -n "$LI_HTTPD_ROOT" ]] || LI_HTTPD_ROOT="${HOME}/staging/li-httpd}"
+# systemd ExecStartPre (--render-only) must use the synced li-httpd tree, not lic/scripts.
 MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml}"
 # Prefer li-httpd flatten (needs li-httpd/scripts on PYTHONPATH for multi-site).
 if [[ -f "${LI_HTTPD_ROOT}/scripts/flatten-httpd-config.py" ]]; then

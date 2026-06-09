@@ -51,7 +51,7 @@ bash scripts/edge-lis-validate.sh
 sudo bash scripts/edge-lis-apply.sh --install-systemd
 ```
 
-Requires `~/staging/lic`, `~/staging/li-httpd` (multi-site flatten), and a vhost-capable `li-httpd` binary. After upgrading `lic` or adding many `[[site]]` blocks, rebuild on blackpearl:
+Requires `~/staging/lic`, `~/staging/li-httpd` (multi-site flatten), and a vhost-capable `li-httpd` binary. Set `LI_HTTPD_ROOT=~/staging/li-httpd` on systemd render-only restarts so flatten uses the synced li-httpd scripts (pool|vhost routes, `upstream_peer=pool|host|port`). After upgrading `lic` or adding many `[[site]]` blocks, rebuild on blackpearl:
 
 ```bash
 bash scripts/build-edge-li-httpd.sh
