@@ -76,7 +76,7 @@ sudo systemctl restart li-httpd-homelab-tls.service
 sudo systemctl enable --now li-httpd-edge-watchdog.timer
 ```
 
-Requires `lic` on `feat/dynamic-httpd-routes` (or newer) — homelab flatten emits 200+ routes.
+Requires `lic` on `main` (merged 2026-06-09, includes dynamic routes + TLS proxy relay fixes) — homelab flatten emits 200+ routes.
 
 ## Verify (no VPN)
 
