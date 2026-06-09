@@ -21,4 +21,12 @@ echo "==> Reload GitLab workers"
 kubectl exec -n "$NAMESPACE" gitlab-0 -- gitlab-ctl hup puma
 kubectl exec -n "$NAMESPACE" gitlab-0 -- gitlab-ctl hup sidekiq
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -f "$SCRIPT_DIR/k8s-gitlab-fix-project-runners-tokens.sh" ]]; then
+  echo "==> Also fix corrupted project runners_token encryption (trace API)"
+  bash "$SCRIPT_DIR/k8s-gitlab-fix-project-runners-tokens.sh"
+else
+  echo "WARN: missing k8s-gitlab-fix-project-runners-tokens.sh — run it separately if trace PATCH still 500s"
+fi
+
 echo "==> Done. Retry failed pipelines from GitLab UI or API."
