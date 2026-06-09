@@ -36,27 +36,11 @@ if grep -qE '^#define HTTPD_MAX_ROUTES ' "$NET_C"; then
   echo "build-edge-li-httpd: $NET_C still uses fixed HTTPD_MAX_ROUTES; upgrade lic for dynamic route table" >&2
   exit 1
 fi
-# Multi-route edge: disable proxy snap + upstream fd reuse; reset global resp cache per request.
-sed -i 's/if (g_proxy_snap_ready || g_proxy_snap_recording || slot/if (httpd_proxy_snap_disabled() || g_proxy_snap_ready || g_proxy_snap_recording || slot/' "$NET_C" || true
-sed -i 's/return g_proxy_snap_ready ? 1 : 0;/return (g_proxy_snap_ready \&\& !httpd_proxy_snap_disabled()) ? 1 : 0;/' "$NET_C" || true
-sed -i 's/s->proxy_up_reuse = resp_keep;/s->proxy_up_reuse = 0;/' "$NET_C" || true
-sed -i 's/s->proxy_up_reuse = 1;/s->proxy_up_reuse = 0;/g' "$NET_C" || true
-python3 - "$NET_C" <<'PY' || true
-import sys
-from pathlib import Path
-p = Path(sys.argv[1])
-text = p.read_text()
-needle = """  httpd_slot_t* s = &g_slots[slot];
-  s->proxy_active = 1;"""
-repl = """  httpd_slot_t* s = &g_slots[slot];
-  g_proxy_resp_cl_cached = -1;
-  g_proxy_resp_hdr_bytes_cached = 0;
-  httpd_proxy_snap_reset();
-  s->proxy_active = 1;"""
-if needle in text and "g_proxy_resp_cl_cached = -1;" not in text.split("httpd_li_proxy_mark_active_i", 1)[-1][:600]:
-    p.write_text(text.replace(needle, repl, 1))
-PY
-
+if ! grep -q 'httpd_proxy_snap_disabled' "$NET_C"; then
+  echo "build-edge-li-httpd: lic missing httpd_proxy_snap_disabled; upgrade lic before edge build" >&2
+  exit 1
+fi
+echo "build-edge-li-httpd: skipping legacy sed patches (edge proxy fixes are in lic)"
 ( cd "$LIC_ROOT" && ./scripts/build-li-httpd.sh )
 sudo install -m 0755 "${LIC_ROOT}/build/li-httpd" /usr/local/bin/li-httpd
 echo "build-edge-li-httpd: installed /usr/local/bin/li-httpd"

@@ -130,3 +130,23 @@ Then restart DNS: `kubectl -n homelab-dns rollout restart daemonset/homelab-lan-
 - [k8s/edge/README.md](../k8s/edge/README.md) — NodePort map
 - [k8s/dns/README.md](../k8s/dns/README.md) — manifest details
 - Internal CA: when `docs/internal-ca-homelab.md` exists in homelab-k3s, add `ca.homelab.lan` to [k8s/dns/coredns-configmap.yaml](../k8s/dns/coredns-configmap.yaml)
+
+## WAN GitLab on LAN (`gitlab.lilangverse.xyz`)
+
+Fritz!Box forwards **TCP 443** (and **80**) to **192.168.10.33** only. From a machine on the same LAN (including blackpearl):
+
+| Probe | Typical result | Why |
+|-------|----------------|-----|
+| `curl https://gitlab.lilangverse.xyz/...` (system resolver → public WAN IP) | **Connection refused / timeout** | Hairpin NAT often disabled; traffic leaves LAN and cannot re-enter on `.33`. |
+| `curl --resolve gitlab.lilangverse.xyz:443:77.x.x.x ...` (public IP) | **200** on small paths | Hairpin or off-LAN path works when the forward target is reachable. |
+| `curl --resolve gitlab.lilangverse.xyz:443:127.0.0.1 ...` | **200** for `/users/sign_in` | Hits local li-httpd; use for edge health on blackpearl. |
+
+**Split-DNS fix (recommended on LAN):** resolve `gitlab.lilangverse.xyz` (and `registry.gitlab.lilangverse.xyz` if used) to **`192.168.10.33`** via CoreDNS zone override ([k8s/dns/](../k8s/dns/)) or per-host `/etc/hosts`:
+
+```
+192.168.10.33 gitlab.lilangverse.xyz registry.gitlab.lilangverse.xyz
+```
+
+The edge watchdog treats **WAN** probe failures as **informational only** (local `127.0.0.1` resolve is authoritative) so hairpin/DNS gaps do not restart li-httpd.
+
+**Edge binary note:** Dynamic route table builds (`lic` ≥ `f33d62a9`) need `apply-edge-proxy-patch.sh` (CRLF-safe) and must **not** run legacy `sed` rewrites from `build-edge-li-httpd.sh` on `li_rt_net.c`. Until TLS large-proxy is stable on the dynamic binary, blackpearl may run the last known-good `li-httpd` from `~/staging/li-httpd/build/li-httpd` for stable sign-in while `lic` is fixed upstream.
