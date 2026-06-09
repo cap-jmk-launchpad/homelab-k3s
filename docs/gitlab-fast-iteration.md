@@ -12,7 +12,10 @@ Homelab GitLab runs on k3s NodePort **30481** behind **li-httpd** at `https://gi
 | API read (groups, projects) | `https://gitlab.lilangverse.xyz` + PAT | Edge GET works |
 | API write / `git push` via API | `http://127.0.0.1:30481` from **blackpearl** | Edge HTTPS POST can hang or 400 for some bodies |
 | Git smart HTTP (clone/push) | `https://gitlab.lilangverse.xyz` | Edge proxies POST for git-upload/receive-pack |
-| Render gate | `npm run test:edge-gitlab-render` | Playwright CSS/JS acceptance |
+| Proxy byte gate (18/18 curl) | `npm run test:proxy` | `wc -c` == Content-Length per asset |
+| Parallel load gate | `npm run test:edge-parallel` | 18 concurrent asset fetches |
+| Render gate | `npm run test:edge-render` | Playwright CSS/JS acceptance |
+| Full edge suite | `npm test` | proxy + parallel + render |
 
 ## Mint PAT / refresh auth (`npm run gitlab:auth` — ~30s)
 
@@ -114,8 +117,13 @@ curl -sk --resolve gitlab.lilangverse.xyz:443:192.168.10.33 \
 # 3) API write / push from blackpearl when edge POST fails
 ssh blackpearl 'curl -s -H "PRIVATE-TOKEN: '"$GITLAB_TOKEN"'" http://127.0.0.1:30481/api/v4/groups/li-langverse'
 
-# 4) UI / render checks
-npm run test:edge-gitlab-render
+# 4) Edge proxy gates (from homelab-k3s/)
+npm run test:proxy          # sequential 18/18 curl
+npm run test:edge-parallel  # parallel 18/18 curl
+npm run test:edge-render    # Playwright browser render
+# or all three:
+npm test
+
 npm run gitlab:auth
 ```
 

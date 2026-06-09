@@ -25,9 +25,20 @@ npx playwright install chrome   # optional if system Chrome is present
 
 LAN split-DNS or hosts entry pointing the hostname at `192.168.10.33` is equivalent to `--resolve`.
 
+## Run full edge suite
+
+```bash
+npm test                  # proxy + parallel + render
+npm run test:proxy        # curl 18/18 (wc -c gate)
+npm run test:edge-parallel  # parallel 18/18
+npm run test:edge-render  # Playwright
+```
+
 ## Run Playwright (browser render)
 
 ```bash
+npm run test:edge-render
+# or
 npx playwright test edge-gitlab-render
 ```
 
@@ -38,6 +49,8 @@ Artifacts: `test-results/edge-gitlab-render/gitlab-sign-in.png`, `summary.json`.
 **Linux / blackpearl / Git Bash:**
 
 ```bash
+npm run test:proxy
+# or
 bash scripts/edge-gitlab-assets-curl.sh
 ```
 
