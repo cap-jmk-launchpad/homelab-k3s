@@ -21,20 +21,8 @@ if [[ -f "${SCRIPT_DIR}/apply-edge-tls-patch.sh" ]]; then
   bash "${SCRIPT_DIR}/apply-edge-tls-patch.sh"
 fi
 
-for old in 16 128; do
-  if grep -q "#define HTTPD_MAX_ROUTES ${old}" "$NET_C"; then
-    sed -i "s/#define HTTPD_MAX_ROUTES ${old}/#define HTTPD_MAX_ROUTES 256/" "$NET_C"
-  fi
-done
-
-
-MIN_EDGE_ROUTES=256
-routes_val=""
-if routes_line=$(grep -E '^#define HTTPD_MAX_ROUTES [0-9]+' "$NET_C" | head -1); then
-  routes_val=${routes_line##* }
-fi
-if [[ -z "$routes_val" ]] || [[ "$routes_val" -lt "$MIN_EDGE_ROUTES" ]]; then
-  echo "build-edge-li-httpd: HTTPD_MAX_ROUTES must be >= ${MIN_EDGE_ROUTES} in $NET_C (got: ${routes_val:-unset})" >&2
+if grep -qE '^#define HTTPD_MAX_ROUTES ' "$NET_C"; then
+  echo "build-edge-li-httpd: $NET_C still uses fixed HTTPD_MAX_ROUTES; upgrade lic for dynamic route table" >&2
   exit 1
 fi
 # Multi-route edge: disable proxy snap + upstream fd reuse; reset global resp cache per request.

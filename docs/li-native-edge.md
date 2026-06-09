@@ -53,7 +53,7 @@ sudo bash scripts/edge-lis-apply.sh --install-systemd
 
 Requires `~/staging/lic`, `~/staging/li-httpd` (multi-site flatten), and a vhost-capable `li-httpd` binary. Set `LI_HTTPD_ROOT=~/staging/li-httpd` on systemd render-only restarts so flatten uses the synced li-httpd scripts (pool|vhost routes, `upstream_peer=pool|host|port`). After upgrading `lic` or adding many `[[site]]` blocks, rebuild on blackpearl:
 
-**MUST** rebuild blackpearl edge with [scripts/build-edge-li-httpd.sh](../scripts/build-edge-li-httpd.sh) — not plain `lic/scripts/build-li-httpd.sh`. Stock lic builds use `HTTPD_MAX_ROUTES=16`; the homelab flattened config has 200+ routes, so a plain build drops GitLab and most `[[site]]` proxy routes (404 on `/users/sign_in` while `/health` may still pass). The edge script bumps routes to 256, applies vhost/TLS proxy patches, and fails the build if `HTTPD_MAX_ROUTES` is still below 256 after patching.
+**MUST** rebuild blackpearl edge with [scripts/build-edge-li-httpd.sh](../scripts/build-edge-li-httpd.sh) — not plain `lic/scripts/build-li-httpd.sh`. The edge script applies vhost/TLS proxy patches and requires a lic build with a **dynamic** route table (`HTTPD_ROUTES_INIT_CAP` in `li_rt_net.c`, no fixed `HTTPD_MAX_ROUTES`). The homelab flattened config has 200+ routes; on startup `li-httpd` logs `loaded N routes (cap M)` to stderr. Older lic builds with a fixed route cap silently drop excess routes (404 on `/users/sign_in` while `/health` may still pass).
 
 ```bash
 bash scripts/build-edge-li-httpd.sh
