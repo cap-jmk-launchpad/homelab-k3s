@@ -2,6 +2,7 @@
 Description=li-httpd homelab edge TLS (:443)
 After=network-online.target k3s.service li-httpd-homelab.service
 Wants=network-online.target
+# Render: edge-lis-apply.sh holds /run/li-httpd/edge-apply.lock (safe parallel restarts).
 
 [Service]
 Type=simple

@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 # Apply native li-httpd as homelab edge ingress on blackpearl (:80 HTTP + :443 TLS).
+#
+# Render uses flock(2) on /run/li-httpd/edge-apply.lock so li-httpd-homelab and
+# li-httpd-homelab-tls can restart together without corrupting shared runtime configs.
+#
+# Manual restarts: prefer `bash scripts/edge-lis-apply.sh` (restarts HTTP then TLS).
+# Or: systemctl restart li-httpd-homelab.service && systemctl restart li-httpd-homelab-tls.service
 set -euo pipefail
 
 RENDER_ONLY=0
@@ -79,11 +85,14 @@ RUNTIME="${RUNTIME_DIR}/homelab.runtime.conf"
 RUNTIME_TLS="${RUNTIME_DIR}/homelab.tls.runtime.conf"
 TLS_CERT_DIR="/var/lib/li-httpd/tls/homelab"
 
+EDGE_APPLY_LOCK="${RUNTIME_DIR}/edge-apply.lock"
+mkdir -p "$RUNTIME_DIR" /var/lib/li-httpd/empty "$TLS_CERT_DIR"
+(
+  flock -w 300 9 || { echo "timeout waiting for $EDGE_APPLY_LOCK (parallel edge-lis-apply?)" >&2; exit 1; }
+
 [[ -f "${EDGE_DIR}/homelab.httpd.toml" ]] || { echo "missing ${EDGE_DIR}/homelab.httpd.toml" >&2; exit 1; }
 [[ -f "$FLATTEN" ]] || { echo "missing flatten script at $FLATTEN (sync lic to ~/staging/lic)" >&2; exit 1; }
 [[ -f /usr/local/bin/li-httpd ]] || { echo "missing /usr/local/bin/li-httpd — run lic build-li-httpd.sh first" >&2; exit 1; }
-
-mkdir -p "$RUNTIME_DIR" /var/lib/li-httpd/empty "$TLS_CERT_DIR"
 
 inputs=("${EDGE_DIR}/homelab.httpd.toml")
 if [[ -f "$MAJICO_HTTPD_TOML" ]]; then
@@ -114,6 +123,8 @@ python3 "$FLATTEN" "$MERGED_TLS" -o "$RUNTIME_TLS"
 python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME_TLS"
 echo "flatten tls: $RUNTIME_TLS ($(wc -l <"$RUNTIME_TLS") lines)"
 
+) 9>"$EDGE_APPLY_LOCK" || exit 1
+
 if [[ "$RENDER_ONLY" -eq 1 ]]; then
   exit 0
 fi
@@ -133,6 +144,7 @@ if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then
 fi
 
 if [[ "$RELOAD" -eq 1 ]]; then
+  # Sequential: HTTP then TLS (ExecStartPre render is flock-serialized).
   for unit in li-httpd-homelab.service li-httpd-homelab-tls.service; do
     if systemctl is-active --quiet "$unit" 2>/dev/null; then
       systemctl restart "$unit"

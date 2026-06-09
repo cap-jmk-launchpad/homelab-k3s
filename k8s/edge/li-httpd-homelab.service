@@ -2,6 +2,7 @@
 Description=li-httpd homelab edge (LIS ingress)
 After=network-online.target k3s.service
 Wants=network-online.target
+# Render: edge-lis-apply.sh holds /run/li-httpd/edge-apply.lock (safe parallel restarts).
 
 [Service]
 Type=simple
