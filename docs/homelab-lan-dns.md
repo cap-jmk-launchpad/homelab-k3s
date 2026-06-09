@@ -149,4 +149,12 @@ Fritz!Box forwards **TCP 443** (and **80**) to **192.168.10.33** only. From a ma
 
 The edge watchdog treats **WAN** probe failures as **informational only** (local `127.0.0.1` resolve is authoritative) so hairpin/DNS gaps do not restart li-httpd.
 
-**Edge binary note:** Dynamic route table builds (`lic` ≥ `f33d62a9`) need `apply-edge-proxy-patch.sh` (CRLF-safe) and must **not** run legacy `sed` rewrites from `build-edge-li-httpd.sh` on `li_rt_net.c`. Until TLS large-proxy is stable on the dynamic binary, blackpearl may run the last known-good `li-httpd` from `~/staging/li-httpd/build/li-httpd` for stable sign-in while `lic` is fixed upstream.
+**LAN clients:** add the hosts block above *or* configure Fritz **local DNS** / DHCP DNS server **`192.168.10.33`** (CoreDNS zone) so `gitlab.lilangverse.xyz` resolves to the edge IP without hairpin.
+
+**Windows workstation manual probes:** use `curl.exe --ssl-no-revoke` and either the hosts/DNS split above or:
+
+```powershell
+curl.exe --ssl-no-revoke --resolve gitlab.lilangverse.xyz:443:192.168.10.33 https://gitlab.lilangverse.xyz/users/sign_in
+```
+
+Do **not** treat intermittent workstation WAN curls as edge failures (Schannel revocation / parallel probes); blackpearl acceptance uses **10/10** local `--resolve` to `127.0.0.1` and **10/10** hostname curls with hosts->``192.168.10.33`` before re-enabling `li-httpd-edge-watchdog.timer`.

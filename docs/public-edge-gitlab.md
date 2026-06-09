@@ -107,7 +107,7 @@ Hairpin from inside the LAN may differ from WAN; the edge watchdog probes with `
 
 ## Isolated acceptance before deploy
 
-On blackpearl, stop the edge watchdog and kill orphan `/tmp/li-httpd` processes before testing. Rebuild with `build-edge-li-httpd.sh`, restart `li-httpd-homelab` then `li-httpd-homelab-tls`, then run **10× each** (2s spacing) without WAN traffic:
+On blackpearl, stop the edge watchdog and kill orphan `/tmp/li-httpd` processes before testing. Rebuild with `build-edge-li-httpd.sh`, restart `li-httpd-homelab` then `li-httpd-homelab-tls`, then run **10× each** (**3s** spacing, **120s** curl timeout) for test **C** (local `--resolve`); with `/etc/hosts` on blackpearl mapping the public name to **`192.168.10.33`**, also run **10x** hostname HTTPS curls (split-DNS path):
 
 | Test | Command pattern | Pass |
 |------|-----------------|------|
@@ -115,7 +115,7 @@ On blackpearl, stop the edge watchdog and kill orphan `/tmp/li-httpd` processes 
 | B | same paths on `http://127.0.0.1:80` | same |
 | C | `curl -k --resolve gitlab.lilangverse.xyz:443:127.0.0.1 https://gitlab.lilangverse.xyz/...` | same |
 
-Require **C = 10/10** before `edge-lis-apply.sh` or re-enabling `li-httpd-edge-watchdog.timer`. If C fails, fix `lic`, rebuild on blackpearl only — do not deploy WAN probes in parallel with debug sessions.
+Require **local C = 10/10** and **hostname (split-DNS) = 10/10** (sign-in **200/302**, GitLab CSS **835437** bytes) before `edge-lis-apply.sh` or re-enabling `li-httpd-edge-watchdog.timer`. Acceptance gate runs on **blackpearl only** - not from a Windows workstation. If C or hostname curls fail, fix `lic`, rebuild on blackpearl only - do not deploy WAN probes in parallel with debug sessions.
 
 ## Emergency only — NodePort 30481
 
