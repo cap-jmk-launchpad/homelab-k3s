@@ -2,10 +2,12 @@
   "name": "homelab-k3s-edge-tests",
   "private": true,
   "scripts": {
-    "test": "npm run test:proxy && npm run test:edge-parallel && npm run test:edge-render",
+    "test": "npm run test:layer6",
+    "test:layer6": "npm run test:proxy && npm run test:edge-parallel && npm run test:edge-render",
     "test:proxy": "bash scripts/edge-gitlab-assets-curl.sh",
     "test:edge-parallel": "EDGE_PROBE_RESOLVE=gitlab.lilangverse.xyz:443:192.168.10.33 EDGE_PROBE_LABEL=parallel-edge bash scripts/edge-parallel-18-probe.sh",
     "test:edge-render": "playwright test edge-gitlab-render",
+    "test:lic-layers": "echo 'Run lic layers 1-5 first: cd ../lic && sh test/proxy/run-proxy-tests.sh --all'",
     "test:edge-gitlab-render": "npm run test:edge-render",
     "test:edge-gitlab-assets": "npm run test:proxy",
     "gitlab:auth": "npm run gitlab:mint-pat",
