@@ -15,3 +15,13 @@ Policies:
 - **allow-lan-nodeport-app** / **allow-lan-nodeport-kong** — LAN (`192.168.10.0/24`) to NodePort backends on ports 3000 and 8000
 
 NodePorts `30080` and `30000` on blackpearl are unchanged; UFW on the control plane restricts them to the LAN.
+
+## Goal agent watchdog
+
+`majico-goal-agent-watchdog` CronJob (every 30m) is pinned to the **deck** Pi worker (`kubernetes.io/hostname: deck`) so periodic kubectl API traffic does not hit the blackpearl control plane.
+
+```bash
+kubectl apply -f k8s/majico-staging/goal-agent-watchdog-cronjob.yaml
+```
+
+RBAC + script ConfigMap are created by the majico deploy pipeline; this manifest only owns placement and the CronJob spec.

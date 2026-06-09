@@ -1,0 +1,89 @@
+# Goal-directed agent watchdog — runs every 30m, pinned to deck (Pi worker).
+# Keeps majico-goal-directed-refactor-loop CronJob healthy; uses in-cluster SA.
+# Script ConfigMap + RBAC are applied separately (majico deploy pipeline).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: majico-goal-agent-watchdog
+  namespace: majico-staging
+  labels:
+    app.kubernetes.io/name: majico
+    app.kubernetes.io/component: goal-agent-watchdog
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 600
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: majico
+            app.kubernetes.io/component: goal-agent-watchdog
+        spec:
+          restartPolicy: Never
+          serviceAccountName: majico-goal-agent-watchdog
+          nodeSelector:
+            kubernetes.io/hostname: deck
+          containers:
+            - name: watchdog
+              # alpine/k8s ships kubectl + bash (multi-arch); avoids apt/curl on each run.
+              image: alpine/k8s:1.32.4
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
+                    export KUBECONFIG=/tmp/kubeconfig
+                    kubectl config set-cluster in-cluster \
+                      --server="https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}" \
+                      --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                    kubectl config set-credentials sa \
+                      --token="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+                    kubectl config set-context in-cluster --cluster=in-cluster --user=sa
+                    kubectl config use-context in-cluster
+                  fi
+                  bash /scripts/k8s-agent-watchdog.sh
+              env:
+                - name: K8S_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: GOAL_REFACTOR_CRONJOB
+                  value: majico-goal-directed-refactor-loop
+                - name: GOAL_WATCHDOG_CRONJOB
+                  value: majico-goal-agent-watchdog
+                - name: STUCK_JOB_AGE_MINUTES
+                  value: "90"
+                - name: RUN_TO_COMPLETION_STUCK_JOB_AGE_MINUTES
+                  value: "2880"
+                - name: GOAL_RUN_TO_COMPLETION_JOB
+                  value: majico-goal-directed-refactor-run-to-completion
+                - name: FAILED_JOB_AGE_MINUTES
+                  value: "15"
+                - name: CURSOR_SECRET_NAME
+                  value: cursor-agent-secrets
+                - name: WORKER_DEPLOYMENT
+                  value: majico-worker
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: script
+              configMap:
+                name: majico-goal-agent-watchdog-script
+                defaultMode: 0755
