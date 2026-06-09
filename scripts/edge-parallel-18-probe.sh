@@ -9,7 +9,9 @@ LABEL="${EDGE_PROBE_LABEL:-parallel-18}"
 HTML="/tmp/edge_parallel_sign_in.html"
 ASSETS="/tmp/edge_parallel_assets18.txt"
 
-curl -sk --http1.1 --resolve "$RESOLVE" -o "$HTML" --max-time 30 "https://${HOST}/users/sign_in"
+# curl 18 (partial file) is common when edge closes TLS after Connection: close body
+curl -sk --http1.1 --resolve "$RESOLVE" -o "$HTML" --max-time 30 "https://${HOST}/users/sign_in" \
+  || { test -s "$HTML" || exit 1; }
 grep -oE '(href|src)="(/assets/[^"]+\.(css|js))"' "$HTML" \
   | sed -E 's/.*="([^"]+)".*/\1/' | sort -u > "$ASSETS"
 n=$(wc -l < "$ASSETS")
