@@ -7,6 +7,9 @@ EDGE="${REPO_ROOT}/k8s/edge"
 
 [[ "$(id -u)" -eq 0 ]] || { echo "run as root on blackpearl" >&2; exit 1; }
 
+git -C "${REPO_ROOT}" checkout -- scripts/reorder-edge-upstream-peers.py scripts/edge-health-probe.sh scripts/edge-watchdog.sh scripts/edge-lis-apply.sh scripts/deploy-edge-blackpearl.sh 2>/dev/null || true
+sed -i 's/\r$//' "${REPO_ROOT}"/scripts/*.sh 2>/dev/null || true
+
 install -m 755 "${REPO_ROOT}/scripts/edge-lis-apply.sh" "${REPO_ROOT}/scripts/edge-health-probe.sh"
 install -m 755 "${REPO_ROOT}/scripts/edge-watchdog.sh" "${REPO_ROOT}/scripts/reorder-edge-upstream-peers.py"
 install -m 755 "${REPO_ROOT}/scripts/edge-health-probe.sh" /usr/local/bin/edge-health-probe.sh

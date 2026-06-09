@@ -12,7 +12,7 @@ Environment=MAJICO_HTTPD_TOML=/home/s4il0r/staging/majico-deploy/deploy/staging/
 ExecStartPre=/bin/mkdir -p /run/li-httpd /var/lib/li-httpd/empty
 ExecStartPre=/bin/bash -c 'HOME=/home/s4il0r LIC_ROOT=/home/s4il0r/staging/lic LI_HTTPD_ROOT=/home/s4il0r/staging/li-httpd MAJICO_HTTPD_TOML=/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml bash /home/s4il0r/staging/homelab-k3s/scripts/edge-lis-apply.sh --render-only'
 ExecStart=/usr/local/bin/li-httpd /run/li-httpd/homelab.runtime.conf
-ExecStartPost=/bin/bash /usr/local/bin/edge-health-probe.sh 80 gitlab.lilangverse.xyz /health
+ExecStartPost=-/usr/local/bin/edge-health-probe.sh 80 gitlab.lilangverse.xyz /health
 User=root
 Group=root
 Restart=always

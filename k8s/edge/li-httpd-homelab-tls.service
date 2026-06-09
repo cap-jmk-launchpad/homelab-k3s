@@ -12,7 +12,7 @@ Environment=MAJICO_HTTPD_TOML=/home/s4il0r/staging/majico-deploy/deploy/staging/
 ExecStartPre=/bin/mkdir -p /run/li-httpd /var/lib/li-httpd/tls/homelab /var/lib/li-httpd/empty
 ExecStartPre=/bin/bash -c 'for i in $(seq 1 120); do test -f /run/li-httpd/.render-ready && exit 0; sleep 1; done; echo "timeout waiting for /run/li-httpd/.render-ready (HTTP unit must render first)" >&2; exit 1'
 ExecStart=/usr/local/bin/li-httpd /run/li-httpd/homelab.tls.runtime.conf
-ExecStartPost=/bin/bash /usr/local/bin/edge-health-probe.sh 443 gitlab.lilangverse.xyz /health
+ExecStartPost=-/usr/local/bin/edge-health-probe.sh 443 gitlab.lilangverse.xyz /health
 User=root
 Group=root
 Restart=always
