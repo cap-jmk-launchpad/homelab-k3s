@@ -97,6 +97,7 @@ python3 "${EDGE_DIR}/merge-httpd-config.py" "${inputs[@]}" -o "$MERGED" --valida
 
 export PYTHONPATH="${FLATTEN_PYTHONPATH}${PYTHONPATH:+:$PYTHONPATH}"
 python3 "$FLATTEN" "$MERGED" -o "$RUNTIME"
+python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME"
 echo "flatten http: $RUNTIME ($(wc -l <"$RUNTIME") lines)"
 
 python3 "$GEN_HTTPS" "$MERGED" -o "$MERGED_TLS"
@@ -110,6 +111,7 @@ else
 fi
 
 python3 "$FLATTEN" "$MERGED_TLS" -o "$RUNTIME_TLS"
+python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME_TLS"
 echo "flatten tls: $RUNTIME_TLS ($(wc -l <"$RUNTIME_TLS") lines)"
 
 if [[ "$RENDER_ONLY" -eq 1 ]]; then
