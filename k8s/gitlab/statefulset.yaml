@@ -65,19 +65,36 @@ spec:
               mountPath: /var/log/gitlab
             - name: dshm
               mountPath: /dev/shm
+          # Kubelet probes hit pod IP, not localhost. With external_url set, /-/health and
+          # /-/readiness return 404 on pod IP; /users/sign_in returns 200 (verified 2026-06-09).
+          startupProbe:
+            httpGet:
+              path: /users/sign_in
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: gitlab.lilangverse.xyz
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 40
           readinessProbe:
             httpGet:
               path: /users/sign_in
               port: http
-            initialDelaySeconds: 120
+              httpHeaders:
+                - name: Host
+                  value: gitlab.lilangverse.xyz
             periodSeconds: 20
             timeoutSeconds: 5
-            failureThreshold: 30
+            failureThreshold: 6
           livenessProbe:
             httpGet:
-              path: /-/health
+              path: /users/sign_in
               port: http
-            initialDelaySeconds: 600
+              httpHeaders:
+                - name: Host
+                  value: gitlab.lilangverse.xyz
             periodSeconds: 60
             timeoutSeconds: 10
             failureThreshold: 6

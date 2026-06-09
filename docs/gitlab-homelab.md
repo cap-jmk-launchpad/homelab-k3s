@@ -125,4 +125,5 @@ kubectl top pod -n gitlab
 
 - **Pending pod on engine:** node missing label or insufficient memory → relax `nodeSelector` or add RAM.
 - **502 / not ready:** wait for Omnibus reconfigure; check `kubectl logs`.
+- **Pod restart loop (liveness 404):** after changing `external_url` to a public HTTPS hostname, kubelet probes must send the matching **`Host`** header and use **`/users/sign_in`** (not `/-/health`, which 404s on pod IP). A **`startupProbe`** with `failureThreshold: 40` (~20 min) prevents liveness kills during Omnibus reconfigure. See `k8s/gitlab/statefulset.yaml`.
 - **Runner not picking jobs:** verify runner in **Admin → CI/CD → Runners**; check registration token matches `.env`.
