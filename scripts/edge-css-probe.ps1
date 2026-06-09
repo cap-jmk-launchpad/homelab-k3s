@@ -30,12 +30,14 @@ $curlBase = @(
     '--no-sessionid',
     '--no-keepalive',
     '--http1.1',
+    '-H', 'Connection: close',
     '--max-time', '120'
 )
 
 $pass = 0
 for ($i = 1; $i -le $Runs; $i++) {
     $sign = & curl.exe -sk @curlBase -o NUL -w '%{http_code}' "https://${HostName}/users/sign_in"
+    Start-Sleep -Milliseconds 500
     $size = & curl.exe -sk @curlBase -o NUL -w '%{size_download}' "https://${HostName}${css}"
     $ok = ($sign -eq '200' -or $sign -eq '302') -and ($size -eq "$ExpectedBytes")
     if ($ok) { $pass++ }
