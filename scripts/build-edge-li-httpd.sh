@@ -27,6 +27,16 @@ for old in 16 128; do
   fi
 done
 
+
+MIN_EDGE_ROUTES=256
+routes_val=""
+if routes_line=$(grep -E '^#define HTTPD_MAX_ROUTES [0-9]+' "$NET_C" | head -1); then
+  routes_val=${routes_line##* }
+fi
+if [[ -z "$routes_val" ]] || [[ "$routes_val" -lt "$MIN_EDGE_ROUTES" ]]; then
+  echo "build-edge-li-httpd: HTTPD_MAX_ROUTES must be >= ${MIN_EDGE_ROUTES} in $NET_C (got: ${routes_val:-unset})" >&2
+  exit 1
+fi
 # Multi-route edge: disable proxy snap + upstream fd reuse; reset global resp cache per request.
 sed -i 's/if (g_proxy_snap_ready || g_proxy_snap_recording || slot/if (httpd_proxy_snap_disabled() || g_proxy_snap_ready || g_proxy_snap_recording || slot/' "$NET_C" || true
 sed -i 's/return g_proxy_snap_ready ? 1 : 0;/return (g_proxy_snap_ready \&\& !httpd_proxy_snap_disabled()) ? 1 : 0;/' "$NET_C" || true
