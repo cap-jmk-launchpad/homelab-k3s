@@ -12,8 +12,9 @@ $ErrorActionPreference = 'Continue'
 $css = $null
 for ($attempt = 1; $attempt -le 3; $attempt++) {
     $html = & curl.exe -sk --ssl-no-revoke --resolve "${HostName}:443:${EdgeIp}" --max-time 60 "https://${HostName}/users/sign_in" 2>$null
-    if ($html -match '(/assets/application-[a-f0-9]+\.css)') {
-        $css = $Matches[1]
+    $m = [regex]::Match([string]$html, '/assets/application-[a-f0-9]+\.css')
+    if ($m.Success) {
+        $css = $m.Value
         break
     }
     Start-Sleep -Seconds 2
@@ -34,8 +35,8 @@ $curlBase = @(
 
 $pass = 0
 for ($i = 1; $i -le $Runs; $i++) {
-    $sign = & curl.exe -sk @curlBase -o $null -w '%{http_code}' "https://${HostName}/users/sign_in"
-    $size = & curl.exe -sk @curlBase -o $null -w '%{size_download}' "https://${HostName}${css}"
+    $sign = & curl.exe -sk @curlBase -o NUL -w '%{http_code}' "https://${HostName}/users/sign_in"
+    $size = & curl.exe -sk @curlBase -o NUL -w '%{size_download}' "https://${HostName}${css}"
     $ok = ($sign -eq '200' -or $sign -eq '302') -and ($size -eq "$ExpectedBytes")
     if ($ok) { $pass++ }
     $status = if ($ok) { 'PASS' } else { 'FAIL' }
