@@ -25,6 +25,9 @@ if [[ -f "${LI_HTTPD_ROOT}/scripts/patch-vhost-runtime.py" ]] \
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -d "${LIC_ROOT}/.git" ]]; then
+  git -C "$LIC_ROOT" checkout -- runtime/li_rt_net.c runtime/li_rt_tls.c 2>/dev/null || true
+fi
 if [[ -f "${SCRIPT_DIR}/apply-edge-tls-patch.sh" ]]; then
   bash "${SCRIPT_DIR}/apply-edge-tls-patch.sh"
 fi
