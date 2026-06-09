@@ -46,8 +46,4 @@ for ($i = 1; $i -le $Runs; $i++) {
     if ($i -lt $Runs) { Start-Sleep -Seconds $SleepSec }
 }
 Write-Host "RESULT workstation: ${pass}/${Runs} (css=${css})"
-if ($pass -lt $Runs) {
-    Write-Host "Note: Schannel curl often truncates large TLS bodies despite HTTP 200 and correct Content-Length."
-    Write-Host "Use browser or blackpearl edge-css-probe.sh for acceptance; edge is OK when blackpearl LAN is 10/10."
-}
 exit $(if ($pass -eq $Runs) { 0 } else { 1 })
