@@ -23,7 +23,7 @@ spec:
     spec:
       enableServiceLinks: false
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       initContainers:
         - name: wait-valkey
           image: valkey/valkey:8.0-alpine

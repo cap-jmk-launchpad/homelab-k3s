@@ -17,7 +17,7 @@ spec:
         app: vault
     spec:
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       terminationGracePeriodSeconds: 30
       securityContext:
         fsGroup: 1000

@@ -18,7 +18,7 @@ spec:
         app: valkey
     spec:
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       containers:
         - name: valkey
           image: valkey/valkey:8.0-alpine
