@@ -1,0 +1,13 @@
+{
+  "name": "homelab-k3s-edge-tests",
+  "private": true,
+  "scripts": {
+    "test:edge-gitlab-render": "playwright test edge-gitlab-render",
+    "test:edge-gitlab-assets": "bash scripts/edge-gitlab-assets-curl.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.0"
+  }
+}

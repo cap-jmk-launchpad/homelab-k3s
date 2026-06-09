@@ -33,6 +33,10 @@ k8s/vault/projects/**/external-secret.yaml
 !k8s/vault/projects/search-gateway/external-secret.yaml
 !k8s/vault/projects/klaut-platform/external-secret.yaml
 
+# Playwright edge render tests
+node_modules/
+test-results/
+
 # OS / editor
 .DS_Store
 Thumbs.db
