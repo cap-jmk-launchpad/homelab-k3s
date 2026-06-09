@@ -127,3 +127,5 @@ kubectl top pod -n gitlab
 - **502 / not ready:** wait for Omnibus reconfigure; check `kubectl logs`.
 - **Pod restart loop (liveness 404):** after changing `external_url` to a public HTTPS hostname, kubelet probes must send the matching **`Host`** header and use **`/users/sign_in`** (not `/-/health`, which 404s on pod IP). A **`startupProbe`** with `failureThreshold: 40` (~20 min) prevents liveness kills during Omnibus reconfigure. See `k8s/gitlab/statefulset.yaml`.
 - **Runner not picking jobs:** verify runner in **Admin → CI/CD → Runners**; check registration token matches `.env`.
+- **`scheduler_failure` (job never reaches k8s executor):** check `gitlab-0` production log for `OpenSSL::Cipher::CipherError` in `lib/ci/job_token/jwt.rb` — usually `gitlab-secrets.json` rotated while DB kept old encrypted signing keys. Fix: `./scripts/k8s-gitlab-fix-ci-signing-keys.sh`, then retry pipelines.
+- **`script_failure` / invalid `pull_policy`:** runner `config.toml` needs `allowed_pull_policies = ["always", "if-not-present"]` under `[runners.kubernetes]`. Fix: `./scripts/k8s-gitlab-runner-patch-config.sh` (or re-apply `runner-deployment.yaml`).

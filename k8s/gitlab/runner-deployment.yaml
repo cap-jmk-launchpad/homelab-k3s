@@ -51,6 +51,9 @@ spec:
                   --run-untagged=true \
                   --locked=false
               fi
+              if [[ -f /etc/gitlab-runner/config.toml ]] && ! grep -q 'allowed_pull_policies' /etc/gitlab-runner/config.toml; then
+                sed -i '/service_account = "gitlab-runner"/a\    allowed_pull_policies = ["always", "if-not-present"]' /etc/gitlab-runner/config.toml
+              fi
               exec gitlab-runner run --user=gitlab-runner --working-directory=/home/gitlab-runner
           env:
             - name: GITLAB_RUNNER_URL
