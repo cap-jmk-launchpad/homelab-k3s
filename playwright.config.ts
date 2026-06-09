@@ -6,7 +6,7 @@ const signInUrl = `https://${host}/users/sign_in`;
 
 export default defineConfig({
   testDir: "./scripts",
-  testMatch: "edge-gitlab-render.spec.ts",
+  testMatch: /edge-gitlab-render\.spec\.ts|gitlab-playwright-auth\.spec\.ts/,
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -27,6 +27,28 @@ export default defineConfig({
   projects: [
     {
       name: "edge-gitlab-render",
+      testMatch: "edge-gitlab-render.spec.ts",
+      use: {
+        baseURL: `https://${host}`,
+      },
+    },
+    {
+      name: "gitlab-auth",
+      testMatch: "gitlab-playwright-auth.spec.ts",
+      use: {
+        baseURL: `https://${host}`,
+      },
+    },
+    {
+      name: "gitlab-auth-nodeport",
+      testMatch: "gitlab-playwright-auth.spec.ts",
+      use: {
+        baseURL: `http://${process.env.GITLAB_NODE_IP ?? "192.168.10.32"}:${process.env.GITLAB_NODEPORT ?? "30481"}`,
+      },
+    },
+    {
+      name: "gitlab-auth-pat",
+      testMatch: "gitlab-playwright-auth.spec.ts",
       use: {
         baseURL: `https://${host}`,
       },

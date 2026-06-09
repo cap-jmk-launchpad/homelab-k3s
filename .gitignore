@@ -36,6 +36,8 @@ k8s/vault/projects/**/external-secret.yaml
 # Playwright edge render tests
 node_modules/
 test-results/
+.playwright/
+.gitlab-token.local
 
 # OS / editor
 .DS_Store

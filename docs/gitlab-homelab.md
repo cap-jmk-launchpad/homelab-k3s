@@ -30,6 +30,8 @@ Git over SSH (optional): NodePort **30222** — requires Fritz/TCP forward or LA
 
 **No VPN** — use `https://gitlab.lilangverse.xyz` for web, API, and `git clone`/`git push` over HTTPS. Full runbook: **[public-edge-gitlab.md](public-edge-gitlab.md)** (Fritz forwards, TLS, curl/git checks, emergency NodePort).
 
+**Fast dev iteration** (PAT mint, Playwright login, API POST bypass): **[gitlab-fast-iteration.md](gitlab-fast-iteration.md)**.
+
 Live hostnames (same Omnibus pod, NodePort **30481** behind li-httpd):
 
 | Hostname | Docs |

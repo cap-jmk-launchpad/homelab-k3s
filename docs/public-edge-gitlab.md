@@ -149,6 +149,10 @@ git -c http.sslVerify=false ls-remote http://192.168.10.33:30481/li-langverse/li
 
 Do **not** publish NodePort 30481 on Fritz. Production path is always **443 → li-httpd → 30481**.
 
+## Fast iteration (tokens, API bypass)
+
+When edge POST/API writes fail but GitLab is healthy in-cluster: **[gitlab-fast-iteration.md](gitlab-fast-iteration.md)** (`npm run gitlab:auth`, NodePort bypass from blackpearl, Playwright session).
+
 ## Related
 
 - [gitlab-homelab.md](gitlab-homelab.md) — Omnibus deploy, runner, backups
