@@ -106,6 +106,7 @@ render_edge_configs() {
 
   export PYTHONPATH="${FLATTEN_PYTHONPATH}${PYTHONPATH:+:$PYTHONPATH}"
   python3 "$FLATTEN" "$MERGED" -o "$RUNTIME"
+  python3 "${SCRIPT_DIR}/edge-inject-runtime-limits.py" "$MERGED" "$RUNTIME"
   python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME"
   echo "flatten http: $RUNTIME ($(wc -l <"$RUNTIME") lines)"
 
@@ -120,6 +121,7 @@ render_edge_configs() {
   fi
 
   python3 "$FLATTEN" "$MERGED_TLS" -o "$RUNTIME_TLS"
+  python3 "${SCRIPT_DIR}/edge-inject-runtime-limits.py" "$MERGED" "$RUNTIME_TLS"
   python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME_TLS"
   echo "flatten tls: $RUNTIME_TLS ($(wc -l <"$RUNTIME_TLS") lines)"
 
