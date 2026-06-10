@@ -30,6 +30,8 @@ Git over SSH (optional): NodePort **30222** — requires Fritz/TCP forward or LA
 
 **No VPN** — use `https://gitlab.lilangverse.xyz` for web, API, and `git clone`/`git push` over HTTPS. Full runbook: **[public-edge-gitlab.md](public-edge-gitlab.md)** (Fritz forwards, TLS, curl/git checks, emergency NodePort).
 
+**Anonymous read:** the **`li-langverse`** group and all Li product repos are **public** (browse + `git clone` without login). **`gitlab-homelab-config`** stays **private**. GitHub `li-langverse/*` remains the read-only mirror backup. See [public-edge-gitlab.md — Public li-langverse repos](public-edge-gitlab.md#public-li-langverse-repos-no-sign-in).
+
 **Fast dev iteration** (PAT mint, Playwright login, API POST bypass): **[gitlab-fast-iteration.md](gitlab-fast-iteration.md)**.
 
 Live hostnames (same Omnibus pod, NodePort **30481** behind li-httpd):

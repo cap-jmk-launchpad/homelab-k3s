@@ -95,21 +95,57 @@ When ready to move GitLab prod from nginx to li-httpd:
 
 Merged relay fix: GitLab MR [li-langverse/lic!128](https://gitlab.lilangverse.xyz/li-langverse/lic/-/merge_requests/128) → `main` @ merge commit **`9f486a45`** (source **`606bf37ba`**).
 
-## Verify (no VPN)
+## Public `li-langverse` repos (no sign-in)
 
-From any external network:
+As of **2026-06-10**, the **`li-langverse`** group and **66 of 67** projects are **public** — browse and `git clone` over HTTPS without login.
+
+| Scope | Visibility | Notes |
+|-------|------------|-------|
+| Group `li-langverse` | **public** | [Explore](https://gitlab.lilangverse.xyz/explore) lists public projects |
+| Li dev repos (`lic`, `lis`, `li-httpd`, …) | **public** | Primary GitLab source; GitHub `li-langverse/*` remains read-only mirror |
+| `gitlab-homelab-config` | **private** | Homelab/k8s wiring — kept private (may reference cluster secrets) |
+| `gitlab-github-mirror` | **public** | Mirror automation scripts only (no credentials in repo) |
+
+**Security:** public repos expose source and issue/MR metadata to the internet. Do not commit secrets, `.env`, or deploy tokens. Push still requires authentication (PAT or credential helper).
+
+To re-apply visibility (admin PAT via `npm run gitlab:auth` / `scripts/gitlab-mint-pat.mjs`):
 
 ```bash
-# Web UI (expect 200 or 302 to sign-in)
-curl -sS -o /dev/null -w 'sign_in=%{http_code}\n' https://gitlab.lilangverse.xyz/users/sign_in
+# Group (API may 500 — use rails runner on gitlab-0 if needed)
+curl -sk -X PUT -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://gitlab.lilangverse.xyz/api/v4/groups/4?visibility=public"
 
-# Git smart HTTP (private repo: 401 without token; public repo: 200 + refs)
+# Per project
+curl -sk -X PUT -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://gitlab.lilangverse.xyz/api/v4/projects/<id>?visibility=public"
+```
+
+## Verify (no VPN)
+
+From any external network (no `PRIVATE-TOKEN`):
+
+```bash
+# Explore / public project list
+curl -sS 'https://gitlab.lilangverse.xyz/api/v4/projects?visibility=public&per_page=5'
+
+# Public repo web UI (expect 200, not redirect to sign_in)
+curl -sS -o /dev/null -w 'lic_web=%{http_code}\n' \
+  https://gitlab.lilangverse.xyz/li-langverse/lic
+
+# Git smart HTTP on public repo (expect 200 + refs)
 curl -sS -o /dev/null -w 'git_refs=%{http_code}\n' \
   -H 'User-Agent: git/2.43.0' \
   'https://gitlab.lilangverse.xyz/li-langverse/lic.git/info/refs?service=git-upload-pack'
 
-# Clone / ls-remote (use deploy token or credential helper for private repos)
+# Anonymous clone / ls-remote (public repos only)
 GIT_TERMINAL_PROMPT=0 git ls-remote https://gitlab.lilangverse.xyz/li-langverse/lic.git
+
+# Sign-in page still available for push/admin
+curl -sS -o /dev/null -w 'sign_in=%{http_code}\n' https://gitlab.lilangverse.xyz/users/sign_in
+
+# Private repo still gated (expect 302/401 without token)
+curl -sS -o /dev/null -w 'homelab_config=%{http_code}\n' \
+  https://gitlab.lilangverse.xyz/li-langverse/gitlab-homelab-config
 ```
 
 On blackpearl (prod nginx :443; li-httpd dev :8443):
