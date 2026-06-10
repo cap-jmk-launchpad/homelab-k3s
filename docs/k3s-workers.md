@@ -1,4 +1,4 @@
-# k3s workers
+﻿# k3s workers
 
 Workers run the **k3s agent** and register with the control plane API on port 6443.
 
@@ -9,7 +9,8 @@ Workers run the **k3s agent** and register with the control plane API on port 64
 | `K3S_URL` | yes | e.g. `https://<control-plane-host>:6443` |
 | `K3S_TOKEN` | yes | From control plane: `sudo cat /var/lib/rancher/k3s/server/node-token` |
 | `NODE_NAME` | recommended | Kubernetes node name (defaults to short hostname) |
-| `NODE_IP` | sometimes | LAN IP for multi-homed or WSL mirrored networking |
+| NODE_IP | sometimes | LAN IP for multi-homed or WSL mirrored networking |
+| MAX_PODS | optional | Kubelet pod cap (default 110). Use 250 on dense workers with a /24 PodCIDR; writes /etc/rancher/k3s/config.yaml before install |
 
 ## Native Linux worker
 
@@ -39,7 +40,7 @@ WORKER_HOST=<admin-user>@<lan-ip> \
   bash scripts/join-from-control-plane.sh
 ```
 
-WSL workers often use a non-default SSH port — see below.
+WSL workers often use a non-default SSH port â€” see below.
 
 ## WSL2 worker (Ubuntu)
 
@@ -122,6 +123,17 @@ Notes:
 
 Label example: `workload=edge`, `machine=raspberry-pi`.
 
+
+## Raise kubelet max-pods (existing agent)
+
+Default kubelet capacity is **110 pods** per node. Dense workers (e.g. **engine**) can use `MAX_PODS=250` when joining, or on an already-joined host:
+
+```bash
+sudo MAX_PODS=250 bash scripts/k3s-write-kubelet-max-pods.sh
+sudo systemctl restart k3s-agent
+```
+
+Verify from the control plane: `kubectl describe node <name>` should show `pods: 250` under Capacity/Allocatable.
 ## Re-join after failure
 
 ```bash

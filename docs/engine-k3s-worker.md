@@ -1,10 +1,10 @@
-# engine — k3s GPU worker
+﻿# engine â€” k3s GPU worker
 
 Engine is the **dedicated GPU box** (not the daily driver). It joins **blackpearl** as a k3s agent for training workloads.
 
 | Item | Value |
 |------|--------|
-| Host | `engine` / `192.168.10.32` (Fritz!box may list `.29` / `.40` — use the one that answers SSH) |
+| Host | `engine` / `192.168.10.32` (Fritz!box may list `.29` / `.40` â€” use the one that answers SSH) |
 | User | `s4il0r` |
 | Cluster | `https://192.168.10.41:6443` (blackpearl) |
 | Labels | `workload=training`, `gpu=nvidia`, `machine=engine` |
@@ -28,7 +28,7 @@ ssh -i C:\Users\s4il0r\Documents\Programming\beelink-cleanup\blackpearl s4il0r@1
 
 ## Join cluster
 
-**Option A — from blackpearl (after SSH works):**
+**Option A â€” from blackpearl (after SSH works):**
 
 ```bash
 # on blackpearl
@@ -36,7 +36,7 @@ git clone ... beelink-cleanup  # or scp scripts/
 bash ~/staging/beelink-cleanup/scripts/onboard-engine-from-blackpearl.sh
 ```
 
-**Option B — on engine directly:**
+**Option B â€” on engine directly:**
 
 ```bash
 curl -sfL https://get.k3s.io | K3S_URL=https://192.168.10.41:6443 K3S_TOKEN='...' sh -s - agent --node-name engine
@@ -59,4 +59,18 @@ Engine has **no taint** (always welcome training). The daily PC should get `dedi
 
 ## Ollama LLM service (host GPU)
 
-Bare-metal Ollama on engine (not in k3s): [engine-ollama.md](engine-ollama.md) — `bash scripts/engine-ollama-deploy.sh` from this repo.
+Bare-metal Ollama on engine (not in k3s): [engine-ollama.md](engine-ollama.md) â€” `bash scripts/engine-ollama-deploy.sh` from this repo.
+## Pod capacity (max-pods)
+
+Engine schedules many CI/GitLab runner pods. Kubelet default **110** is too low; use **`max-pods=250`** (fits a per-node **/24** PodCIDR).
+
+**New joins** (from blackpearl): `MAX_PODS=250` is the default in `scripts/onboard-engine-from-blackpearl.sh` / `join-k3s-worker.sh`.
+
+**Already joined** (on engine):
+
+```bash
+sudo MAX_PODS=250 bash ~/k3s-join/k3s-write-kubelet-max-pods.sh   # or copy from homelab-k3s/scripts/
+sudo systemctl restart k3s-agent
+```
+
+Verify: `kubectl describe node engine` → Capacity/Allocatable `pods: 250`.
