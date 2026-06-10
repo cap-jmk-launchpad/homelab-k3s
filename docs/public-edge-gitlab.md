@@ -2,7 +2,7 @@
 
 Developers worldwide use **`https://gitlab.lilangverse.xyz`** directly. **Production GitLab HTTPS** uses **nginx** on blackpearl (`192.168.10.33`); GitLab Omnibus stays on k3s NodePort **30481** — no second install, no VPN, no NodePort in normal workflows.
 
-**li-httpd** remains in the stack for `:80` (ACME HTTP-01 + non-GitLab hostnames) and **`:8443` dev/benchmark** (full TLS overlay). Production edge uses nginx until li-httpd native relay is **TESTED** at 18/18 parallel on `:443`.
+**li-httpd** remains in the stack for `:80` (ACME HTTP-01 + non-GitLab hostnames) and **`:8443` dev/benchmark** (full TLS overlay). Production edge stays **nginx :443** until an explicit cutover — li-httpd native relay is **TESTED** on `:8443` at lic **`606bf37ba`** (parallel 18/18 ×5, npm test:proxy 18/18, Playwright PASS).
 
 ## Path
 
@@ -14,7 +14,7 @@ Fritz!Box WAN (77.23.124.82)  TCP 80 + 443  →  192.168.10.33 (blackpearl)
         │
         ├── :443  nginx (GitLab prod TLS)  ──►  127.0.0.1:30481
         ├── :80   li-httpd (ACME + other WAN/LAN hosts)
-        └── :8443 li-httpd TLS overlay (dev / benchmark / non-GitLab vhosts)
+        └── :8443 li-httpd TLS overlay (dev / benchmark — TESTED @ lic 606bf37ba)
 ```
 
 Registry (when enabled): `registry.gitlab.lilangverse.xyz` → same nginx upstream as web UI.
@@ -83,6 +83,18 @@ sudo systemctl restart li-httpd-homelab.service li-httpd-homelab-tls.service
 # Benchmark li-httpd on :8443 — production stays nginx :443
 ```
 
+### li-httpd dev cutover path (`:8443` → `:443`)
+
+When ready to move GitLab prod from nginx to li-httpd:
+
+1. Confirm **TESTED** on `:8443` at the target lic SHA (currently **`606bf37ba`** on `main` after MR !128).
+2. On blackpearl: `bash scripts/build-edge-li-httpd.sh` → `edge-lis-apply.sh` → restart `li-httpd-homelab-tls`.
+3. Run [edge-acceptance-gate.sh](../scripts/edge-acceptance-gate.sh) with `EDGE_PROBE_RESOLVE=gitlab.lilangverse.xyz:8443:127.0.0.1` (and LAN resolve) — all parallel/sequential/CSS gates **18/18** and **10/10**.
+4. Workstation: `npm test` in `homelab-k3s` (proxy + parallel + Playwright against `:443` nginx until cutover; use `:8443` resolve env for li-httpd-only gates).
+5. **Cutover (manual only):** point Fritz `:443` at li-httpd (stop `nginx-gitlab-edge`, bind li-httpd `:443`, or swap upstream in nginx) — do **not** auto-switch; prod stays nginx until operator approves.
+
+Merged relay fix: GitLab MR [li-langverse/lic!128](https://gitlab.lilangverse.xyz/li-langverse/lic/-/merge_requests/128) → `main` @ merge commit **`9f486a45`** (source **`606bf37ba`**).
+
 ## Verify (no VPN)
 
 From any external network:
@@ -132,7 +144,7 @@ Run the combined gate: [scripts/edge-acceptance-gate.sh](../scripts/edge-accepta
 
 **NOT TESTED** = any check below the above thresholds. Browser styling alone, sequential-only, or NodePort parallel success does **not** qualify.
 
-Workstation `curl.exe` (Schannel) is not an acceptance probe for large TLS bodies. Acceptance gates run against **nginx :443** (production path). li-httpd `:8443` gates are for relay development only.
+Workstation `curl.exe` (Schannel) is not an acceptance probe for large TLS bodies. Acceptance gates run against **nginx :443** (production path). li-httpd `:8443` gates (relay development / pre-cutover) use `EDGE_PROBE_RESOLVE=gitlab.lilangverse.xyz:8443:192.168.10.33` — **TESTED** at lic **`606bf37ba`**.
 
 ## Isolated acceptance before deploy
 

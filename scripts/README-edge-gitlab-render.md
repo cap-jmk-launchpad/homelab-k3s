@@ -54,9 +54,10 @@ npm run test:proxy
 bash scripts/edge-gitlab-assets-curl.sh
 ```
 
-**Windows PowerShell:**
+**Windows (PowerShell or npm):**
 
 ```powershell
+npm run test:edge-parallel   # node launcher → edge-parallel-18-probe.ps1
 .\scripts\edge-gitlab-assets-curl.ps1
 ```
 
