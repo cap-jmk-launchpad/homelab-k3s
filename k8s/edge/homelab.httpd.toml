@@ -16,6 +16,8 @@ fail_timeout = "10s"
 max_body = "512m"
 max_header = "32k"
 proxy_max_response_body = "64m"
+# Parallel pump bypass + stream counter (0 = disabled → gates stuck at 16–18/18, not ×3)
+concurrent_streams = 128
 # max_routes = 0   # default: unlimited dynamic route table (200+ [[site]] routes)
 # max_routes = 512 # optional hard cap; load fails if flattened config exceeds N
 
