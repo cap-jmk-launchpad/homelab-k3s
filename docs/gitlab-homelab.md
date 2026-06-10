@@ -14,6 +14,17 @@ Self-hosted **GitLab Community Edition** (Omnibus container) plus **GitLab Runne
 
 Bundled Omnibus monitoring (Prometheus/Grafana/exporters) is **disabled** in `k8s/gitlab/configmap.yaml` to save RAM.
 
+### Engine RAM headroom (li-swarm idle)
+
+When GitLab on **engine** is memory-starved, scale goal-directed workers to **0** and suspend org wake cronjobs (manifests in **li-cursor-agents** deploy/k8s/engine/). From a workstation with homelab kubeconfig:
+
+`powershell
+cd li-cursor-agents
+.\scripts\free-engine-memory-for-gitlab.ps1 -ApplyManifests
+`
+
+Resume sprints with .\scripts\scale-goal-workers-k8s.ps1 / per-sprint setup scripts and set spec.suspend: false on org wake cronjobs when re-enabling the org swarm. Do **not** lower the engine **5Gi** kubelet system reserve (homelab-k3s/scripts/apply-engine-memory-reserve.sh).
+
 ## Access (default: internal proto)
 
 | Mode | URL |
