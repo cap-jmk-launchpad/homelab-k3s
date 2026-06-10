@@ -1,97 +1,80 @@
 #!/usr/bin/env bash
-# Reserve host memory so k3s cannot schedule pods into the last N GiB (OOM safety).
-# Usage (on engine): sudo SYSTEM_RESERVED_MEMORY=5Gi ./k3s-write-kubelet-memory-reserve.sh
-# Optional: KUBE_RESERVED_MEMORY=512Mi EVICTION_MEMORY=1Gi
+# Reserve host memory so kubelet does not schedule pods into the OS safety margin.
+# Usage: sudo SYSTEM_RESERVED_MEMORY=5Gi ./k3s-write-kubelet-memory-reserve.sh
 set -euo pipefail
 
 SYSTEM_RESERVED_MEMORY="${SYSTEM_RESERVED_MEMORY:-5Gi}"
 KUBE_RESERVED_MEMORY="${KUBE_RESERVED_MEMORY:-512Mi}"
-EVICTION_MEMORY="${EVICTION_MEMORY:-1Gi}"
-RESTART_K3S="${RESTART_K3S:-1}"
+EVICTION_HARD="${EVICTION_HARD:-memory.available<1Gi}"
 
 if [[ "$(id -u)" -ne 0 ]]; then
-  echo "Run as root: sudo SYSTEM_RESERVED_MEMORY=${SYSTEM_RESERVED_MEMORY} $0" >&2
+  echo "Run as root: sudo SYSTEM_RESERVED_MEMORY=$SYSTEM_RESERVED_MEMORY $0" >&2
   exit 1
 fi
 
-CFG_DIR=/etc/rancher/k3s
-CFG_FILE="${CFG_DIR}/config.yaml"
+CFG_DIR="${HOST_ROOT:-}/etc/rancher/k3s"
+CFG_FILE="$CFG_DIR/config.yaml"
 mkdir -p "$CFG_DIR"
 
-[[ -f "$CFG_FILE" ]] && cp -a "$CFG_FILE" "${CFG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+if [[ -f "$CFG_FILE" ]]; then
+  cp -a "$CFG_FILE" "${CFG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+fi
 
-python3 - "$CFG_FILE" "$SYSTEM_RESERVED_MEMORY" "$KUBE_RESERVED_MEMORY" "$EVICTION_MEMORY" <<'PY'
+python3 - "$CFG_FILE" "$SYSTEM_RESERVED_MEMORY" "$KUBE_RESERVED_MEMORY" "$EVICTION_HARD" <<'PY'
 import sys
 from pathlib import Path
 
 cfg_path = Path(sys.argv[1])
 sys_mem = sys.argv[2]
 kube_mem = sys.argv[3]
-evict = sys.argv[4]
+eviction = sys.argv[4]
 
-want = {
-    f"system-reserved=memory={sys_mem},cpu=250m",
-    f"kube-reserved=memory={kube_mem},cpu=100m",
-    f"eviction-hard=memory.available<{evict},imagefs.available<10%",
-}
+wanted = [
+    f"system-reserved=memory={sys_mem}",
+    f"kube-reserved=memory={kube_mem}",
+    f"eviction-hard={eviction}",
+]
 
 text = cfg_path.read_text() if cfg_path.exists() else ""
 lines = text.splitlines()
-
-def strip_arg(line: str) -> str | None:
-    line = line.strip()
-    if not line.startswith("- "):
-        return None
-    val = line[2:].strip().strip('"').strip("'")
-    return val.split("=", 1)[0] if "=" in val else val
-
 out: list[str] = []
-in_kubelet = False
-existing: list[str] = []
+i = 0
+kubelet_block = False
+existing: set[str] = set()
 
-for line in lines:
+while i < len(lines):
+    line = lines[i]
     if line.startswith("kubelet-arg:"):
-        in_kubelet = True
+        kubelet_block = True
         out.append(line)
+        i += 1
+        while i < len(lines) and lines[i].startswith("  - "):
+            val = lines[i].split('"')[1] if '"' in lines[i] else lines[i]
+            key = val.split("=")[0]
+            existing.add(key)
+            out.append(lines[i])
+            i += 1
+        for arg in wanted:
+            key = arg.split("=")[0]
+            if key not in existing:
+                out.append(f'  - "{arg}"')
+        kubelet_block = False
         continue
-    if in_kubelet:
-        if line.startswith("  - "):
-            existing.append(line)
-            continue
-        in_kubelet = False
     out.append(line)
+    i += 1
 
-prefixes = {
-    "system-reserved",
-    "kube-reserved",
-    "eviction-hard",
-}
-kept = []
-for line in existing:
-    val = strip_arg(line)
-    if val and any(val.startswith(p) for p in prefixes):
-        continue
-    kept.append(line)
-
-final_args = kept + [f'  - "{arg}"' for arg in sorted(want)]
-
-if "kubelet-arg:" not in out:
-    if out and out[-1].strip():
-        out.append("")
+if not any(line.startswith("kubelet-arg:") for line in out):
     out.append("kubelet-arg:")
-else:
-    # replace block: find kubelet-arg line index and drop until non-indented
-    idx = out.index("kubelet-arg:")
-    out = out[: idx + 1]
+    for arg in wanted:
+        out.append(f'  - "{arg}"')
 
-out.extend(final_args)
 cfg_path.write_text("\n".join(out).rstrip() + "\n")
-print(f"Wrote kubelet memory reserve to {cfg_path}")
-for arg in sorted(want):
-    print(f"  {arg}")
 PY
 
-if [[ "$RESTART_K3S" == "1" ]]; then
+echo "Wrote memory reserve to $CFG_FILE:"
+grep -E 'system-reserved|kube-reserved|eviction-hard' "$CFG_FILE" || true
+
+if ${HOST_ROOT:+false} true; then
   if systemctl is-active --quiet k3s-agent; then
     systemctl restart k3s-agent
     echo "restarted k3s-agent"
@@ -99,4 +82,8 @@ if [[ "$RESTART_K3S" == "1" ]]; then
     systemctl restart k3s
     echo "restarted k3s server"
   fi
+else
+  nsenter -t 1 -m -u -i -n -p -- systemctl restart k3s-agent || \
+    nsenter -t 1 -m -u -i -n -p -- systemctl restart k3s || true
+  echo "restarted k3s via nsenter"
 fi
