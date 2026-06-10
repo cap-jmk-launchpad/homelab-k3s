@@ -17,6 +17,15 @@ Homelab GitLab runs on k3s NodePort **30481** behind **li-httpd** at `https://gi
 | Render gate | `npm run test:edge-render` | Playwright CSS/JS acceptance |
 | Full edge suite | `npm test` | proxy + parallel + render |
 
+## Windows workstation (stop git sign-in popups)
+
+See **[windows-git-auth.md](windows-git-auth.md)** — store PAT in Credential Manager after `npm run gitlab:auth`:
+
+```powershell
+cd homelab-k3s
+npm run windows:git-auth
+```
+
 ## Mint PAT / refresh auth (`npm run gitlab:auth` — ~30s)
 
 From workstation (needs `KUBECONFIG=~/.kube/config-homelab`):

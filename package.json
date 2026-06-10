@@ -13,7 +13,8 @@
     "gitlab:auth": "npm run gitlab:mint-pat",
     "gitlab:auth:browser": "playwright test gitlab-playwright-auth --project=gitlab-auth",
     "gitlab:auth:browser:pat": "playwright test gitlab-playwright-auth --project=gitlab-auth-pat",
-    "gitlab:mint-pat": "node scripts/gitlab-mint-pat.mjs"
+    "gitlab:mint-pat": "node scripts/gitlab-mint-pat.mjs",
+    "windows:git-auth": "pwsh -NoProfile -File scripts/windows-git-auth-setup.ps1"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
