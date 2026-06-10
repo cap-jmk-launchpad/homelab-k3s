@@ -62,6 +62,10 @@ peers = ["http://127.0.0.1:30583"]
 policy = "ip_hash"
 peers = ["http://127.0.0.1:30481"]
 
+[upstreams.lip_registry]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30422"]
+
 [upstreams.dependency_track]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30482"]
@@ -195,6 +199,24 @@ listen = ":80"
 "PATCH /*" = "proxy:gitlab"
 "DELETE /*" = "proxy:gitlab"
 "OPTIONS /*" = "proxy:gitlab"
+
+# lip package registry API (engine k3s NodePort 30422). No OAuth on GET /v1.
+[[site]]
+host = "lip.lilangverse.xyz"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "proxy:lip_registry"
+"HEAD /health" = "proxy:lip_registry"
+"GET /v1/*" = "proxy:lip_registry"
+"HEAD /v1/*" = "proxy:lip_registry"
+"POST /v1/*" = "proxy:lip_registry"
+"PUT /v1/*" = "proxy:lip_registry"
+"PATCH /v1/*" = "proxy:lip_registry"
+"DELETE /v1/*" = "proxy:lip_registry"
+"OPTIONS /v1/*" = "proxy:lip_registry"
+"GET /account/*" = "proxy:lip_registry"
+"POST /account/*" = "proxy:lip_registry"
 
 [[site]]
 host = "deps.klaut.pro"
