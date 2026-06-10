@@ -14,7 +14,7 @@ spec:
     spec:
       restartPolicy: OnFailure
       nodeSelector:
-        kubernetes.io/hostname: blackpearl
+        kubernetes.io/hostname: engine
       containers:
         - name: migrate
           image: postgres:15-alpine
