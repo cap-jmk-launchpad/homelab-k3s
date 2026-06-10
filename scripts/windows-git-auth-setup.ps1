@@ -63,4 +63,4 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "OK: GitLab HTTPS auth stored in Windows Credential Manager."
-Write-Host "GitHub: run 'gh auth status' — uses gh auth git-credential (no GCM popup)."
+Write-Host "GitHub: run 'gh auth status' - uses gh auth git-credential (no GCM popup)."
