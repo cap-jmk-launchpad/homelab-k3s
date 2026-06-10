@@ -2,7 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 const host = process.env.GITLAB_HOST ?? "gitlab.lilangverse.xyz";
 const edgeIp = process.env.EDGE_IP ?? "192.168.10.33";
-const signInUrl = `https://${host}/users/sign_in`;
+const edgePort = process.env.GITLAB_EDGE_PORT ?? "443";
+const origin =
+  edgePort === "443" ? `https://${host}` : `https://${host}:${edgePort}`;
+const signInUrl = `${origin}/users/sign_in`;
 
 export default defineConfig({
   testDir: "./scripts",
@@ -29,14 +32,14 @@ export default defineConfig({
       name: "edge-gitlab-render",
       testMatch: "edge-gitlab-render.spec.ts",
       use: {
-        baseURL: `https://${host}`,
+        baseURL: origin,
       },
     },
     {
       name: "gitlab-auth",
       testMatch: "gitlab-playwright-auth.spec.ts",
       use: {
-        baseURL: `https://${host}`,
+        baseURL: origin,
       },
     },
     {
@@ -50,7 +53,7 @@ export default defineConfig({
       name: "gitlab-auth-pat",
       testMatch: "gitlab-playwright-auth.spec.ts",
       use: {
-        baseURL: `https://${host}`,
+        baseURL: origin,
       },
     },
   ],

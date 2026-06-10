@@ -10,6 +10,7 @@ Environment=LIC_ROOT=/home/s4il0r/staging/lic
 Environment=LI_HTTPD_ROOT=/home/s4il0r/staging/li-httpd
 Environment=MAJICO_HTTPD_TOML=/home/s4il0r/staging/majico-deploy/deploy/staging/edge/majico-staging.httpd.toml
 Environment=LI_HTTPD_WORKERS=auto
+Environment=LI_HTTPD_USE_NATIVE_PROXY_RELAY=1
 ExecStartPre=/bin/mkdir -p /run/li-httpd /var/lib/li-httpd/tls/homelab /var/lib/li-httpd/empty
 ExecStartPre=/bin/bash -c 'for i in $(seq 1 120); do test -f /run/li-httpd/.render-ready && exit 0; sleep 1; done; echo "timeout waiting for /run/li-httpd/.render-ready (HTTP unit must render first)" >&2; exit 1'
 ExecStart=/usr/local/bin/li-httpd /run/li-httpd/homelab.tls.runtime.conf

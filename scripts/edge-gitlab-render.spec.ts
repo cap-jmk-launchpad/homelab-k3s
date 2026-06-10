@@ -3,7 +3,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 const HOST = process.env.GITLAB_HOST ?? "gitlab.lilangverse.xyz";
-const SIGN_IN = `https://${HOST}/users/sign_in`;
+const EDGE_PORT = process.env.GITLAB_EDGE_PORT ?? "443";
+const ORIGIN =
+  EDGE_PORT === "443" ? `https://${HOST}` : `https://${HOST}:${EDGE_PORT}`;
+const SIGN_IN = `${ORIGIN}/users/sign_in`;
 const ARTIFACT_DIR = path.join(__dirname, "..", "test-results", "edge-gitlab-render");
 
 const BENIGN_CONSOLE = [

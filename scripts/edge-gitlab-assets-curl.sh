@@ -4,7 +4,8 @@ set -eu
 
 HOST="${GITLAB_HOST:-gitlab.lilangverse.xyz}"
 EDGE_IP="${EDGE_IP:-192.168.10.33}"
-RESOLVE="${HOST}:443:${EDGE_IP}"
+EDGE_PORT="${GITLAB_EDGE_PORT:-443}"
+RESOLVE="${HOST}:${EDGE_PORT}:${EDGE_IP}"
 HTML="${TMPDIR:-/tmp}/gitlab_sign_in.html"
 ASSET_LIST="${TMPDIR:-/tmp}/gitlab_assets18.txt"
 
