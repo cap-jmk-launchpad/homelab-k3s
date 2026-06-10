@@ -10,7 +10,7 @@ LOCAL_BIND="${EDGE_HEALTH_LOCAL_BIND:-127.0.0.1}"
 TIMEOUT="${EDGE_HEALTH_TIMEOUT:-15}"
 
 if command -v curl >/dev/null 2>&1; then
-  if [[ "$PORT" == "443" ]]; then
+  if [[ "$PORT" == "443" || "$PORT" == "8443" ]]; then
     curl -fsS --connect-timeout "$TIMEOUT" --max-time "$TIMEOUT" \
       -k --resolve "${HOST}:${PORT}:${LOCAL_BIND}" \
       "https://${HOST}${PATH_PROBE}" >/dev/null
@@ -20,7 +20,7 @@ if command -v curl >/dev/null 2>&1; then
       "http://${HOST}${PATH_PROBE}" >/dev/null
   fi
 elif command -v wget >/dev/null 2>&1; then
-  if [[ "$PORT" == "443" ]]; then
+  if [[ "$PORT" == "443" || "$PORT" == "8443" ]]; then
     wget -qO- --timeout="$TIMEOUT" --no-check-certificate \
       --header="Host: ${HOST}" "https://${LOCAL_BIND}${PATH_PROBE}" >/dev/null
   else

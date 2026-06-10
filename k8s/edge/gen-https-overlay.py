@@ -24,7 +24,9 @@ HOMELAB_EDGE_TLS_LIVE = os.environ.get(
 HOMELAB_EDGE_TLS_LIVE = os.environ.get(
     "HOMELAB_EDGE_TLS_LIVE", "/etc/letsencrypt/live/homelab-edge"
 ).strip()
-LISTEN_HTTPS = ":443"
+# Production GitLab HTTPS is nginx :443; li-httpd TLS overlay uses :8443 for dev/benchmark.
+_LISTEN_RAW = os.environ.get("HOMELAB_LI_HTTPD_TLS_PORT", ":8443").strip()
+LISTEN_HTTPS = _LISTEN_RAW if _LISTEN_RAW.startswith(":") else f":{_LISTEN_RAW}"
 ACME_EMAIL = os.environ.get("HOMELAB_ACME_EMAIL", "admin@majico.xyz").strip()
 
 WAN_TLS_SUFFIXES = (".klaut.pro", ".d3bu7.com", ".lilangverse.xyz", ".obsevia.com")

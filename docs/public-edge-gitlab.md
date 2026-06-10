@@ -1,6 +1,8 @@
 # Public access — no VPN required
 
-Developers worldwide use **`https://gitlab.lilangverse.xyz`** directly. The homelab edge is **li-httpd** on blackpearl (`192.168.10.33`); GitLab Omnibus stays on k3s NodePort **30481** — no second install, no VPN, no NodePort in normal workflows.
+Developers worldwide use **`https://gitlab.lilangverse.xyz`** directly. **Production GitLab HTTPS** uses **nginx** on blackpearl (`192.168.10.33`); GitLab Omnibus stays on k3s NodePort **30481** — no second install, no VPN, no NodePort in normal workflows.
+
+**li-httpd** remains in the stack for `:80` (ACME HTTP-01 + non-GitLab hostnames) and **`:8443` dev/benchmark** (full TLS overlay). Production edge uses nginx until li-httpd native relay is **TESTED** at 18/18 parallel on `:443`.
 
 ## Path
 
@@ -10,14 +12,12 @@ Internet / developers
         ▼
 Fritz!Box WAN (77.23.124.82)  TCP 80 + 443  →  192.168.10.33 (blackpearl)
         │
-        ▼
-li-httpd :80 (HTTP + ACME)  /  :443 (TLS)
-        │  Host: gitlab.lilangverse.xyz
-        ▼
-127.0.0.1:30481  (gitlab Service NodePort → Omnibus on engine)
+        ├── :443  nginx (GitLab prod TLS)  ──►  127.0.0.1:30481
+        ├── :80   li-httpd (ACME + other WAN/LAN hosts)
+        └── :8443 li-httpd TLS overlay (dev / benchmark / non-GitLab vhosts)
 ```
 
-Registry (when enabled): `registry.gitlab.lilangverse.xyz` → same upstream.
+Registry (when enabled): `registry.gitlab.lilangverse.xyz` → same nginx upstream as web UI.
 
 ## Edge routes (source of truth)
 
@@ -41,7 +41,7 @@ Forward **only** to the edge IP — not the SSH/admin address:
 | TCP **80** | **80** | **192.168.10.33** |
 | TCP **443** | **443** | **192.168.10.33** |
 
-Do **not** point port 80 at another host that returns a static `ok` page; **Let's Encrypt HTTP-01** and GitLab both need li-httpd on `:80` with `/.well-known/acme-challenge` routed.
+Do **not** point port 80 at another host that returns a static `ok` page; **Let's Encrypt HTTP-01** needs li-httpd on `:80` with `/.well-known/acme-challenge` routed (nginx uses the issued certs on `:443`).
 
 Details: [fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md) (same IP rules for `*.klaut.pro` and `*.lilangverse.xyz`).
 
@@ -58,25 +58,30 @@ Issue or renew GitLab cert on blackpearl (HTTP-01 via li-httpd `:80`):
 ```bash
 sudo certbot certonly --webroot -w /var/lib/li-httpd/acme \
   -d gitlab.lilangverse.xyz -d registry.gitlab.lilangverse.xyz
-sudo bash ~/staging/homelab-k3s/scripts/edge-lis-apply.sh
-sudo systemctl restart li-httpd-homelab.service li-httpd-homelab-tls.service
+sudo systemctl reload nginx-gitlab-edge.service
 ```
+
+Certbot timer handles auto-renewal; reload nginx after renew (`certbot renew --deploy-hook "systemctl reload nginx-gitlab-edge"`).
 
 ## Deploy / refresh edge
 
-On blackpearl (after rsync `homelab-k3s`, `lic`, `li-httpd`):
+On blackpearl (after rsync `homelab-k3s`):
 
 ```bash
 cd ~/staging/homelab-k3s
-bash scripts/build-edge-li-httpd.sh    # dynamic route table + edge patches
-sudo bash scripts/edge-lis-apply.sh --install-systemd
-sudo systemctl restart li-httpd-homelab.service
-sleep 2
-sudo systemctl restart li-httpd-homelab-tls.service
+sudo bash scripts/edge-nginx-apply.sh --install-systemd   # nginx :443 GitLab prod
+sudo bash scripts/edge-lis-apply.sh --install-systemd     # li-httpd :80 + :8443 dev TLS
 sudo systemctl enable --now li-httpd-edge-watchdog.timer
 ```
 
-Requires `lic` on `main` (merged 2026-06-09, includes dynamic routes + TLS proxy relay fixes) — homelab flatten emits 200+ routes.
+li-httpd dev rebuild (when iterating `lic` relay):
+
+```bash
+bash scripts/build-edge-li-httpd.sh
+sudo bash scripts/edge-lis-apply.sh
+sudo systemctl restart li-httpd-homelab.service li-httpd-homelab-tls.service
+# Benchmark li-httpd on :8443 — production stays nginx :443
+```
 
 ## Verify (no VPN)
 
@@ -95,12 +100,16 @@ curl -sS -o /dev/null -w 'git_refs=%{http_code}\n' \
 GIT_TERMINAL_PROMPT=0 git ls-remote https://gitlab.lilangverse.xyz/li-langverse/lic.git
 ```
 
-On blackpearl (always hits local li-httpd — use for edge debugging):
+On blackpearl (prod nginx :443; li-httpd dev :8443):
 
 ```bash
-curl -skI -H 'Host: gitlab.lilangverse.xyz' https://127.0.0.1/users/sign_in
-curl -skI -H 'Host: gitlab.lilangverse.xyz' \
-  'https://127.0.0.1/li-langverse/lic.git/info/refs?service=git-upload-pack'
+curl -skI --resolve gitlab.lilangverse.xyz:443:127.0.0.1 \
+  https://gitlab.lilangverse.xyz/users/sign_in
+curl -skI --resolve gitlab.lilangverse.xyz:443:127.0.0.1 \
+  'https://gitlab.lilangverse.xyz/li-langverse/lic.git/info/refs?service=git-upload-pack'
+# li-httpd dev overlay:
+curl -skI --resolve gitlab.lilangverse.xyz:8443:127.0.0.1 \
+  https://gitlab.lilangverse.xyz:8443/users/sign_in
 ```
 
 Hairpin from inside the LAN may differ from WAN; the edge watchdog probes with `--resolve gitlab.lilangverse.xyz:443:127.0.0.1` so restarts are not triggered by Fritz hairpin failures.
@@ -123,11 +132,11 @@ Run the combined gate: [scripts/edge-acceptance-gate.sh](../scripts/edge-accepta
 
 **NOT TESTED** = any check below the above thresholds. Browser styling alone, sequential-only, or NodePort parallel success does **not** qualify.
 
-Workstation `curl.exe` (Schannel) is not an acceptance probe for large TLS bodies. Fix `lic`, rebuild on blackpearl, re-run the gate — do not enable `li-httpd-edge-watchdog.timer` until **TESTED**.
+Workstation `curl.exe` (Schannel) is not an acceptance probe for large TLS bodies. Acceptance gates run against **nginx :443** (production path). li-httpd `:8443` gates are for relay development only.
 
 ## Isolated acceptance before deploy
 
-On blackpearl, stop the edge watchdog and kill orphan `/tmp/li-httpd` processes before testing. Rebuild with `build-edge-li-httpd.sh`, restart `li-httpd-homelab` then `li-httpd-homelab-tls`, then run [scripts/edge-acceptance-gate.sh](../scripts/edge-acceptance-gate.sh). The sequential CSS/JS checks (tests A–C below) remain useful for bisecting upstream vs edge; the **parallel 18/18** probes above are the hard gate.
+On blackpearl, stop the edge watchdog before testing. With nginx on `:443`, run [scripts/edge-acceptance-gate.sh](../scripts/edge-acceptance-gate.sh). For li-httpd relay work, probe `:8443` instead (`EDGE_PROBE_RESOLVE=gitlab.lilangverse.xyz:8443:127.0.0.1`). The sequential CSS/JS checks (tests A–C below) remain useful for bisecting upstream vs edge; the **parallel 18/18** probes above are the hard gate.
 
 | Test | Command pattern | Pass |
 |------|-----------------|------|
@@ -147,7 +156,7 @@ curl -H 'Host: gitlab.lilangverse.xyz' http://192.168.10.33:30481/users/sign_in
 git -c http.sslVerify=false ls-remote http://192.168.10.33:30481/li-langverse/lic.git
 ```
 
-Do **not** publish NodePort 30481 on Fritz. Production path is always **443 → li-httpd → 30481**.
+Do **not** publish NodePort 30481 on Fritz. Production path is always **443 → nginx → 30481**.
 
 ## Fast iteration (tokens, API bypass)
 

@@ -1,5 +1,5 @@
 [Unit]
-Description=li-httpd homelab edge TLS (:443)
+Description=li-httpd homelab edge TLS (:8443 dev — prod GitLab is nginx :443)
 After=network-online.target k3s.service li-httpd-homelab.service
 Wants=network-online.target
 # Render: edge-lis-apply.sh holds /run/li-httpd/edge-apply.lock (safe parallel restarts).
@@ -13,7 +13,7 @@ Environment=LI_HTTPD_WORKERS=auto
 ExecStartPre=/bin/mkdir -p /run/li-httpd /var/lib/li-httpd/tls/homelab /var/lib/li-httpd/empty
 ExecStartPre=/bin/bash -c 'for i in $(seq 1 120); do test -f /run/li-httpd/.render-ready && exit 0; sleep 1; done; echo "timeout waiting for /run/li-httpd/.render-ready (HTTP unit must render first)" >&2; exit 1'
 ExecStart=/usr/local/bin/li-httpd /run/li-httpd/homelab.tls.runtime.conf
-ExecStartPost=-/usr/local/bin/edge-health-probe.sh 443 gitlab.lilangverse.xyz /health
+ExecStartPost=-/usr/local/bin/edge-health-probe.sh 8443 gitlab.lilangverse.xyz /health
 User=root
 Group=root
 Restart=always

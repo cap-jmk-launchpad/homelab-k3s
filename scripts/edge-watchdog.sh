@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# blackpearl edge watchdog — verify GitLab HTTPS on local li-httpd; heal only after repeated local failures.
+# blackpearl edge watchdog — GitLab prod HTTPS via nginx :443; heal nginx + li-httpd HTTP.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APPLY="${EDGE_LIS_APPLY:-${SCRIPT_DIR}/edge-lis-apply.sh}"
+NGINX_APPLY="${EDGE_NGINX_APPLY:-${SCRIPT_DIR}/edge-nginx-apply.sh}"
 if [[ ! -f "$APPLY" ]]; then
   APPLY="/home/s4il0r/staging/homelab-k3s/scripts/edge-lis-apply.sh"
+fi
+if [[ ! -f "$NGINX_APPLY" ]]; then
+  NGINX_APPLY="/home/s4il0r/staging/homelab-k3s/scripts/edge-nginx-apply.sh"
 fi
 HOST="${EDGE_WATCHDOG_HOST:-gitlab.lilangverse.xyz}"
 PATH_PROBE="${EDGE_WATCHDOG_PATH:-/users/sign_in}"
@@ -48,12 +52,13 @@ http_code() {
   fi
 }
 
-if ! systemctl is-active --quiet li-httpd-homelab.service 2>/dev/null \
-  || ! systemctl is-active --quiet li-httpd-homelab-tls.service 2>/dev/null; then
-  log "li-httpd unit inactive — render + restart"
+if ! systemctl is-active --quiet nginx-gitlab-edge.service 2>/dev/null \
+  || ! systemctl is-active --quiet li-httpd-homelab.service 2>/dev/null; then
+  log "nginx-gitlab-edge or li-httpd HTTP inactive — apply + restart"
+  bash "$NGINX_APPLY" --install-systemd 2>/dev/null || bash "$NGINX_APPLY" || true
   bash "$APPLY" --no-reload || true
+  systemctl restart nginx-gitlab-edge.service 2>/dev/null || true
   systemctl restart li-httpd-homelab.service
-  systemctl restart li-httpd-homelab-tls.service
   write_streak 0
   exit 0
 fi
@@ -80,11 +85,12 @@ if [[ "$streak" -lt "$FAIL_THRESHOLD" ]]; then
   exit 0
 fi
 
-log "local failed ${FAIL_THRESHOLD}x — edge-lis-apply --no-reload + sequential restart"
+log "local failed ${FAIL_THRESHOLD}x — nginx + li-httpd HTTP heal"
 bash "$APPLY" --no-reload
+bash "$NGINX_APPLY" --no-reload 2>/dev/null || true
 systemctl restart li-httpd-homelab.service
 sleep 2
-systemctl restart li-httpd-homelab-tls.service
+systemctl restart nginx-gitlab-edge.service
 write_streak 0
 
 sleep 3

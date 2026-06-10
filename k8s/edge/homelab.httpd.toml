@@ -3,7 +3,7 @@
 # Backends: k3s NodePorts on loopback (kube-proxy).
 # Policy: docs/li-native-edge.md
 
-# listen on :80 is per [[site]]; :443 TLS uses gen-https-overlay (second li-httpd).
+# listen on :80 is per [[site]]; :8443 TLS dev overlay uses gen-https-overlay (prod GitLab: nginx :443).
 [server]
 document_root = "/var/lib/li-httpd/empty"
 

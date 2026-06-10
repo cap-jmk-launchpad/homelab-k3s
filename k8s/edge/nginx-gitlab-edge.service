@@ -1,0 +1,19 @@
+[Unit]
+Description=nginx GitLab production edge (:443)
+Documentation=file:///home/s4il0r/staging/homelab-k3s/docs/public-edge-gitlab.md
+After=network-online.target k3s.service
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile=/run/nginx-gitlab-edge.pid
+ExecStartPre=/usr/sbin/nginx -t -c /etc/nginx/gitlab-edge/nginx.conf
+ExecStart=/usr/sbin/nginx -c /etc/nginx/gitlab-edge/nginx.conf
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s QUIT $MAINPID
+ExecStartPost=-/usr/local/bin/edge-health-probe.sh 443 gitlab.lilangverse.xyz /users/sign_in
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
