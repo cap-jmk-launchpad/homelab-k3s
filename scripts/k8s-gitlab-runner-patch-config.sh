@@ -35,6 +35,7 @@ listen_address = ":9252"
     service_account = "gitlab-runner"
     helper_image = "registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.11.4"
     helper_image_pull_policy = "if-not-present"
+    pull_policy = "if-not-present"
     allowed_pull_policies = ["always", "if-not-present"]
     [runners.kubernetes.node_selector]
       "kubernetes.io/arch" = "amd64"

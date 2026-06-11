@@ -51,7 +51,6 @@ spec:
                   --run-untagged=true \
                   --locked=false
               fi
-              if [[ -f /etc/gitlab-runner/config.toml ]] && ! grep -q 'allowed_pull_policies' /etc/gitlab-runner/config.toml; then
               if [[ -f /etc/gitlab-runner/config.toml ]] && ! grep -q 'kubernetes.io/hostname' /etc/gitlab-runner/config.toml; then
                 if grep -q '\[runners.kubernetes.node_selector\]' /etc/gitlab-runner/config.toml; then
                   sed -i '/\[runners.kubernetes.node_selector\]/a\    "kubernetes.io/hostname" = "engine"' /etc/gitlab-runner/config.toml
@@ -59,7 +58,11 @@ spec:
                   sed -i '/service_account = "gitlab-runner"/a\\n  [runners.kubernetes.node_selector]\n    "kubernetes.io/hostname" = "engine"' /etc/gitlab-runner/config.toml
                 fi
               fi
+              if [[ -f /etc/gitlab-runner/config.toml ]] && ! grep -q 'allowed_pull_policies' /etc/gitlab-runner/config.toml; then
                 sed -i '/service_account = "gitlab-runner"/a\    allowed_pull_policies = ["always", "if-not-present"]' /etc/gitlab-runner/config.toml
+              fi
+              if [[ -f /etc/gitlab-runner/config.toml ]] && ! grep -q '^    pull_policy = ' /etc/gitlab-runner/config.toml; then
+                sed -i '/service_account = "gitlab-runner"/a\    pull_policy = "if-not-present"' /etc/gitlab-runner/config.toml
               fi
               exec gitlab-runner run --user=gitlab-runner --working-directory=/home/gitlab-runner
           env:
