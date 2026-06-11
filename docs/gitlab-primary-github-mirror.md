@@ -52,6 +52,37 @@ cd li-cursor-agents
 
 Uses `~/.kube/config-homelab`, patches `li-agents-secrets`, restarts goal-directed deployments.
 
+## Mirror drift recovery
+
+If GitHub `main` advanced without GitLab (e.g. mistaken GitHub admin-merge):
+
+```powershell
+cd <repo>
+git fetch origin github
+git checkout main
+git merge github/main    # or cherry-pick; resolve conflicts favoring GitLab policy
+git push origin main     # GitLab push-mirror updates GitHub
+```
+
+Never leave GitHub ahead of GitLab for li-langverse code repos.
+
+If GitLab already has the correct merge (e.g. MR merged on GitLab) but GitHub was updated by mistake, **do not** cherry-pick onto GitHub. GitLab stays canonical; run the mirror so GitHub catches up:
+
+```powershell
+cd li-cursor-agents
+.\scripts\run-gitlab-github-mirror-local.ps1   # or wait for li-swarm CronJob
+.\scripts\assert-gitlab-primary.ps1
+```
+
+## Drift check (CI / manual)
+
+```powershell
+cd li-cursor-agents
+.\scripts\assert-gitlab-primary.ps1
+```
+
+Fails when `github/main` is not an ancestor of `origin/main` (GitHub ahead of GitLab).
+
 ## Excluded repos
 
 | Repo | Policy |
