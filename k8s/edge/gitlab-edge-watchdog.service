@@ -1,0 +1,10 @@
+[Unit]
+Description=GitLab nginx upstream watchdog (NodePort / engine IP / tunnel)
+After=network-online.target nginx-gitlab-edge.service k3s.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=HOME=/home/s4il0r
+Environment=KUBECONFIG=/home/s4il0r/.kube/config
+ExecStart=/usr/local/bin/gitlab-edge-watchdog.sh
