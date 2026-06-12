@@ -1,13 +1,13 @@
-# GitLab-primary, GitHub-mirror (li-langverse)
+# GitLab-primary; GitHub = GHCR only (li-langverse)
 
-Develop on **GitLab** (`gitlab.lilangverse.xyz/li-langverse/*`). **GitHub** is a read-only mirror. Container images stay on **GHCR** (`ghcr.io/li-langverse/*`).
+Develop on **GitLab** (`gitlab.lilangverse.xyz/li-langverse/*`). **GitHub** (`github.com/li-langverse`) is **not** a git backup mirror for day-to-day work — the org uses GitHub **only for GHCR** (`ghcr.io/li-langverse/*`) and legacy Pages workflows that still deploy from mirrored refs until fully migrated.
 
-## Remotes (after cutover)
+## Remotes (product repos)
 
 | Remote | URL | Push |
 |--------|-----|------|
-| `origin` | `https://gitlab.lilangverse.xyz/li-langverse/<repo>.git` | yes |
-| `github` | `https://github.com/li-langverse/<repo>.git` | **disabled** (fetch only) |
+| `origin` | `https://gitlab.lilangverse.xyz/li-langverse/<repo>.git` | **yes** |
+| `github` | — | **do not use** for git (GHCR login only) |
 
 Apply locally:
 
@@ -21,8 +21,8 @@ cd li-cursor-agents
 | Variable | Use |
 |----------|-----|
 | `GITLAB_TOKEN` | Git clone/push, GitLab API, K8s `li-agents-secrets` |
-| `GH_TOKEN` | GitHub API, GHCR pull, Pages workflows |
-| `GH_MIRROR_TOKEN` | GitLab→GitHub push mirror (blackpearl only) |
+| `GH_TOKEN` | **GHCR** push/pull, GitHub API where still required |
+| `GH_MIRROR_TOKEN` | **Deprecated** — git push mirrors to GitHub are being retired |
 
 Store locally in `li/.env.gitlab` (copy from `.env.gitlab.example`). Never commit secrets.
 
@@ -52,27 +52,9 @@ cd li-cursor-agents
 
 Uses `~/.kube/config-homelab`, patches `li-agents-secrets`, restarts goal-directed deployments.
 
-## Mirror drift recovery
+## If old GitHub git mirrors still exist
 
-If GitHub `main` advanced without GitLab (e.g. mistaken GitHub admin-merge):
-
-```powershell
-cd <repo>
-git fetch origin github
-git checkout main
-git merge github/main    # or cherry-pick; resolve conflicts favoring GitLab policy
-git push origin main     # GitLab push-mirror updates GitHub
-```
-
-Never leave GitHub ahead of GitLab for li-langverse code repos.
-
-If GitLab already has the correct merge (e.g. MR merged on GitLab) but GitHub was updated by mistake, **do not** cherry-pick onto GitHub. GitLab stays canonical; run the mirror so GitHub catches up:
-
-```powershell
-cd li-cursor-agents
-.\scripts\run-gitlab-github-mirror-local.ps1   # or wait for li-swarm CronJob
-.\scripts\assert-gitlab-primary.ps1
-```
+Legacy `github.com/li-langverse/*` repos may lag or be archived. **GitLab is canonical.** Do not merge on GitHub. If you need to retire a mirror, archive the GitHub repo and update docs — do not treat GitHub as backup git.
 
 ## Drift check (CI / manual)
 
@@ -81,13 +63,13 @@ cd li-cursor-agents
 .\scripts\assert-gitlab-primary.ps1
 ```
 
-Fails when `github/main` is not an ancestor of `origin/main` (GitHub ahead of GitLab).
+Only relevant while GitHub mirrors still exist; fails when `github/main` is not an ancestor of `origin/main`.
 
 ## Excluded repos
 
 | Repo | Policy |
 |------|--------|
-| `homelab-k3s` | `cap-jmk-launchpad` — GitHub-primary |
+| `homelab-k3s` | `cap-jmk-launchpad` — GitHub-primary (infra) |
 | `klaut-*` | Foreign product track |
 
 See also: `li/.cursor/rules/gitlab-primary-github-mirror.mdc`, `homelab-k3s/docs/windows-git-auth.md`.

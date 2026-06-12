@@ -102,7 +102,7 @@ As of **2026-06-10**, the **`li-langverse`** group and **66 of 67** projects are
 | Scope | Visibility | Notes |
 |-------|------------|-------|
 | Group `li-langverse` | **public** | [Explore](https://gitlab.lilangverse.xyz/explore) lists public projects |
-| Li dev repos (`lic`, `lis`, `li-httpd`, …) | **public** | Primary GitLab source; GitHub `li-langverse/*` remains read-only mirror |
+| Li dev repos (`lic`, `lis`, `li-httpd`, …) | **public** | Primary GitLab source; GitHub org = **GHCR only** |
 | `gitlab-homelab-config` | **private** | Homelab/k8s wiring — kept private (may reference cluster secrets) |
 | `gitlab-github-mirror` | **public** | Mirror automation scripts only (no credentials in repo) |
 
