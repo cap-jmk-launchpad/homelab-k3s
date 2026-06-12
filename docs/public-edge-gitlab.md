@@ -104,7 +104,7 @@ As of **2026-06-10**, the **`li-langverse`** group and **66 of 67** projects are
 | Group `li-langverse` | **public** | [Explore](https://gitlab.lilangverse.xyz/explore) lists public projects |
 | Li dev repos (`lic`, `lis`, `li-httpd`, …) | **public** | Primary GitLab source; GitHub org = **GHCR only** |
 | `gitlab-homelab-config` | **private** | Homelab/k8s wiring — kept private (may reference cluster secrets) |
-| `gitlab-github-mirror` | **public** | Mirror automation scripts only (no credentials in repo) |
+| `gitlab-github-mirror` | **public** | **Retired** — git mirror CronJob suspended; GHCR-only policy |
 
 **Security:** public repos expose source and issue/MR metadata to the internet. Do not commit secrets, `.env`, or deploy tokens. Push still requires authentication (PAT or credential helper).
 
