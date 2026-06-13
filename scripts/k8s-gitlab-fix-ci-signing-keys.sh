@@ -9,6 +9,8 @@ NAMESPACE="${GITLAB_NAMESPACE:-gitlab}"
 require_cmd() { command -v "$1" >/dev/null 2>&1 || { echo "ERROR: missing $1" >&2; exit 1; }; }
 require_cmd kubectl
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 echo "==> Clear corrupted signing key columns"
 kubectl exec -n "$NAMESPACE" gitlab-0 -- gitlab-psql -d gitlabhq_production -c \
   "UPDATE application_settings SET encrypted_ci_jwt_signing_key = NULL, encrypted_ci_jwt_signing_key_iv = NULL, encrypted_ci_job_token_signing_key = NULL, encrypted_ci_job_token_signing_key_iv = NULL, runners_registration_token_encrypted = NULL;"
@@ -21,7 +23,13 @@ echo "==> Reload GitLab workers"
 kubectl exec -n "$NAMESPACE" gitlab-0 -- gitlab-ctl hup puma
 kubectl exec -n "$NAMESPACE" gitlab-0 -- gitlab-ctl hup sidekiq
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo "==> Restore runners_registration_token (cleared above; runner register POST /api/v4/runners -> 500 without it)"
+if [[ -f "$SCRIPT_DIR/k8s-gitlab-fix-runners-registration-token.sh" ]]; then
+  bash "$SCRIPT_DIR/k8s-gitlab-fix-runners-registration-token.sh"
+else
+  echo "WARN: missing k8s-gitlab-fix-runners-registration-token.sh — run it if runner register returns 500"
+fi
+
 if [[ -f "$SCRIPT_DIR/k8s-gitlab-fix-project-runners-tokens.sh" ]]; then
   echo "==> Also fix corrupted project runners_token encryption (trace API)"
   bash "$SCRIPT_DIR/k8s-gitlab-fix-project-runners-tokens.sh"
