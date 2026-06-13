@@ -86,6 +86,10 @@ peers = ["http://127.0.0.1:30582"]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30584"]
 
+[upstreams.portfolio]
+balance = "round_robin"
+peers = ["http://192.168.10.26:30585"]
+
 [[site]]
 host = "grafana.homelab.lan"
 listen = ":80"
@@ -329,3 +333,12 @@ listen = ":80"
 "GET /health" = "static:healthcheck"
 "GET /*" = "proxy:qroma_demo"
 "POST /*" = "proxy:qroma_demo"
+
+[[site]]
+host = "portfolio.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:portfolio"
+"POST /*" = "proxy:portfolio"
