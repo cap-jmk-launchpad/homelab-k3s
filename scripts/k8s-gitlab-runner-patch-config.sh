@@ -17,7 +17,7 @@ if [[ -z "$TOKEN" ]]; then
   exit 1
 fi
 cat > /tmp/gitlab-runner-config.toml <<EOF
-concurrent = 2
+concurrent = 1
 check_interval = 3
 log_level = "info"
 listen_address = ":9252"
@@ -37,6 +37,7 @@ listen_address = ":9252"
     helper_image_pull_policy = "if-not-present"
     pull_policy = "if-not-present"
     allowed_pull_policies = ["always", "if-not-present"]
+    poll_timeout = 600
     [runners.kubernetes.node_selector]
       "kubernetes.io/arch" = "amd64"
 EOF

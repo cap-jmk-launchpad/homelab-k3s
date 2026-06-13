@@ -6,7 +6,7 @@ metadata:
     app: gitlab-runner
 data:
   config.toml: |
-    concurrent = 2
+    concurrent = 1
     check_interval = 3
     log_level = "info"
     listen_address = ":9252"
