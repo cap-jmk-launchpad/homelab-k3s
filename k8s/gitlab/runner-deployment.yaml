@@ -46,9 +46,8 @@ spec:
                   --executor kubernetes \
                   --kubernetes-namespace "${GITLAB_NAMESPACE}" \
                   --kubernetes-service-account gitlab-runner \
-                  --kubernetes-node-selector "kubernetes.io/hostname=engine" \
+                  --kubernetes-node-selector "kubernetes.io/arch=amd64" \
                   --kubernetes-helper-image "registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v17.11.4" \
-                  --kubernetes-helper-image-pull-policy "if-not-present" \
                   --kubernetes-pull-policy "if-not-present" \
                   --description "homelab-k8s" \
                   --tag-list "homelab-k8s" \
