@@ -23,7 +23,7 @@ cd li-cursor-agents
 .\scripts\free-engine-memory-for-gitlab.ps1 -ApplyManifests
 `
 
-Resume sprints with .\scripts\scale-goal-workers-k8s.ps1 / per-sprint setup scripts and set spec.suspend: false on org wake cronjobs when re-enabling the org swarm. Do **not** lower the engine **5Gi** kubelet system reserve (homelab-k3s/scripts/apply-engine-memory-reserve.sh).
+Resume sprints with .\scripts\scale-goal-workers-k8s.ps1 / per-sprint setup scripts and set spec.suspend: false on org wake cronjobs when re-enabling the org swarm. Do **not** lower the engine **5Gi** kubelet system reserve ([apply-engine-memory-reserve.sh](../scripts/apply-engine-memory-reserve.sh)). **blackpearl** (li-lios-kernel, edge): **2Gi** reserve — [apply-blackpearl-memory-reserve.sh](../scripts/apply-blackpearl-memory-reserve.sh). Full table: [li-headroom-reservation.md](li-headroom-reservation.md).
 
 ## Access (default: internal proto)
 

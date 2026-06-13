@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Apply system memory reserve on engine via privileged host-mount pod (no SSH required).
+# Apply system memory reserve on blackpearl (k3s server) via privileged host-mount pod.
 set -euo pipefail
 
-SYSTEM_RESERVED_MEMORY="${SYSTEM_RESERVED_MEMORY:-5Gi}"
-NODE="${ENGINE_NODE:-engine}"
+SYSTEM_RESERVED_MEMORY="${SYSTEM_RESERVED_MEMORY:-2Gi}"
+KUBE_RESERVED_MEMORY="${KUBE_RESERVED_MEMORY:-512Mi}"
+EVICTION_HARD="${EVICTION_HARD:-memory.available<512Mi}"
+NODE="${BLACKPEARL_NODE:-blackpearl}"
 NAMESPACE="${NAMESPACE:-kube-system}"
-POD="engine-k3s-mem-reserve"
+POD="blackpearl-k3s-mem-reserve"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESERVE_SCRIPT="$SCRIPT_DIR/k3s-write-kubelet-memory-reserve.sh"
@@ -13,6 +15,8 @@ if [[ ! -f "$RESERVE_SCRIPT" ]]; then
   echo "missing $RESERVE_SCRIPT" >&2
   exit 1
 fi
+
+export SYSTEM_RESERVED_MEMORY KUBE_RESERVED_MEMORY EVICTION_HARD
 
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 kubectl delete pod "$POD" -n "$NAMESPACE" --ignore-not-found --wait=true >/dev/null 2>&1 || true
@@ -86,8 +90,5 @@ done
 kubectl logs "pod/${POD}" -n "$NAMESPACE" || true
 kubectl get pod "$POD" -n "$NAMESPACE" -o wide || true
 
-echo "engine capacity/allocatable memory:"
+echo "blackpearl capacity/allocatable memory:"
 kubectl get node "$NODE" -o custom-columns=NAME:.metadata.name,CAP:.status.capacity.memory,ALLOC:.status.allocatable.memory
-
-echo "gitlab:"
-kubectl get pod -n gitlab gitlab-0 -o wide || true
