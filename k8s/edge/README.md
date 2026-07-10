@@ -16,6 +16,7 @@ Traffic flow for **WAN** (`*.klaut.pro`, `majico.d3bu7.com`) and **LAN** (`*.hom
 | Hostname | Namespace | Backend | WAN status |
 |----------|-----------|---------|------------|
 | `search.klaut.pro` | `searxng` | `127.0.0.1:30479` | **Live** |
+| `research.klaut.pro` | `li-research` | `127.0.0.1:30486` | **Planned** |
 | `gitlab.klaut.pro` | `gitlab` | `127.0.0.1:30481` | **WAN** |
 | `gitlab.lilangverse.xyz` | `gitlab` | `127.0.0.1:30481` | **WAN** (Li platform) |
 | `deps.klaut.pro` | `dependency-track` | `127.0.0.1:30482` | **WAN** |

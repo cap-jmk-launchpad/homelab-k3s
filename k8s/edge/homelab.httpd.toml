@@ -42,6 +42,10 @@ peers = ["http://127.0.0.1:30421"]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30478"]
 
+[upstreams.klaut_research_gateway]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30486"]
+
 [upstreams.searxng]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30479"]
@@ -147,6 +151,16 @@ listen = ":80"
 "GET /*" = "proxy:searxng"
 "POST /*" = "proxy:searxng"
 "HEAD /*" = "proxy:searxng"
+
+[[site]]
+host = "research.klaut.pro"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:klaut_research_gateway"
+"POST /*" = "proxy:klaut_research_gateway"
+"HEAD /*" = "proxy:klaut_research_gateway"
 
 [[site]]
 host = "gitlab.klaut.pro"

@@ -68,7 +68,7 @@ def _cert_sans(cert_path: Path) -> set[str]:
 ACME_DOMAINS = [
     d.strip()
     for d in os.environ.get(
-        "HOMELAB_ACME_DOMAINS", "majico.d3bu7.com,api.majico.d3bu7.com,supabase.majico.d3bu7.com,search.klaut.pro,gitlab.klaut.pro,gitlab.lilangverse.xyz,registry.gitlab.lilangverse.xyz,lip.lilangverse.xyz"
+        "HOMELAB_ACME_DOMAINS", "majico.d3bu7.com,api.majico.d3bu7.com,supabase.majico.d3bu7.com,search.klaut.pro,research.klaut.pro,gitlab.klaut.pro,gitlab.lilangverse.xyz,registry.gitlab.lilangverse.xyz,lip.lilangverse.xyz"
     ).split(",")
     if d.strip()
 ]
