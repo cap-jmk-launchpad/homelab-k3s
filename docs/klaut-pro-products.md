@@ -4,7 +4,9 @@
 
 ## Homelab inventory (current)
 
-**Edge:** Fritz!Box TCP **80** + **443** → **192.168.10.33** (blackpearl k3s node IP). **SSH/admin** only on **192.168.10.41** — do not point port-forwards at `.41`. WAN TLS/HTTP terminates on **li-httpd** (li-native) on blackpearl; backends are k3s **NodePorts** on loopback — [platform-requirements.md](platform-requirements.md).
+**Edge:** Fritz!Box TCP **80** + **443** → **`<edge-host>`** (blackpearl k3s node IP). **SSH/admin** only on **`<admin-host>`** — do not point port-forwards at the admin IP. WAN TLS/HTTP terminates on **li-httpd** (li-native) on blackpearl; backends are k3s **NodePorts** on loopback — [platform-requirements.md](platform-requirements.md).
+
+> **Site-specific topology** (real LAN IPs, NodePorts, Fritz rules, Vault paths): private **`klaut-pro/klaut-internal`** repo — org access required. This public doc keeps placeholders only.
 
 | Service | Namespace | NodePort | WAN hostname | Status |
 |---------|-----------|----------|--------------|--------|
