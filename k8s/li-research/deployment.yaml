@@ -1,0 +1,116 @@
+# Klaut Research Gateway — Deployment (Python FastAPI)
+# Image: build from klaut-pro/klaut-research-gateway Dockerfile, or use bootstrap Job/Deployment.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: klaut-research-gateway
+  namespace: li-research
+  labels:
+    app: klaut-research-gateway
+    app.kubernetes.io/name: klaut-research-gateway
+    app.kubernetes.io/component: api-gateway
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: klaut-research-gateway
+  template:
+    metadata:
+      labels:
+        app: klaut-research-gateway
+        app.kubernetes.io/name: klaut-research-gateway
+    spec:
+      enableServiceLinks: false
+      nodeSelector:
+        kubernetes.io/hostname: engine
+      containers:
+        - name: gateway
+          image: ghcr.io/klaut-pro/klaut-research-gateway:scaffold
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8010
+          env:
+            - name: RESEARCH_API_HOST
+              value: "0.0.0.0"
+            - name: RESEARCH_API_PORT
+              value: "8010"
+            - name: RESEARCH_PUBLIC_URL
+              value: "https://research.klaut.pro"
+            - name: RESEARCH_REPORTS_DIR
+              value: /data/reports
+            - name: RESEARCH_RUNS_PATH
+              value: /data/runs
+            - name: RESEARCH_PERSIST
+              value: "1"
+            - name: RESEARCH_FREE_FOR_SUBSCRIBERS
+              value: "1"
+            - name: OLLAMA_BASE_URL
+              value: "http://engine:11434/v1"
+            - name: OLLAMA_MODEL
+              value: "qwen3.5:9b"
+            - name: OLLAMA_API_KEY
+              value: "ollama"
+            - name: S2_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: klaut-research-secrets
+                  key: S2_API_KEY
+                  optional: true
+            - name: OPENALEX_MAILTO
+              valueFrom:
+                secretKeyRef:
+                  name: klaut-research-secrets
+                  key: OPENALEX_MAILTO
+                  optional: true
+            - name: CROSSREF_MAILTO
+              valueFrom:
+                secretKeyRef:
+                  name: klaut-research-secrets
+                  key: CROSSREF_MAILTO
+                  optional: true
+            - name: KLAUT_SUBSCRIBER_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: klaut-research-secrets
+                  key: KLAUT_SUBSCRIBER_API_KEYS
+                  optional: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: data
+              mountPath: /data/warm-index
+              readOnly: true
+            - name: data
+              mountPath: /data/runs
+              subPath: runs
+            - name: data
+              mountPath: /data/reports
+              subPath: reports
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: li-research-warm-index

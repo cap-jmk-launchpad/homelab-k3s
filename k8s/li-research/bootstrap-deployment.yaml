@@ -1,0 +1,135 @@
+# Bootstrap Deployment: clone Python gateway + uv run (no pre-built image required).
+# Prefer deployment.yaml once ghcr.io/klaut-pro/klaut-research-gateway:scaffold exists.
+# Apply: kubectl apply -f bootstrap-deployment.yaml && kubectl apply -f service.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: klaut-research-gateway
+  namespace: li-research
+  labels:
+    app: klaut-research-gateway
+    app.kubernetes.io/name: klaut-research-gateway
+    app.kubernetes.io/component: api-gateway
+    klaut.pro/bootstrap: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: klaut-research-gateway
+  template:
+    metadata:
+      labels:
+        app: klaut-research-gateway
+        app.kubernetes.io/name: klaut-research-gateway
+    spec:
+      enableServiceLinks: false
+      nodeSelector:
+        kubernetes.io/hostname: engine
+      containers:
+        - name: gateway
+          image: python:3.12-slim-bookworm
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8010
+          env:
+            - name: RESEARCH_API_HOST
+              value: "0.0.0.0"
+            - name: RESEARCH_API_PORT
+              value: "8010"
+            - name: RESEARCH_PUBLIC_URL
+              value: "https://research.klaut.pro"
+            - name: RESEARCH_REPORTS_DIR
+              value: /data/reports
+            - name: RESEARCH_RUNS_PATH
+              value: /data/runs
+            - name: RESEARCH_PERSIST
+              value: "1"
+            - name: RESEARCH_FREE_FOR_SUBSCRIBERS
+              value: "1"
+            - name: OLLAMA_BASE_URL
+              value: "http://engine:11434/v1"
+            - name: OLLAMA_MODEL
+              value: "qwen3.5:9b"
+            - name: OLLAMA_API_KEY
+              value: "ollama"
+            - name: GH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: klaut-research-secrets
+                  key: GH_TOKEN
+                  optional: true
+            - name: S2_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: klaut-research-secrets
+                  key: S2_API_KEY
+                  optional: true
+            - name: OPENALEX_MAILTO
+              valueFrom:
+                secretKeyRef:
+                  name: klaut-research-secrets
+                  key: OPENALEX_MAILTO
+                  optional: true
+            - name: CROSSREF_MAILTO
+              valueFrom:
+                secretKeyRef:
+                  name: klaut-research-secrets
+                  key: CROSSREF_MAILTO
+                  optional: true
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              apt-get update
+              apt-get install -y --no-install-recommends git curl ca-certificates
+              pip install --no-cache-dir uv
+              rm -rf /app && mkdir -p /app
+              TOKEN="${GH_TOKEN:-}"
+              if [ -n "$TOKEN" ]; then
+                git clone "https://x-access-token:${TOKEN}@github.com/klaut-pro/klaut-research-gateway.git" /app \
+                  --branch cursor/klaut-research-python-scaffold --depth 1
+              else
+                git clone "https://github.com/klaut-pro/klaut-research-gateway.git" /app \
+                  --branch cursor/klaut-research-python-scaffold --depth 1
+              fi
+              cd /app
+              uv sync --frozen --no-dev
+              exec uv run uvicorn app.main:app --host 0.0.0.0 --port 8010
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: warm-index
+              mountPath: /data/runs
+              subPath: runs
+            - name: warm-index
+              mountPath: /data/reports
+              subPath: reports
+      volumes:
+        - name: warm-index
+          persistentVolumeClaim:
+            claimName: li-research-warm-index

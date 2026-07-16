@@ -16,7 +16,7 @@
 | Dependency-Track | `dependency-track` | **30482** | `deps.klaut.pro` | **WAN HTTP/HTTPS** |
 | CWE mirror | `cwe` | **30483** | `cwe.klaut.pro` | **WAN HTTP/HTTPS** — use `/health`, `/manifest.json` (not `/`) |
 | Vault OSS + ESO | `vault`, `external-secrets` | **30485** | `vault.klaut.pro` | Deploy via [vault-homelab.md](vault-homelab.md) |
-| Research gateway | `li-research` | **30486** | `research.klaut.pro` | **Planned** — li-httpd route in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml) |
+| Research gateway | `li-research` | **30486** | `research.klaut.pro` | **Manifests ready** — apply bootstrap + service; confirm WAN with curl |
 | k3s WAN edge | blackpearl `.33` | **80** / **443** | Fritz → `.33` | **li-httpd** — all `*.klaut.pro` hostnames in [homelab.httpd.toml](../k8s/edge/homelab.httpd.toml) |
 
 **LAN-only** (li-httpd `*.homelab.lan`, no klaut WAN): Grafana, SigNoz, agent-swarm, DUCAH (`ducah.homelab.lan`), etc. — see [k8s/edge/README.md](../k8s/edge/README.md).
@@ -27,7 +27,7 @@
 |--------------|-------------------------|-----------|
 | `sec-agent` | Dependency-Track + CWE mirror (+ future GitHub App worker) | `deps.klaut.pro`, `cwe.klaut.pro`, `api.klaut.pro` — optional / planned |
 | `search-api` | SearXNG @ `search.klaut.pro` | Engine **live**; metered gateway `api.search.klaut.pro` — planned |
-| `research-api` | `klaut-research-gateway` @ `research.klaut.pro` | Literature search + reports — **planned** (NodePort **30486**) |
+| `research-api` | `klaut-research-gateway` @ `research.klaut.pro` | Literature search + reports — NodePort **30486**; persist runs on warm-index PVC |
 | `vault-api` | Vault OSS + ESO | [vault-homelab.md](vault-homelab.md) — self-hosted on k3s |
 
 Port-forwards and DNS: [fritz-klaut-pro-port-forward.md](fritz-klaut-pro-port-forward.md). Edge routes: [k8s/edge/README.md](../k8s/edge/README.md).
