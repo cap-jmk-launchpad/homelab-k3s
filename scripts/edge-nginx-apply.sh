@@ -31,6 +31,25 @@ fi
 
 mkdir -p /etc/nginx/gitlab-edge
 install -m 644 "${EDGE_DIR}/nginx-gitlab-edge.conf" "$NGINX_CONF_DST"
+# search.klaut.pro + research.klaut.pro TLS vhosts (NodePorts 30479 / 30487)
+if [[ -f "${EDGE_DIR}/nginx-klaut-pro.conf" ]]; then
+  install -m 644 "${EDGE_DIR}/nginx-klaut-pro.conf" /etc/nginx/gitlab-edge/nginx-klaut-pro.conf
+  if ! grep -q 'nginx-klaut-pro.conf' "$NGINX_CONF_DST"; then
+    # Insert include before final closing brace of http{}
+    python3 - <<'PY' "$NGINX_CONF_DST"
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+text = p.read_text()
+inc = "    include /etc/nginx/gitlab-edge/nginx-klaut-pro.conf;\n"
+if "nginx-klaut-pro.conf" not in text:
+    idx = text.rstrip().rfind("}")
+    if idx < 0:
+        raise SystemExit("edge-nginx-apply: no closing brace in nginx.conf")
+    p.write_text(text[:idx] + inc + text[idx:])
+PY
+  fi
+fi
 nginx -t -c "$NGINX_CONF_DST"
 
 if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then

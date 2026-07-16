@@ -44,7 +44,7 @@ peers = ["http://127.0.0.1:30478"]
 
 [upstreams.klaut_research_gateway]
 balance = "round_robin"
-peers = ["http://127.0.0.1:30486"]
+peers = ["http://127.0.0.1:30487"]
 
 [upstreams.searxng]
 balance = "round_robin"

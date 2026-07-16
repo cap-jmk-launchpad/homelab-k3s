@@ -1,4 +1,5 @@
-# Klaut Research Gateway — Service (NodePort 30486 for li-httpd edge)
+# Klaut Research Gateway — Service (NodePort 30487 for li-httpd edge)
+# NOTE: 30486 is taken by gitlab/gitlab pages — do not reuse.
 apiVersion: v1
 kind: Service
 metadata:
@@ -15,4 +16,4 @@ spec:
     - name: http
       port: 8010
       targetPort: http
-      nodePort: 30486
+      nodePort: 30487

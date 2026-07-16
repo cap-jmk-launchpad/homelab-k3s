@@ -1,4 +1,4 @@
-# li-research — homelab k8s
+# li-research ï¿½ homelab k8s
 
 Warm index + research gateway on **engine NVMe** (`nvme0n1`, label `homelab-nvme` @ `/srv/homelab/nvme`).
 
@@ -8,18 +8,18 @@ Warm index + research gateway on **engine NVMe** (`nvme0n1`, label `homelab-nvme
 | sdc | `/srv/homelab/intenso-research` | spare USB bulk (not warm-index) |
 | nvme | `/srv/homelab/nvme` | **li-research warm-index + runs** |
 
-## Gateway (NodePort 30486)
+## Gateway (NodePort 30487)
 
 | Resource | File |
 |----------|------|
-| Service | `service.yaml` — NodePort **30486** |
-| Image deploy | `deployment.yaml` — `ghcr.io/klaut-pro/klaut-research-gateway:scaffold` |
-| Bootstrap (no image) | `bootstrap-deployment.yaml` — clones Python branch + `uv run` |
+| Service | `service.yaml` â€” NodePort **30487** (30486 is GitLab Pages) |
+| Image deploy | `deployment.yaml` â€” `ghcr.io/klaut-pro/klaut-research-gateway:scaffold` |
+| Bootstrap (no image) | `bootstrap-deployment.yaml` â€” clones Python branch + `uv run` |
 | Secrets example | `secret.example.yaml` |
 
-Edge (`homelab.httpd.toml`): `research.klaut.pro` ? `127.0.0.1:30486`.
+Edge (`homelab.httpd.toml`): `research.klaut.pro` â†’ `127.0.0.1:30487`.
 
-Runs persist under PVC subpath `runs` ? container `/data/runs` (`RESEARCH_RUNS_PATH`).
+Runs persist under PVC subpath `runs` â†’ container `/data/runs` (`RESEARCH_RUNS_PATH`).
 
 ### Apply (bootstrap first)
 
@@ -32,7 +32,7 @@ kubectl apply -f k8s/li-research/pvc-warm-index.yaml
 kubectl apply -f k8s/li-research/bootstrap-deployment.yaml
 kubectl apply -f k8s/li-research/service.yaml
 kubectl -n li-research rollout status deployment/klaut-research-gateway
-curl -sS http://127.0.0.1:30486/health | jq .
+curl -sS http://127.0.0.1:30487/health | jq .
 ```
 
 On engine, ensure dirs exist for subPaths:
