@@ -31,25 +31,92 @@ fi
 
 mkdir -p /etc/nginx/gitlab-edge
 install -m 644 "${EDGE_DIR}/nginx-gitlab-edge.conf" "$NGINX_CONF_DST"
-# search.klaut.pro + research.klaut.pro TLS vhosts (NodePorts 30479 / 30487)
-if [[ -f "${EDGE_DIR}/nginx-klaut-pro.conf" ]]; then
-  install -m 644 "${EDGE_DIR}/nginx-klaut-pro.conf" /etc/nginx/gitlab-edge/nginx-klaut-pro.conf
-  if ! grep -q 'nginx-klaut-pro.conf' "$NGINX_CONF_DST"; then
-    # Insert include before final closing brace of http{}
-    python3 - <<'PY' "$NGINX_CONF_DST"
-from pathlib import Path
-import sys
-p = Path(sys.argv[1])
-text = p.read_text()
-inc = "    include /etc/nginx/gitlab-edge/nginx-klaut-pro.conf;\n"
-if "nginx-klaut-pro.conf" not in text:
-    idx = text.rstrip().rfind("}")
-    if idx < 0:
-        raise SystemExit("edge-nginx-apply: no closing brace in nginx.conf")
-    p.write_text(text[:idx] + inc + text[idx:])
-PY
-  fi
+install -m 644 "${EDGE_DIR}/nginx-collins.conf" /etc/nginx/gitlab-edge/nginx-collins.conf 2>/dev/null || true
+OBSEVIA_SNIPPET="${EDGE_DIR}/nginx-obsevia-demos.conf"
+obsevia_certs_ready=0
+if [[ -f "$OBSEVIA_SNIPPET" ]]; then
+  for d in ducah.obsevia.com qroma.obsevia.com unitedhealth.obsevia.com chat.obsevia.com dp.obsevia.com supabase.obsevia.com api.obsevia.com; do
+    if [[ -e "/etc/letsencrypt/live/${d}/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/${d}/fullchain.pem" ]]; then
+      obsevia_certs_ready=1
+      break
+    fi
+  done
 fi
+if [[ "$obsevia_certs_ready" -eq 1 ]]; then
+  sed "/__OBSEVIA_DEMOS_INCLUDE__/r ${OBSEVIA_SNIPPET}" "$NGINX_CONF_DST" \
+    | sed '/__OBSEVIA_DEMOS_INCLUDE__/d' >"${NGINX_CONF_DST}.merged"
+  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  echo "edge-nginx-apply: included obsevia demo HTTPS vhosts"
+else
+  sed '/__OBSEVIA_DEMOS_INCLUDE__/d' "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
+  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  echo "edge-nginx-apply: obsevia demo HTTPS vhosts skipped (no LE certs under /etc/letsencrypt/live/*.obsevia.com)"
+fi
+COLLINS_SNIPPET="${EDGE_DIR}/nginx-collins.conf"
+collins_cert_ready=0
+if [[ -f "$COLLINS_SNIPPET" ]] && { [[ -e "/etc/letsencrypt/live/collins.d3bu7.com/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/collins.d3bu7.com/fullchain.pem" ]]; }; then
+  collins_cert_ready=1
+fi
+if [[ "$collins_cert_ready" -eq 1 ]]; then
+  sed "/__COLLINS_INCLUDE__/r ${COLLINS_SNIPPET}" "$NGINX_CONF_DST" \
+    | sed '/__COLLINS_INCLUDE__/d' >"${NGINX_CONF_DST}.merged"
+  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  echo "edge-nginx-apply: included collins.d3bu7.com HTTPS vhost"
+else
+  sed '/__COLLINS_INCLUDE__/d' "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
+  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  echo "edge-nginx-apply: collins HTTPS vhost skipped (no LE cert for collins.d3bu7.com)"
+fi
+
+# YieldScope app + Supabase Kong (NodePorts 30082 / 30595)
+yieldscope_ready=0
+if { [[ -e "/etc/letsencrypt/live/yieldscope.d3bu7.com/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/yieldscope.d3bu7.com/fullchain.pem" ]]; } \
+  && { [[ -e "/etc/letsencrypt/live/supabase.yieldscope.d3bu7.com/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/supabase.yieldscope.d3bu7.com/fullchain.pem" ]]; }; then
+  yieldscope_ready=1
+fi
+if [[ "$yieldscope_ready" -eq 1 ]]; then
+  install -m 644 "${EDGE_DIR}/nginx-yieldscope.conf" /etc/nginx/gitlab-edge/yieldscope.conf
+  install -m 644 "${EDGE_DIR}/nginx-yieldscope-supabase.conf" /etc/nginx/gitlab-edge/yieldscope-supabase.conf
+  sed 's|# __YIELDSCOPE_INCLUDE__|include /etc/nginx/gitlab-edge/yieldscope.conf;\n    include /etc/nginx/gitlab-edge/yieldscope-supabase.conf;|' \
+    "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
+  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  echo "edge-nginx-apply: included yieldscope + supabase.yieldscope HTTPS vhosts"
+else
+  sed '/__YIELDSCOPE_INCLUDE__/d' "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
+  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  echo "edge-nginx-apply: yieldscope HTTPS vhosts skipped (no LE certs)"
+fi
+
+# mail.lilangverse.xyz + mail.yieldscope.d3bu7.com (fix wrong-SNI fallback to lip)
+mail_https_ready=0
+if [[ -f "${EDGE_DIR}/nginx-mail-https.conf" ]] \
+  && { [[ -e "/etc/letsencrypt/live/mail.lilangverse.xyz/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/mail.lilangverse.xyz/fullchain.pem" ]]; } \
+  && { [[ -e "/etc/letsencrypt/live/mail.yieldscope.d3bu7.com/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/mail.yieldscope.d3bu7.com/fullchain.pem" ]]; }; then
+  mail_https_ready=1
+fi
+if [[ "$mail_https_ready" -eq 1 ]]; then
+  install -m 644 "${EDGE_DIR}/nginx-mail-https.conf" /etc/nginx/gitlab-edge/nginx-mail-https.conf
+  sed 's|# __MAIL_HTTPS_INCLUDE__|include /etc/nginx/gitlab-edge/nginx-mail-https.conf;|' \
+    "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
+  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  echo "edge-nginx-apply: included mail.lilangverse + mail.yieldscope HTTPS vhosts"
+else
+  sed '/__MAIL_HTTPS_INCLUDE__/d' "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
+  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  echo "edge-nginx-apply: mail HTTPS vhosts skipped (no LE certs)"
+fi
+# Always install public HTTP front (landing :80 -> HTTPS + proxy to li-httpd :8080).
+HTTP_FRONT="${EDGE_DIR}/nginx-obsevia-http-front.conf"
+if [[ -f "$HTTP_FRONT" ]]; then
+  install -m 644 "$HTTP_FRONT" /etc/nginx/gitlab-edge/nginx-obsevia-http-front.conf
+  if ! grep -q 'nginx-obsevia-http-front.conf' "$NGINX_CONF_DST"; then
+    sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-obsevia-http-front.conf;' "$NGINX_CONF_DST"
+  fi
+  echo "edge-nginx-apply: included HTTP :80 front"
+else
+  echo "edge-nginx-apply: WARN missing $HTTP_FRONT" >&2
+fi
+
 nginx -t -c "$NGINX_CONF_DST"
 
 if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then
@@ -69,6 +136,30 @@ if [[ "$SKIP_RELOAD" -eq 1 ]]; then
 fi
 
 # Regenerate li-httpd TLS overlay on :8443 before restart.
+
+BUREAUZILLA_SNIPPET="${EDGE_DIR}/nginx-bureauzilla.conf"
+bureauzilla_cert_ready=0
+if [[ -f "$BUREAUZILLA_SNIPPET" ]] && { [[ -e "/etc/letsencrypt/live/bureauzilla.com/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/bureauzilla.com/fullchain.pem" ]]; }; then
+  bureauzilla_cert_ready=1
+fi
+if [[ "$bureauzilla_cert_ready" -eq 1 ]]; then
+  install -m 644 "$BUREAUZILLA_SNIPPET" /etc/nginx/gitlab-edge/nginx-bureauzilla.conf
+  if grep -q "__BUREAUZILLA_INCLUDE__" "$NGINX_CONF_DST"; then
+    sed "/__BUREAUZILLA_INCLUDE__/r ${BUREAUZILLA_SNIPPET}" "$NGINX_CONF_DST" \
+      | sed "/__BUREAUZILLA_INCLUDE__/d" >"${NGINX_CONF_DST}.merged"
+    mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  else
+    echo "    include /etc/nginx/gitlab-edge/nginx-bureauzilla.conf;" >> "$NGINX_CONF_DST"
+  fi
+  echo "edge-nginx-apply: included bureauzilla.com HTTPS vhost"
+else
+  if grep -q "__BUREAUZILLA_INCLUDE__" "$NGINX_CONF_DST"; then
+    sed "/__BUREAUZILLA_INCLUDE__/d" "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
+    mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  fi
+  echo "edge-nginx-apply: bureauzilla HTTPS vhost skipped (no LE cert for bureauzilla.com)"
+fi
+
 export HOMELAB_LI_HTTPD_TLS_PORT=":8443"
 bash "${SCRIPT_DIR}/edge-lis-apply.sh" --no-reload
 
@@ -80,6 +171,9 @@ if systemctl is-enabled nginx-gitlab-edge.service &>/dev/null; then
 else
   systemctl enable --now nginx-gitlab-edge.service
 fi
+sleep 2
+# Ensure workers picked up merged config (SNI vhosts).
+systemctl reload nginx-gitlab-edge.service 2>/dev/null || true
 
 systemctl restart li-httpd-homelab-tls.service
 

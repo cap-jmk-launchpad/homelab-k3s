@@ -1,0 +1,27 @@
+# Merge into blackpearl li-httpd edge for Bureauzilla marketing.
+# HTTPS: nginx :443 → NodePort 30596 (after LE cert + edge-nginx-apply).
+# HTTP :80: nginx ACME + redirect once cert exists (see nginx-obsevia-http-front).
+
+[upstreams.bureauzilla_web]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30596"]
+
+[[site]]
+host = "bureauzilla.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:bureauzilla_web"
+"POST /*" = "proxy:bureauzilla_web"
+"HEAD /*" = "proxy:bureauzilla_web"
+
+[[site]]
+host = "www.bureauzilla.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:bureauzilla_web"
+"POST /*" = "proxy:bureauzilla_web"
+"HEAD /*" = "proxy:bureauzilla_web"
