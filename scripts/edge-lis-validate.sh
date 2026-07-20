@@ -48,6 +48,15 @@ MAJICO_HTTPD_TOML="${MAJICO_HTTPD_TOML:-/home/s4il0r/staging/majico-deploy/deplo
 MERGED="/tmp/homelab-edge.merged.toml"
 
 inputs=("${EDGE_DIR}/homelab.httpd.toml")
+if [[ -f "${EDGE_DIR}/reeldemo-supabase.httpd.toml" ]]; then
+  inputs+=("${EDGE_DIR}/reeldemo-supabase.httpd.toml")
+fi
+if [[ -f "${EDGE_DIR}/obsevia-landing.httpd.toml" ]]; then
+  inputs+=("${EDGE_DIR}/obsevia-landing.httpd.toml")
+fi
+if [[ -f "${EDGE_DIR}/bureauzilla.httpd.toml" ]]; then
+  inputs+=("${EDGE_DIR}/bureauzilla.httpd.toml")
+fi
 if [[ -f "$MAJICO_HTTPD_TOML" ]]; then
   inputs+=("$MAJICO_HTTPD_TOML")
 else

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Apply native li-httpd as homelab edge ingress on blackpearl (:80 HTTP + :8443 TLS dev).
-# Production GitLab HTTPS: nginx :443 — see scripts/edge-nginx-apply.sh.
+# Apply native li-httpd as homelab edge ingress on blackpearl (:8080 HTTP + :8443 TLS dev).
+# Public :80 is nginx (HTTPS redirects + reverse-proxy to li-httpd :8080) — see edge-nginx-apply.sh.
+# Production GitLab HTTPS: nginx :443.
 #
 # Serialization: flock(2) on /run/li-httpd/edge-apply.lock inside this script only.
 # Do NOT wrap invocations in an outer flock (systemd/cron) — that deadlocks with inner flock.
@@ -96,6 +97,15 @@ mkdir -p "$RUNTIME_DIR" /var/lib/li-httpd/empty "$TLS_CERT_DIR"
 render_edge_configs() {
   rm -f "$RENDER_READY"
   local inputs=("${EDGE_DIR}/homelab.httpd.toml")
+  if [[ -f "${EDGE_DIR}/reeldemo-supabase.httpd.toml" ]]; then
+    inputs+=("${EDGE_DIR}/reeldemo-supabase.httpd.toml")
+  fi
+  if [[ -f "${EDGE_DIR}/obsevia-landing.httpd.toml" ]]; then
+    inputs+=("${EDGE_DIR}/obsevia-landing.httpd.toml")
+  fi
+  if [[ -f "${EDGE_DIR}/bureauzilla.httpd.toml" ]]; then
+    inputs+=("${EDGE_DIR}/bureauzilla.httpd.toml")
+  fi
   if [[ -f "$MAJICO_HTTPD_TOML" ]]; then
     inputs+=("$MAJICO_HTTPD_TOML")
   else
@@ -109,6 +119,11 @@ render_edge_configs() {
   python3 "$FLATTEN" "$MERGED" -o "$RUNTIME"
   python3 "${SCRIPT_DIR}/edge-inject-runtime-limits.py" "$MERGED" "$RUNTIME"
   python3 "${SCRIPT_DIR}/reorder-edge-upstream-peers.py" "$RUNTIME"
+  # Public :80 is nginx; shift li-httpd HTTP sites to :8080 so both can coexist.
+  if grep -q '^listen_port=80$' "$RUNTIME"; then
+    sed -i 's/^listen_port=80$/listen_port=8080/' "$RUNTIME"
+    echo "flatten http: rewrote listen_port 80 -> 8080 for nginx HTTP front"
+  fi
   echo "flatten http: $RUNTIME ($(wc -l <"$RUNTIME") lines)"
 
   python3 "$GEN_HTTPS" "$MERGED" -o "$MERGED_TLS"
@@ -186,4 +201,4 @@ if [[ "$RELOAD" -eq 1 ]]; then
   fi
 fi
 
-echo "edge-lis-apply: done (li-httpd :80 + :8443 dev TLS; GitLab prod nginx :443)"
+echo "edge-lis-apply: done (li-httpd :8080 + :8443 dev TLS; public :80/:443 nginx)"
