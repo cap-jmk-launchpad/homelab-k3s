@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-obsevia-demos-supabase-kong
+  namespace: majico-staging
+  labels:
+    app.kubernetes.io/name: supabase-kong
+    app.kubernetes.io/part-of: obsevia-demos
+spec:
+  podSelector:
+    matchLabels:
+      app: supabase-kong
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: obsevia-ducah-staging
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: obsevia-qroma-staging
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: obsevia-unitedhealth-staging
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: dp-demo
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: high-fi-demos
+      ports:
+        - protocol: TCP
+          port: 8000
