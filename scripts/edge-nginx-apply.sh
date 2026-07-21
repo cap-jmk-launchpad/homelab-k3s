@@ -43,6 +43,9 @@ if [[ -f "$OBSEVIA_SNIPPET" ]]; then
   done
 fi
 if [[ "$obsevia_certs_ready" -eq 1 ]]; then
+  if [[ -f "${EDGE_DIR}/nginx-obsevia-demo-supabase-api-locations.conf" ]]; then
+    install -m 644 "${EDGE_DIR}/nginx-obsevia-demo-supabase-api-locations.conf" /etc/nginx/gitlab-edge/nginx-obsevia-demo-supabase-api-locations.conf
+  fi
   sed "/__OBSEVIA_DEMOS_INCLUDE__/r ${OBSEVIA_SNIPPET}" "$NGINX_CONF_DST" \
     | sed '/__OBSEVIA_DEMOS_INCLUDE__/d' >"${NGINX_CONF_DST}.merged"
   mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
