@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: librebase
+  labels:
+    librebase.io/app: todo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-app
+  namespace: librebase
+data:
+  # lis backend (mock auth + in-memory REST) runs on :54321 in the pod
+  LIBREBASE_API: "http://127.0.0.1:54321"
+  LIBREBASE_ANON: "anon"
+  LI_PROFILE: "librebase"
+  LI_AUTH_BACKEND: "mock"
+  LI_REGISTRY_MOCK: "1"
+  LI_JWT_SECRET: "change-me-todo-secret"
+  LI_REALTIME_API: "0"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-app
+  namespace: librebase
+  labels:
+    app: librebase
+    librebase.io/app: todo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: librebase-todo
+  template:
+    metadata:
+      labels:
+        app: librebase-todo
+        librebase.io/app: todo
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: lis
+          image: docker.io/library/librebase-todo:latest
+          imagePullPolicy: Never
+          command: ["/bin/bash", "/opt/todo/entrypoint-lis.sh"]
+          envFrom:
+            - configMapRef:
+                name: todo-app
+          env:
+            - name: LI_DATA_DIR
+              value: /data/lis
+          ports:
+            - name: api
+              containerPort: 54321
+          readinessProbe:
+            httpGet:
+              path: /rest/v1/todos?limit=1
+              port: api
+            initialDelaySeconds: 5
+            periodSeconds: 5
+        - name: todo-app
+          image: docker.io/library/librebase-todo:latest
+          imagePullPolicy: Never
+          command: ["node", "/opt/todo/src/server.mjs"]
+          envFrom:
+            - configMapRef:
+                name: todo-app
+          env:
+            - name: PORT
+              value: "8787"
+          ports:
+            - name: http
+              containerPort: 8787
+          readinessProbe:
+            httpGet:
+              path: /todos
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-app
+  namespace: librebase
+  labels:
+    app: librebase
+    librebase.io/app: todo
+spec:
+  type: NodePort
+  selector:
+    app: librebase-todo
+  ports:
+    - name: http
+      port: 8787
+      targetPort: http
+      nodePort: 30585
