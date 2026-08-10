@@ -14,20 +14,23 @@ SSH_KEY="${HOME}/.ssh/homelab"
 SSH=(-i "$SSH_KEY" -o BatchMode=yes -o StrictHostKeyChecking=no)
 
 LIBREBASE_REPO="${LIBREBASE_REPO:-${REPO_ROOT}/../../li-langverse-gitlab/li-langverse/librebase}"
+LIS_REPO="${LIS_REPO:-$(dirname "$LIBREBASE_REPO")/lis}"
 REMOTE_DIR="~/staging/librebase-todo"
 
 echo "==> sync librebase sources to engine"
-ssh "${SSH[@]}" "$ENGINE" "mkdir -p $REMOTE_DIR/apps $REMOTE_DIR/packages $REMOTE_DIR/deploy"
+ssh "${SSH[@]}" "$ENGINE" "mkdir -p $REMOTE_DIR/apps $REMOTE_DIR/packages $REMOTE_DIR/deploy/docker/librebase-todo"
 rsync -az -e "ssh ${SSH[*]}" --exclude node_modules --exclude .git --exclude .next \
   "$LIBREBASE_REPO/apps/todo-app/" "$ENGINE:$REMOTE_DIR/apps/todo-app/"
 rsync -az -e "ssh ${SSH[*]}" --exclude node_modules --exclude .git \
   "$LIBREBASE_REPO/packages/sdk/" "$ENGINE:$REMOTE_DIR/packages/sdk/"
 rsync -az -e "ssh ${SSH[*]}" --exclude __pycache__ \
-  "$LIBREBASE_REPO/../../lis/" "$ENGINE:$REMOTE_DIR/lis/"
+  "$LIBREBASE_REPO/deploy/docker/librebase-todo/" "$ENGINE:$REMOTE_DIR/deploy/docker/librebase-todo/"
+rsync -az -e "ssh ${SSH[*]}" --exclude __pycache__ \
+  "$LIS_REPO/" "$ENGINE:$REMOTE_DIR/lis/"
 
 echo "==> build image on engine (amd64)"
 ssh "${SSH[@]}" "$ENGINE" "cd $REMOTE_DIR && \
-  sudo docker build -t docker.io/library/librebase-todo:latest -f deploy/docker/librebase-todo/Dockerfile ."
+  sudo docker build --build-context lis-src=./lis -t docker.io/library/librebase-todo:latest -f deploy/docker/librebase-todo/Dockerfile ."
 
 echo "==> apply k8s manifests"
 KUBECONFIG="${KUBECONFIG:-${HOME}/.kube/config-homelab}" kubectl apply -f "$REPO_ROOT/k8s/librebase-todo/todo-app.yaml"
