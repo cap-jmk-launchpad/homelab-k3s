@@ -40,7 +40,7 @@ spec:
         librebase.io/app: todo
     spec:
       nodeSelector:
-        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: engine
       containers:
         - name: lis
           image: docker.io/library/librebase-todo:latest
@@ -76,7 +76,7 @@ spec:
               containerPort: 8787
           readinessProbe:
             httpGet:
-              path: /todos
+              path: /health
               port: http
             initialDelaySeconds: 5
             periodSeconds: 5
@@ -97,4 +97,4 @@ spec:
     - name: http
       port: 8787
       targetPort: http
-      nodePort: 30585
+      nodePort: 30500

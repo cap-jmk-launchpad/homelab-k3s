@@ -30,7 +30,9 @@ rsync -az -e "ssh ${SSH[*]}" --exclude __pycache__ \
 
 echo "==> build image on engine (amd64)"
 ssh "${SSH[@]}" "$ENGINE" "cd $REMOTE_DIR && \
-  sudo docker build --build-context lis-src=./lis -t docker.io/library/librebase-todo:latest -f deploy/docker/librebase-todo/Dockerfile ."
+  sudo docker build --build-context lis-src=./lis -t docker.io/library/librebase-todo:latest -f deploy/docker/librebase-todo/Dockerfile . && \
+  sudo docker save docker.io/library/librebase-todo:latest | \
+  sudo ctr --address /run/k3s/containerd/containerd.sock -n k8s.io images import -"
 
 echo "==> apply k8s manifests"
 KUBECONFIG="${KUBECONFIG:-${HOME}/.kube/config-homelab}" kubectl apply -f "$REPO_ROOT/k8s/librebase-todo/todo-app.yaml"

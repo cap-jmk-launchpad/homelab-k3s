@@ -66,6 +66,10 @@ peers = ["http://127.0.0.1:30583"]
 policy = "ip_hash"
 peers = ["http://127.0.0.1:30481"]
 
+[upstreams.librebase_todo]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30500"]
+
 [upstreams.lip_registry]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30422"]
@@ -356,3 +360,13 @@ listen = ":80"
 "GET /health" = "static:healthcheck"
 "GET /*" = "proxy:portfolio"
 "POST /*" = "proxy:portfolio"
+
+[[site]]
+host = "todo.librebase.xyz"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:librebase_todo"
+"POST /*" = "proxy:librebase_todo"
+"DELETE /*" = "proxy:librebase_todo"
