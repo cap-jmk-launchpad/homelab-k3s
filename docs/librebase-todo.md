@@ -47,6 +47,7 @@ k3s containerd (`/run/k3s/containerd/containerd.sock`), and applies
 
 ```bash
 curl -s https://todo.librebase.xyz/health            # {"ok":true,"service":"todo-app"}
+curl -s https://todo.librebase.xyz/                  # web UI (signup/signin + todos)
 curl -s -X POST https://todo.librebase.xyz/auth/signup -H 'Content-Type: application/json' \
   -d '{"email":"a@example.com","password":"secret-pass"}'
 ```
