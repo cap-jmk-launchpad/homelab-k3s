@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agentic-book-supabase
+  labels:
+    app.kubernetes.io/name: agentic-book-supabase
+    app.kubernetes.io/part-of: launchpad

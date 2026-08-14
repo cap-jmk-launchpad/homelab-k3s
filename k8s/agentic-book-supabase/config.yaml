@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agentic-book-supabase-config
+  namespace: agentic-book-supabase
+data:
+  API_EXTERNAL_URL: https://supabase.agentic-book.org
+  GOTRUE_JWT_ISSUER: https://supabase.agentic-book.org/auth/v1
+  GOTRUE_MAILER_EXTERNAL_HOSTS: supabase.agentic-book.org,agentic-book.org
+  GOTRUE_URI_ALLOW_LIST: https://agentic-book.org/**,http://localhost:3005/**,http://127.0.0.1:3005/**,http://localhost:9477/**,http://127.0.0.1:9477/**
+  SITE_URL: https://agentic-book.org
+  STUDIO_DEFAULT_ORGANIZATION: Agentic Book
+  STUDIO_DEFAULT_PROJECT: Agentic Book
+  SUPABASE_NAMESPACE: agentic-book-supabase
+  SUPABASE_PUBLIC_URL: https://supabase.agentic-book.org

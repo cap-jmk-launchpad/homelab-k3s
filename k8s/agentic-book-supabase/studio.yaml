@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studio
+  namespace: agentic-book-supabase
+  labels:
+    app: studio
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: studio
+  template:
+    metadata:
+      labels:
+        app: studio
+    spec:
+      containers:
+      - name: studio
+        image: supabase/studio:2026.04.27-sha-5f60601
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: HOSTNAME
+          value: 0.0.0.0
+        - name: STUDIO_PG_META_URL
+          value: http://meta:8080
+        - name: POSTGRES_HOST
+          value: db
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_DB
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_PASSWORD
+              name: agentic-book-supabase-secrets
+        - name: PG_META_CRYPTO_KEY
+          valueFrom:
+            secretKeyRef:
+              key: PG_META_CRYPTO_KEY
+              name: agentic-book-supabase-secrets
+        - name: DEFAULT_ORGANIZATION_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: STUDIO_DEFAULT_ORGANIZATION
+              name: agentic-book-supabase-config
+        - name: DEFAULT_PROJECT_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: STUDIO_DEFAULT_PROJECT
+              name: agentic-book-supabase-config
+        - name: SUPABASE_URL
+          value: http://kong:8000
+        - name: SUPABASE_PUBLIC_URL
+          valueFrom:
+            configMapKeyRef:
+              key: SUPABASE_PUBLIC_URL
+              name: agentic-book-supabase-config
+        - name: SUPABASE_ANON_KEY
+          valueFrom:
+            secretKeyRef:
+              key: ANON_KEY
+              name: agentic-book-supabase-secrets
+        - name: SUPABASE_SERVICE_KEY
+          valueFrom:
+            secretKeyRef:
+              key: SERVICE_ROLE_KEY
+              name: agentic-book-supabase-secrets
+        - name: AUTH_JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: JWT_SECRET
+              name: agentic-book-supabase-secrets
+        - name: NEXT_PUBLIC_ENABLE_LOGS
+          value: "false"
+        ports:
+        - containerPort: 3000
+          name: http
+        readinessProbe:
+          httpGet:
+            path: /api/platform/profile
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 384Mi
+      nodeSelector:
+        kubernetes.io/hostname: engine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: studio
+  namespace: agentic-book-supabase
+  labels:
+    app: studio
+spec:
+  selector:
+    app: studio
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 3000
+    targetPort: http

@@ -1,0 +1,85 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: agentic-book-supabase-backup
+  namespace: agentic-book-supabase
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: postgres:15-alpine
+            imagePullPolicy: IfNotPresent
+            command: ["sh", "/scripts/backup.sh"]
+            env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: agentic-book-supabase-secrets
+            volumeMounts:
+            - name: backups
+              mountPath: /backups
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          volumes:
+          - name: backups
+            persistentVolumeClaim:
+              claimName: agentic-book-supabase-backups
+          - name: scripts
+            configMap:
+              name: agentic-book-supabase-backup-scripts
+              defaultMode: 493
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: agentic-book-supabase-backup-prune
+  namespace: agentic-book-supabase
+spec:
+  schedule: "30 4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          containers:
+          - name: prune
+            image: postgres:15-alpine
+            imagePullPolicy: IfNotPresent
+            command: ["sh", "/scripts/prune-backups.sh"]
+            env:
+            - name: RETENTION_DAYS
+              value: "30"
+            volumeMounts:
+            - name: backups
+              mountPath: /backups
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          volumes:
+          - name: backups
+            persistentVolumeClaim:
+              claimName: agentic-book-supabase-backups
+          - name: scripts
+            configMap:
+              name: agentic-book-supabase-backup-scripts
+              defaultMode: 493
+---

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: librebase-supabase
+  labels:
+    app.kubernetes.io/name: librebase-supabase
+    app.kubernetes.io/part-of: launchpad

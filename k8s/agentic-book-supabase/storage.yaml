@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage
+  namespace: agentic-book-supabase
+  labels:
+    app: storage
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: storage
+  template:
+    metadata:
+      labels:
+        app: storage
+    spec:
+      initContainers:
+      - name: wait-db
+        image: postgres:15-alpine
+        command: ["sh", "-c", "until pg_isready -h db -p 5432 -U postgres; do sleep 2; done"]
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: agentic-book-supabase-secrets
+              key: POSTGRES_PASSWORD
+      containers:
+      - name: storage
+        image: supabase/storage-api:v1.60.4
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ANON_KEY
+          valueFrom:
+            secretKeyRef:
+              key: ANON_KEY
+              name: agentic-book-supabase-secrets
+        - name: SERVICE_KEY
+          valueFrom:
+            secretKeyRef:
+              key: SERVICE_ROLE_KEY
+              name: agentic-book-supabase-secrets
+        - name: POSTGREST_URL
+          value: http://rest:3000
+        - name: PGRST_JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: JWT_SECRET
+              name: agentic-book-supabase-secrets
+        - name: AUTH_JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: JWT_SECRET
+              name: agentic-book-supabase-secrets
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: STORAGE_DATABASE_URL
+              name: agentic-book-supabase-secrets
+        - name: FILE_SIZE_LIMIT
+          value: "104857600"
+        - name: STORAGE_BACKEND
+          value: file
+        - name: FILE_STORAGE_BACKEND_PATH
+          value: /var/lib/storage
+        - name: TENANT_ID
+          value: stub
+        - name: REGION
+          value: stub
+        - name: GLOBAL_S3_BUCKET
+          value: stub
+        - name: ENABLE_IMAGE_TRANSFORMATION
+          value: "false"
+        - name: STORAGE_PUBLIC_URL
+          valueFrom:
+            configMapKeyRef:
+              key: SUPABASE_PUBLIC_URL
+              name: agentic-book-supabase-config
+        ports:
+        - containerPort: 5000
+          name: http
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: storage-data
+          mountPath: /var/lib/storage
+      volumes:
+      - name: storage-data
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/hostname: engine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage
+  namespace: agentic-book-supabase
+  labels:
+    app: storage
+spec:
+  selector:
+    app: storage
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 5000
+    targetPort: http

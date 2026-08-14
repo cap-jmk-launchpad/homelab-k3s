@@ -1,0 +1,128 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: librebase-supabase-backup
+  namespace: librebase-supabase
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: postgres:15-alpine
+            imagePullPolicy: IfNotPresent
+            command: ["sh", "/scripts/backup.sh"]
+            env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: librebase-supabase-secrets
+            volumeMounts:
+            - name: backups
+              mountPath: /backups
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          volumes:
+          - name: backups
+            persistentVolumeClaim:
+              claimName: librebase-supabase-backups
+          - name: scripts
+            configMap:
+              name: librebase-supabase-backup-scripts
+              defaultMode: 493
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: librebase-supabase-backup-prune
+  namespace: librebase-supabase
+spec:
+  schedule: "30 4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          containers:
+          - name: prune
+            image: postgres:15-alpine
+            imagePullPolicy: IfNotPresent
+            command: ["sh", "/scripts/prune-backups.sh"]
+            env:
+            - name: RETENTION_DAYS
+              value: "30"
+            volumeMounts:
+            - name: backups
+              mountPath: /backups
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          volumes:
+          - name: backups
+            persistentVolumeClaim:
+              claimName: librebase-supabase-backups
+          - name: scripts
+            configMap:
+              name: librebase-supabase-backup-scripts
+              defaultMode: 493
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: librebase-waitlist-json-backup
+  namespace: librebase-supabase
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          containers:
+          - name: waitlist-backup
+            image: postgres:15-alpine
+            imagePullPolicy: IfNotPresent
+            command: ["sh", "/scripts/waitlist-backup.sh"]
+            env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: librebase-supabase-secrets
+            volumeMounts:
+            - name: waitlist
+              mountPath: /waitlist-backups
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          volumes:
+          - name: waitlist
+            persistentVolumeClaim:
+              claimName: librebase-waitlist-json
+          - name: scripts
+            configMap:
+              name: librebase-supabase-backup-scripts
+              defaultMode: 493

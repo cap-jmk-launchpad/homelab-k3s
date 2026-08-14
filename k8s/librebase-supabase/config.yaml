@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: librebase-supabase-config
+  namespace: librebase-supabase
+data:
+  API_EXTERNAL_URL: https://supabase.librebase.xyz
+  GOTRUE_JWT_ISSUER: https://supabase.librebase.xyz/auth/v1
+  GOTRUE_MAILER_EXTERNAL_HOSTS: supabase.librebase.xyz,librebase.xyz
+  GOTRUE_URI_ALLOW_LIST: https://librebase.xyz/**,http://localhost:3005/**,http://127.0.0.1:3005/**,http://localhost:9477/**,http://127.0.0.1:9477/**
+  SITE_URL: https://librebase.xyz
+  STUDIO_DEFAULT_ORGANIZATION: Librebase
+  STUDIO_DEFAULT_PROJECT: Librebase
+  SUPABASE_NAMESPACE: librebase-supabase
+  SUPABASE_PUBLIC_URL: https://supabase.librebase.xyz

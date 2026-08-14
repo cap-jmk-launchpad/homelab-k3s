@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong
+  namespace: librebase-supabase
+  labels:
+    app: kong
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      initContainers:
+      - name: wait-studio
+        image: curlimages/curl:8.12.1
+        command: ["sh", "-c", "until curl -sf http://studio:3000/api/platform/profile; do sleep 3; done"]
+      - name: render-kong
+        image: busybox:1.37
+        command: ["sh", "/scripts/kong-entrypoint.sh"]
+        env:
+        - name: KONG_DECLARATIVE_CONFIG
+          value: /kong-out/kong.yml
+        - name: SUPABASE_ANON_KEY
+          valueFrom:
+            secretKeyRef:
+              key: ANON_KEY
+              name: librebase-supabase-secrets
+        - name: SUPABASE_SERVICE_KEY
+          valueFrom:
+            secretKeyRef:
+              key: SERVICE_ROLE_KEY
+              name: librebase-supabase-secrets
+        - name: DASHBOARD_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: DASHBOARD_USERNAME
+              name: librebase-supabase-secrets
+        - name: DASHBOARD_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: DASHBOARD_PASSWORD
+              name: librebase-supabase-secrets
+        volumeMounts:
+        - name: kong-config
+          mountPath: /home/kong/temp.yml
+          subPath: kong.yml
+        - name: kong-config
+          mountPath: /scripts/kong-entrypoint.sh
+          subPath: kong-entrypoint.sh
+        - name: kong-out
+          mountPath: /kong-out
+      containers:
+      - name: kong
+        image: kong:2.8.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: KONG_DATABASE
+          value: "off"
+        - name: KONG_DECLARATIVE_CONFIG
+          value: /kong-out/kong.yml
+        - name: KONG_PROXY_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_ADMIN_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_PROXY_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_ADMIN_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_PROXY_LISTEN
+          value: 0.0.0.0:8000
+        - name: KONG_NGINX_WORKER_PROCESSES
+          value: "2"
+        ports:
+        - containerPort: 8000
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            memory: 2Gi
+        volumeMounts:
+        - name: kong-out
+          mountPath: /kong-out
+          readOnly: true
+      volumes:
+      - name: kong-config
+        configMap:
+          name: librebase-supabase-kong-config
+          defaultMode: 493
+      - name: kong-out
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/hostname: engine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong
+  namespace: librebase-supabase
+  labels:
+    app: kong
+spec:
+  selector:
+    app: kong
+  type: NodePort
+  ports:
+  - name: http
+    port: 8000
+    targetPort: http
+    nodePort: 30606

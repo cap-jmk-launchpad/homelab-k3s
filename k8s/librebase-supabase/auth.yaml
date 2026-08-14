@@ -1,0 +1,154 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  namespace: librebase-supabase
+  labels:
+    app: auth
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      initContainers:
+      - name: wait-db
+        image: postgres:15-alpine
+        command: ["sh", "-c", "until pg_isready -h db -p 5432 -U postgres; do sleep 2; done"]
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: librebase-supabase-secrets
+              key: POSTGRES_PASSWORD
+      containers:
+      - name: auth
+        image: supabase/gotrue:v2.186.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: GOTRUE_API_HOST
+          value: 0.0.0.0
+        - name: GOTRUE_API_PORT
+          value: "9999"
+        - name: API_EXTERNAL_URL
+          valueFrom:
+            configMapKeyRef:
+              key: API_EXTERNAL_URL
+              name: librebase-supabase-config
+        - name: GOTRUE_DB_DRIVER
+          value: postgres
+        - name: GOTRUE_DB_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: GOTRUE_DB_DATABASE_URL
+              name: librebase-supabase-secrets
+        - name: GOTRUE_SITE_URL
+          valueFrom:
+            configMapKeyRef:
+              key: SITE_URL
+              name: librebase-supabase-config
+        - name: GOTRUE_URI_ALLOW_LIST
+          valueFrom:
+            configMapKeyRef:
+              key: GOTRUE_URI_ALLOW_LIST
+              name: librebase-supabase-config
+        - name: GOTRUE_MAILER_EXTERNAL_HOSTS
+          valueFrom:
+            configMapKeyRef:
+              key: GOTRUE_MAILER_EXTERNAL_HOSTS
+              name: librebase-supabase-config
+        - name: GOTRUE_DISABLE_SIGNUP
+          value: "false"
+        - name: GOTRUE_JWT_ADMIN_ROLES
+          value: service_role
+        - name: GOTRUE_JWT_AUD
+          value: authenticated
+        - name: GOTRUE_JWT_DEFAULT_GROUP_NAME
+          value: authenticated
+        - name: GOTRUE_JWT_EXP
+          value: "3600"
+        - name: GOTRUE_JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: JWT_SECRET
+              name: librebase-supabase-secrets
+        - name: GOTRUE_JWT_ISSUER
+          valueFrom:
+            configMapKeyRef:
+              key: GOTRUE_JWT_ISSUER
+              name: librebase-supabase-config
+        - name: GOTRUE_EXTERNAL_EMAIL_ENABLED
+          value: "true"
+        - name: GOTRUE_MAILER_AUTOCONFIRM
+          value: "true"
+        - name: GOTRUE_SMTP_ADMIN_EMAIL
+          valueFrom:
+            secretKeyRef:
+              key: SMTP_ADMIN_EMAIL
+              name: librebase-supabase-secrets
+              optional: true
+        - name: GOTRUE_SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              key: SMTP_HOST
+              name: librebase-supabase-secrets
+              optional: true
+        - name: GOTRUE_SMTP_PORT
+          valueFrom:
+            secretKeyRef:
+              key: SMTP_PORT
+              name: librebase-supabase-secrets
+              optional: true
+        - name: GOTRUE_SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              key: SMTP_USER
+              name: librebase-supabase-secrets
+              optional: true
+        - name: GOTRUE_SMTP_PASS
+          valueFrom:
+            secretKeyRef:
+              key: SMTP_PASS
+              name: librebase-supabase-secrets
+              optional: true
+        - name: GOTRUE_SMTP_SENDER_NAME
+          value: Librebase
+        ports:
+        - containerPort: 9999
+          name: http
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 192Mi
+      nodeSelector:
+        kubernetes.io/hostname: engine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  namespace: librebase-supabase
+  labels:
+    app: auth
+spec:
+  selector:
+    app: auth
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 9999
+    targetPort: http

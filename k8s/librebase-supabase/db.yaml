@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  namespace: librebase-supabase
+  labels:
+    app: db
+spec:
+  serviceName: db
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - name: postgres
+        image: supabase/postgres:15.8.1.085
+        imagePullPolicy: IfNotPresent
+        args:
+        - postgres
+        - -c
+        - config_file=/etc/postgresql/postgresql.conf
+        - -c
+        - log_min_messages=fatal
+        env:
+        - name: POSTGRES_HOST
+          value: /var/run/postgresql
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_DB
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: librebase-supabase-secrets
+              key: POSTGRES_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: librebase-supabase-secrets
+              key: JWT_SECRET
+        - name: JWT_EXP
+          value: "3600"
+        ports:
+        - containerPort: 5432
+          name: postgres
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 60
+          periodSeconds: 15
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 384Mi
+          limits:
+            memory: 768Mi
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+      nodeSelector:
+        kubernetes.io/hostname: engine
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: librebase-supabase
+  labels:
+    app: db
+spec:
+  selector:
+    app: db
+  type: ClusterIP
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432
