@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp
+  namespace: agentic-book
+  labels:
+    app: mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp
+  template:
+    metadata:
+      labels:
+        app: mcp
+    spec:
+      containers:
+      - name: mcp
+        image: docker.io/library/agentic-book-mcp:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PORT
+          value: "4000"
+        - name: NEXT_PUBLIC_SUPABASE_URL
+          value: "https://supabase.agentic-book.org"
+        - name: SUPABASE_SERVICE_ROLE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: agentic-book-mcp-secrets
+              key: SUPABASE_SERVICE_ROLE_KEY
+        ports:
+        - containerPort: 4000
+          name: http
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+      nodeSelector:
+        kubernetes.io/hostname: blackpearl
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp
+  namespace: agentic-book
+  labels:
+    app: mcp
+spec:
+  selector:
+    app: mcp
+  type: NodePort
+  ports:
+  - name: http
+    port: 4000
+    targetPort: http
+    nodePort: 30621
