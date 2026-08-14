@@ -87,6 +87,38 @@ spec:
           value: "true"
         - name: GOTRUE_MAILER_AUTOCONFIRM
           value: "true"
+        - name: GOTRUE_EXTERNAL_GOOGLE_ENABLED
+          value: "true"
+        - name: GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: GOOGLE_CLIENT_ID
+              name: agentic-book-supabase-secrets
+              optional: true
+        - name: GOTRUE_EXTERNAL_GOOGLE_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: GOOGLE_SECRET
+              name: agentic-book-supabase-secrets
+              optional: true
+        - name: GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI
+          value: https://supabase.agentic-book.org/auth/v1/callback
+        - name: GOTRUE_EXTERNAL_GITHUB_ENABLED
+          value: "true"
+        - name: GOTRUE_EXTERNAL_GITHUB_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: GITHUB_CLIENT_ID
+              name: agentic-book-supabase-secrets
+              optional: true
+        - name: GOTRUE_EXTERNAL_GITHUB_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: GITHUB_SECRET
+              name: agentic-book-supabase-secrets
+              optional: true
+        - name: GOTRUE_EXTERNAL_GITHUB_REDIRECT_URI
+          value: https://supabase.agentic-book.org/auth/v1/callback
         - name: GOTRUE_SMTP_ADMIN_EMAIL
           valueFrom:
             secretKeyRef:
