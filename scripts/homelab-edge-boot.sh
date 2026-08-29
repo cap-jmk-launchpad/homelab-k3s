@@ -65,15 +65,18 @@ for unit in li-httpd-homelab.service nginx-gitlab-edge.service postfix-mx-router
   fi
 done
 
-# Full GitLab upstream / NodePort / pod heal (same as timer oneshot).
-if [[ -x /usr/local/bin/gitlab-edge-watchdog.sh ]]; then
-  /usr/local/bin/gitlab-edge-watchdog.sh || log "WARN: gitlab-edge-watchdog non-zero"
-elif [[ -f "${SCRIPT_DIR}/gitlab-edge-watchdog.sh" ]]; then
-  bash "${SCRIPT_DIR}/gitlab-edge-watchdog.sh" || log "WARN: gitlab-edge-watchdog non-zero"
+# Full keep-up pass (edge + cluster services + prune + backup rotation).
+# This single run subsumes the former gitlab-edge-watchdog + edge-watchdog oneshots.
+if [[ -x /usr/local/bin/cluster-watchdog.sh ]]; then
+  /usr/local/bin/cluster-watchdog.sh --once || log "WARN: cluster-watchdog non-zero"
+elif [[ -f "${SCRIPT_DIR}/cluster-watchdog.sh" ]]; then
+  bash "${SCRIPT_DIR}/cluster-watchdog.sh" --once || log "WARN: cluster-watchdog non-zero"
 fi
 
-# Ensure periodic heal timers are armed after reboot.
-for timer in gitlab-edge-watchdog.timer li-httpd-edge-watchdog.timer cluster-health-watchdog.timer; do
+# Ensure the single unified watchdog timer is armed after reboot (old timers
+# li-httpd-edge-watchdog.timer + gitlab-edge-watchdog.timer are retired by
+# deploy-cluster-watchdog.sh and no longer armed here).
+for timer in cluster-watchdog.timer; do
   if systemctl list-unit-files "$timer" >/dev/null 2>&1; then
     systemctl enable "$timer" 2>/dev/null || true
     systemctl start "$timer" 2>/dev/null || true

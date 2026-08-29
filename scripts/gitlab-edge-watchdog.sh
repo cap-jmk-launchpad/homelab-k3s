@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# DEPRECATED — consolidated into scripts/cluster-watchdog.sh (single systemd timer
+# cluster-watchdog.timer on blackpearl). deploy-cluster-watchdog.sh retires the
+# gitlab-edge-watchdog.timer; this script remains as an internal healer that
+# cluster-watchdog.heal_edge() calls for GitLab nginx-upstream (engine DHCP) + pod
+# restart + reverse-tunnel fallback. New logic should go in cluster-watchdog.sh.
 # blackpearl GitLab edge watchdog - probe nginx :443, heal upstream NodePort (engine DHCP),
 # restart gitlab-0 if needed, optional reverse-tunnel fallback.
 set -euo pipefail

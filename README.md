@@ -124,6 +124,7 @@ Master inventory (products + NodePorts + WAN): **[docs/klaut-pro-products.md](do
 | HCP Vault | [docs/hcp-vault.md](docs/hcp-vault.md) |
 | Fritz port-forward | [docs/fritz-klaut-pro-port-forward.md](docs/fritz-klaut-pro-port-forward.md) |
 | Internal CA (step-ca) | [docs/internal-ca-homelab.md](docs/internal-ca-homelab.md) |
+| Cluster watchdog (self-healing + prune + backup rotation) | [docs/cluster-watchdog.md](docs/cluster-watchdog.md) |
 
 ## License
 

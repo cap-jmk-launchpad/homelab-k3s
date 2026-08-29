@@ -75,7 +75,11 @@ fi
 yieldscope_ready=0
 if { [[ -e "/etc/letsencrypt/live/yieldscope.d3bu7.com/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/yieldscope.d3bu7.com/fullchain.pem" ]]; } \
   && { [[ -e "/etc/letsencrypt/live/supabase.yieldscope.d3bu7.com/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/supabase.yieldscope.d3bu7.com/fullchain.pem" ]]; }; then
-  yieldscope_ready=1
+  if [[ -f "${EDGE_DIR}/nginx-yieldscope.conf" && -f "${EDGE_DIR}/nginx-yieldscope-supabase.conf" ]]; then
+    yieldscope_ready=1
+  else
+    echo "edge-nginx-apply: yieldscope certs present but nginx confs missing in repo — skipping" >&2
+  fi
 fi
 if [[ "$yieldscope_ready" -eq 1 ]]; then
   install -m 644 "${EDGE_DIR}/nginx-yieldscope.conf" /etc/nginx/gitlab-edge/yieldscope.conf
@@ -87,7 +91,7 @@ if [[ "$yieldscope_ready" -eq 1 ]]; then
 else
   sed '/__YIELDSCOPE_INCLUDE__/d' "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
   mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
-  echo "edge-nginx-apply: yieldscope HTTPS vhosts skipped (no LE certs)"
+  echo "edge-nginx-apply: yieldscope HTTPS vhosts skipped (no LE certs or no conf)"
 fi
 
 # mail.lilangverse.xyz + mail.yieldscope.d3bu7.com (fix wrong-SNI fallback to lip)
@@ -107,6 +111,26 @@ else
   sed '/__MAIL_HTTPS_INCLUDE__/d' "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
   mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
   echo "edge-nginx-apply: mail HTTPS vhosts skipped (no LE certs)"
+fi
+# Todo librebase.xyz HTTPS vhost
+install -m 644 "${EDGE_DIR}/nginx-todo-librebase-xyz.conf" /etc/nginx/gitlab-edge/nginx-todo-librebase-xyz.conf
+if ! grep -q 'nginx-todo-librebase-xyz.conf' "$NGINX_CONF_DST"; then
+  sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-todo-librebase-xyz.conf;' "$NGINX_CONF_DST"
+fi
+# Portfolio julianmkleber.com HTTPS vhost (fix wrong-SNI fallback to lip)
+JULIAN_SNIPPET="${EDGE_DIR}/nginx-julianmkleber.conf"
+julian_cert_ready=0
+if [[ -f "$JULIAN_SNIPPET" ]] && { [[ -e "/etc/letsencrypt/live/julianmkleber.com/fullchain.pem" ]] || [[ -L "/etc/letsencrypt/live/julianmkleber.com/fullchain.pem" ]]; }; then
+  julian_cert_ready=1
+fi
+if [[ "$julian_cert_ready" -eq 1 ]]; then
+  install -m 644 "$JULIAN_SNIPPET" /etc/nginx/gitlab-edge/nginx-julianmkleber.conf
+  if ! grep -q 'nginx-julianmkleber.conf' "$NGINX_CONF_DST"; then
+    sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-julianmkleber.conf;' "$NGINX_CONF_DST"
+  fi
+  echo "edge-nginx-apply: included julianmkleber.com HTTPS vhost"
+else
+  echo "edge-nginx-apply: julianmkleber.com HTTPS vhost skipped (no LE cert for julianmkleber.com — run certbot for julianmkleber.com + www.julianmkleber.com)"
 fi
 # Always install public HTTP front (landing :80 -> HTTPS + proxy to li-httpd :8080).
 HTTP_FRONT="${EDGE_DIR}/nginx-obsevia-http-front.conf"
@@ -151,8 +175,8 @@ if [[ "$bureauzilla_cert_ready" -eq 1 ]]; then
     sed "/__BUREAUZILLA_INCLUDE__/r ${BUREAUZILLA_SNIPPET}" "$NGINX_CONF_DST" \
       | sed "/__BUREAUZILLA_INCLUDE__/d" >"${NGINX_CONF_DST}.merged"
     mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
-  else
-    echo "    include /etc/nginx/gitlab-edge/nginx-bureauzilla.conf;" >> "$NGINX_CONF_DST"
+  elif ! grep -q 'nginx-bureauzilla.conf' "$NGINX_CONF_DST"; then
+    sed -i '/include.*mime.types/a\    include /etc/nginx/gitlab-edge/nginx-bureauzilla.conf;' "$NGINX_CONF_DST"
   fi
   echo "edge-nginx-apply: included bureauzilla.com HTTPS vhost"
 else

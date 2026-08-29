@@ -1,6 +1,15 @@
 # GitLab edge self-healing (blackpearl)
 
-When **engine** reboots, DHCP may change its k3s `InternalIP` (e.g. `192.168.10.32` to `192.168.10.40`). nginx on blackpearl can keep proxying to a stale LAN IP while GitLab Omnibus on NodePort **30481** is healthy on the cluster.
+> **Note:** the runtime probes here are now invoked by the **unified `cluster-watchdog`**
+> timer (`scripts/cluster-watchdog.sh` → `heal_edge`), which also covers li-httpd, the
+> portfolio, cluster service keep-up, container prune and backup rotation. The
+> standalone `gitlab-edge-watchdog.timer` is retired; see
+> [docs/cluster-watchdog.md](cluster-watchdog.md). `gitlab-edge-watchdog.sh` is retained
+> only as the GitLab-specific upstream/pod healer that `cluster-watchdog` calls.
+
+When **engine** reboots, DHCP may change its k3s `InternalIP` (e.g. `192.168.10.32` to `192.168.10.40`).
+nginx on blackpearl can keep proxying to a stale LAN IP while GitLab Omnibus on NodePort
+**30481** is healthy on the cluster.
 
 ## gitlab-edge-watchdog
 
@@ -16,16 +25,16 @@ When healthy, prefer upstream `127.0.0.1:30481` (cluster NodePort on blackpearl)
 
 ### Install
 
+Install the unified watchdog (covers GitLab edge healing + all other keep-up duties):
+
 ```bash
 cd ~/staging/homelab-k3s
-sudo bash scripts/gitlab-edge-watchdog-apply.sh --install-systemd
+sudo bash scripts/deploy-cluster-watchdog.sh
 ```
 
-Also enable the generic edge watchdog (nginx + li-httpd HTTP):
+This arms `cluster-watchdog.timer` (every 5 min) and retires the old
+`li-httpd-edge-watchdog.timer` + `gitlab-edge-watchdog.timer`.
 
-```bash
-sudo systemctl enable --now li-httpd-edge-watchdog.timer
-```
 
 ### Logs
 

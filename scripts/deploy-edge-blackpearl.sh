@@ -19,7 +19,10 @@ HOME=/home/s4il0r LIC_ROOT=/home/s4il0r/staging/lic LI_HTTPD_ROOT=/home/s4il0r/s
 systemctl restart li-httpd-homelab.service
 sleep 2
 systemctl restart li-httpd-homelab-tls.service
-systemctl enable --now li-httpd-edge-watchdog.timer
 
-systemctl is-active li-httpd-homelab.service li-httpd-homelab-tls.service li-httpd-edge-watchdog.timer
+# Arm the SINGLE unified cluster watchdog (installs cluster-watchdog.sh + timer and
+# retires the old li-httpd-edge-watchdog.timer / gitlab-edge-watchdog timers).
+bash "${REPO_ROOT}/scripts/deploy-cluster-watchdog.sh"
+
+systemctl is-active li-httpd-homelab.service li-httpd-homelab-tls.service cluster-watchdog.timer
 echo "deploy-edge-blackpearl: done"

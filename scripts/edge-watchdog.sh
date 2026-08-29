@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# DEPRECATED — consolidated into scripts/cluster-watchdog.sh (single systemd timer
+# cluster-watchdog.timer on blackpearl). deploy-cluster-watchdog.sh retires this
+# timer; kept only as an internal healer invoked by cluster-watchdog.heal_edge().
 # blackpearl edge watchdog — GitLab prod HTTPS via nginx :443; heal nginx + li-httpd HTTP.
 set -euo pipefail
 
