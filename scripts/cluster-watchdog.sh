@@ -276,7 +276,7 @@ check_services() {
       continue
     fi
     if [[ "$restart" == "1" ]]; then
-      log "service ${name} (${port}): DOWN (code=${code}) — agent-swarm, monitor-only (no restart)"
+      log "service ${name} (${port}): DOWN (code=${code}) — monitor-only (restart=1, no recycle)"
       continue
     fi
     local sf; sf=$(streak_file "svc-${name}"); local streak; streak=$(read_streak "$sf"); streak=$((streak + 1)); write_streak "$sf" "$streak"
