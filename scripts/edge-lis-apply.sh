@@ -164,8 +164,7 @@ if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then
   install -m 755 "${SCRIPT_DIR}/edge-health-probe.sh" /usr/local/bin/edge-health-probe.sh
   install -m 755 "${LIC_ROOT}/scripts/flatten-httpd-config.sh" /usr/local/bin/flatten-httpd-config.sh 2>/dev/null || true
   for unit in li-httpd-homelab.service li-httpd-homelab-tls.service \
-    nginx-gitlab-edge.service \
-    li-httpd-edge-watchdog.service li-httpd-edge-watchdog.timer; do
+    nginx-gitlab-edge.service; do
     sed -e "s|/home/s4il0r/staging/homelab-k3s|${REPO_ROOT}|g" \
         -e "s|/home/s4il0r/staging/beelink-cleanup|${REPO_ROOT}|g" \
       "${EDGE_DIR}/${unit}" >/etc/systemd/system/${unit}
@@ -175,7 +174,9 @@ if [[ "$INSTALL_SYSTEMD" -eq 1 ]]; then
   systemctl disable --now caddy.service 2>/dev/null || true
   systemctl enable li-httpd-homelab.service li-httpd-homelab-tls.service
   systemctl enable nginx-gitlab-edge.service 2>/dev/null || true
-  systemctl enable li-httpd-edge-watchdog.timer
+  # Legacy li-httpd-edge-watchdog.service/.timer retired: edge reliability is now
+  # owned by the unified cluster-watchdog (scripts/cluster-watchdog.sh). Arm it via:
+  #   sudo bash scripts/deploy-cluster-watchdog.sh
 fi
 
 if [[ "$RELOAD" -eq 1 ]] && [[ -f "$RUNTIME_PRE" ]] && [[ -f "$RUNTIME_TLS_PRE" ]] \
