@@ -1,0 +1,14 @@
+# Merge into homelab.httpd.toml on blackpearl (edge-lis-apply.sh).
+# Routes WAN Shiphook deploy webhooks for agentic-book CI → shiphook :3141.
+# Mirror of k8s/edge/obsevia-demos-shiphook.httpd.toml (Obsevia demo route).
+
+[upstreams.shiphook_agentic_book]
+balance = "round_robin"
+peers = ["http://127.0.0.1:3141"]
+
+[[site]]
+host = "shiphook.agentic-book.org"   # <-- your Shiphook vhost (DNS / Fritz forward → 192.168.10.33:80)
+listen = ":80"
+
+[site.routes]
+"POST /deploy/agentic-book" = "proxy:shiphook_agentic_book"

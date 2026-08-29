@@ -1,0 +1,27 @@
+# agentic-book.org (Next.js web app) — k3s Service + NodePort on `blackpearl`.
+# Mirrors the Service pattern used by k8s/staging/qroma-demo/base/service.yaml.
+#
+# NodePort 30608 is free (30606 librebase-supabase, 30607 agentic-book-supabase Kong,
+# 30621 mcp.agentic-book.org). The Deployment `agentic-book-web` is rolled by Shiphook
+# (scripts/agentic-book-shiphook-deploy.sh) via `kubectl set image`; this Service is
+# the stable backend for the edge proxy (nginx-agentic-book-web.conf) and the
+# cluster-watchdog probe (services.conf).
+#
+# Verify the `selector` matches the live Deployment's pod labels before/after apply.
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentic-book-web
+  namespace: agentic-book-supabase
+  labels:
+    app: agentic-book-web
+spec:
+  selector:
+    app: agentic-book-web
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30608
+      protocol: TCP
+      name: http
+  type: NodePort
