@@ -175,4 +175,4 @@ Truncation is **client-side Schannel read behavior** (not li-httpd route loss): 
 2. **Acceptance gate** — on blackpearl only, run [scripts/edge-acceptance-gate.sh](../scripts/edge-acceptance-gate.sh): parallel **18/18** on `127.0.0.1` and `192.168.10.33`, sequential **18/18**, plus CSS probe **10/10** each. **TESTED** or **NOT TESTED** — no partial success.
 3. **Windows reporting** — [scripts/edge-css-probe.ps1](../scripts/edge-css-probe.ps1) is informational only; never the deploy gate.
 
-Do **not** treat intermittent workstation WAN curls as edge failures. Do **not** re-enable `li-httpd-edge-watchdog.timer` until blackpearl reports **TESTED**.
+Do **not** treat intermittent workstation WAN curls as edge failures. Do **not** re-arm the retired `li-httpd-edge-watchdog.timer`; the unified `cluster-watchdog.timer` (see [docs/cluster-watchdog.md](cluster-watchdog.md)) owns edge reliability — keep it **TESTED**.

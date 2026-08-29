@@ -1,0 +1,17 @@
+[Unit]
+Description=Unified homelab cluster watchdog (edge + cluster services + prune + backups)
+Documentation=file:///home/s4il0r/staging/homelab-k3s/docs/cluster-watchdog.md
+After=network-online.target k3s.service li-httpd-homelab.service nginx-gitlab-edge.service
+Wants=network-online.target
+Wants=li-httpd-homelab.service nginx-gitlab-edge.service
+
+[Service]
+Type=oneshot
+User=root
+Environment=HOME=/home/s4il0r
+Environment=KUBECONFIG=/home/s4il0r/.kube/config
+Environment=SSH_KEY=/home/s4il0r/.ssh/homelab
+Environment=CLUSTER_WATCHDOG_INVENTORY=/etc/cluster-watchdog/services.conf
+Environment=REPO_ROOT=/home/s4il0r/staging/homelab-k3s
+ExecStartPre=/bin/mkdir -p /run/cluster-watchdog /var/log
+ExecStart=/usr/local/bin/cluster-watchdog.sh --once

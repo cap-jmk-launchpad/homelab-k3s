@@ -71,7 +71,7 @@ On blackpearl (after rsync `homelab-k3s`):
 cd ~/staging/homelab-k3s
 sudo bash scripts/edge-nginx-apply.sh --install-systemd   # nginx :443 GitLab prod
 sudo bash scripts/edge-lis-apply.sh --install-systemd     # li-httpd :80 + :8443 dev TLS
-sudo systemctl enable --now li-httpd-edge-watchdog.timer
+sudo bash scripts/deploy-cluster-watchdog.sh              # single watchdog (every 5 min)
 ```
 
 li-httpd dev rebuild (when iterating `lic` relay):
