@@ -184,6 +184,34 @@ skip_ns() {
   return 1
 }
 
+# --- 1b. keep_librebase_staging_up (stage.librebase.xyz landing + app-stage app/MCP) ---
+# Staging is served by the nginx :443 edge via nginx-librebase-staging.conf; if a vhost
+# is dropped (e.g. after a re-apply from a repo without the file) or the upstream stops
+# answering, re-apply the edge config and reload nginx. The docker stack itself is
+# managed by the staging deploy webhook / auto-deploy cron on engine, not here.
+keep_librebase_staging_up() {
+  local streakf; streakf=$(streak_file librebase-staging)
+  local stage_code app_code
+  stage_code=$(http_code_url "https://stage.librebase.xyz/api/admin-proxy/health" "stage.librebase.xyz:443:127.0.0.1")
+  app_code=$(http_code_url "https://app-stage.librebase.xyz/api/admin-proxy/health" "app-stage.librebase.xyz:443:127.0.0.1")
+  log "librebase-staging: stage=${stage_code} app-stage=${app_code}"
+
+  if ok_code "$stage_code" && ok_code "$app_code"; then
+    write_streak "$streakf" 0
+    log "librebase-staging: OK"
+    return 0
+  fi
+
+  local streak; streak=$(read_streak "$streakf"); streak=$((streak + 1)); write_streak "$streakf" "$streak"
+  log "librebase-staging: DEGRADED stage=${stage_code} app-stage=${app_code} streak=${streak}/${LIBREBASE_STAGING_HEAL_THRESHOLD:-2}"
+  if [[ "$streak" -lt "${LIBREBASE_STAGING_HEAL_THRESHOLD:-2}" ]]; then return 0; fi
+
+  log "librebase-staging: threshold reached — re-apply edge config + reload nginx"
+  mut bash "$EDGE_NGINX_APPLY" --no-reload 2>/dev/null || true
+  mut systemctl reload nginx-gitlab-edge.service 2>/dev/null || mut systemctl restart nginx-gitlab-edge.service 2>/dev/null || true
+  write_streak "$streakf" 0
+}
+
 # --- 2. prune_stale (disk reclaim; every run, cheap) ---
 prune_stale() {
   log "prune: collecting stale pods/jobs/pvs (skip-ns=[${WATCHDOG_SKIP_NS}])"
@@ -374,6 +402,7 @@ fi
 log "=== cluster-watchdog run start (check_only=${CHECK_ONLY}) ==="
 heal_edge
 keep_portfolio_up
+keep_librebase_staging_up
 check_services
 prune_stale
 prune_images_gated

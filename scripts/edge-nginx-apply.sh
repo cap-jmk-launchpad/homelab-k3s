@@ -117,6 +117,16 @@ install -m 644 "${EDGE_DIR}/nginx-todo-librebase-xyz.conf" /etc/nginx/gitlab-edg
 if ! grep -q 'nginx-todo-librebase-xyz.conf' "$NGINX_CONF_DST"; then
   sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-todo-librebase-xyz.conf;' "$NGINX_CONF_DST"
 fi
+# Librebase staging vhosts (stage.librebase.xyz landing + app-stage.librebase.xyz app/MCP)
+if [[ -f "${EDGE_DIR}/nginx-librebase-staging.conf" ]]; then
+  install -m 644 "${EDGE_DIR}/nginx-librebase-staging.conf" /etc/nginx/gitlab-edge/nginx-librebase-staging.conf
+  if ! grep -q 'nginx-librebase-staging.conf' "$NGINX_CONF_DST"; then
+    sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-librebase-staging.conf;' "$NGINX_CONF_DST"
+  fi
+  echo "edge-nginx-apply: included librebase staging vhosts (stage + app-stage)"
+else
+  echo "edge-nginx-apply: WARN missing ${EDGE_DIR}/nginx-librebase-staging.conf" >&2
+fi
 # Portfolio julianmkleber.com HTTPS vhost (fix wrong-SNI fallback to lip)
 JULIAN_SNIPPET="${EDGE_DIR}/nginx-julianmkleber.conf"
 julian_cert_ready=0
