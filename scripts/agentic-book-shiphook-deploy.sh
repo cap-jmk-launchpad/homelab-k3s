@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Shiphook runScript for agentic-book-web (M1: CI builds, server rolls).
 #
-# Triggered by web-deploy.yml via the `agentic-book` Shiphook app route on blackpearl.
-# Shiphook runs `git pull` in $SHIPHOOK_REPO_PATH (an agentic-book checkout) BEFORE
-# this script, so HEAD == the commit CI just built+pushed. We read that SHA, target
-# the GHCR image CI pushed, and roll the k3s Deployment.
-#
-# - No registry creds needed (GHCR package is public).
-# - No Supabase keys needed at roll time (baked into the image at CI build time).
+# CI (web-deploy.yml) built+pushed ghcr.io/agentic-book-org/agentic-book-web:main-<sha>
+# to a (private) GHCR package, then POSTed an empty deploy trigger. Shiphook did
+# `git pull` in $repoPath (an agentic-book checkout) before this script runs, so
+# HEAD == the commit CI just deployed. We read that SHA (8 chars, matching CI's
+# ${GITHUB_SHA::8} tag), create a GHCR imagePullSecret from a server-side PAT
+# (private-package pull; never committed), patch the Deployment to use it, then
+# roll. No cluster credential or PAT ever touches CI or git.
 set -euo pipefail
 
 export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
@@ -17,6 +17,12 @@ REPO_PATH="${SHIPHOOK_REPO_PATH:-$(pwd)}"
 REGISTRY="${AGENTIC_BOOK_REGISTRY:-ghcr.io/agentic-book-org}"
 IMAGE_NAME="${AGENTIC_BOOK_IMAGE_NAME:-agentic-book-web}"
 
+# Server-side PAT for pulling the private GHCR package (operator-managed).
+# File: ~/staging/secrets/agentic-book.env  -> GHCR_USERNAME, GHCR_TOKEN
+# (see docs/agentic-book-cd.md). Override the path via AGENTIC_BOOK_SECRET_FILE.
+ENV_FILE="${AGENTIC_BOOK_SECRET_FILE:-$HOME/staging/secrets/agentic-book.env}"
+if [ -f "$ENV_FILE" ]; then set -a; . "$ENV_FILE"; set +a; fi
+
 SHA="$(git -C "$REPO_PATH" rev-parse --short=8 HEAD 2>/dev/null || echo "${AGENTIC_BOOK_TAG:-latest}")"
 IMAGE="${REGISTRY}/${IMAGE_NAME}:main-${SHA}"
 
@@ -25,9 +31,21 @@ echo "   repo HEAD : ${SHA}"
 echo "   image     : ${IMAGE}"
 echo "   namespace : ${NS}"
 
-# The Service (NodePort 30608) is applied once, out of band:
-#   kubectl apply -f k8s/agentic-book/agentic-book-web.yaml
-# It is NOT re-applied here to keep this script focused and path-independent.
+# imagePullSecret for the PRIVATE GHCR package (idempotent; base64 by kubectl).
+if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
+  kubectl -n "$NS" create secret docker-registry ghcr-regcred \
+    --docker-server=ghcr.io \
+    --docker-username="$GHCR_USERNAME" \
+    --docker-password="$GHCR_TOKEN" \
+    --docker-email="${GHCR_EMAIL:-deploy@agentic-book.org}" \
+    --dry-run=client -o yaml | kubectl -n "$NS" apply -f -
+  kubectl -n "$NS" patch "deployment/${DEPLOY}" -p \
+    '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"ghcr-regcred"}]}}}' \
+    --type=merge
+else
+  echo ">> warn: GHCR_USERNAME/GHCR_TOKEN unset — assuming public image or existing pull secret"
+fi
+
 kubectl -n "$NS" set image "deployment/${DEPLOY}" "${DEPLOY}=${IMAGE}"
 kubectl -n "$NS" rollout status "deployment/${DEPLOY}" --timeout=180s
 

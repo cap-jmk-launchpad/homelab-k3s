@@ -70,6 +70,10 @@ peers = ["http://127.0.0.1:30481"]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30500"]
 
+[upstreams.librebase_staging]
+balance = "round_robin"
+peers = ["http://192.168.10.32:3006"]
+
 [upstreams.lip_registry]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30422"]
@@ -370,6 +374,38 @@ listen = ":80"
 "GET /*" = "proxy:librebase_todo"
 "POST /*" = "proxy:librebase_todo"
 "DELETE /*" = "proxy:librebase_todo"
+"PUT /*" = "proxy:librebase_todo"
+"PATCH /*" = "proxy:librebase_todo"
+"OPTIONS /*" = "proxy:librebase_todo"
+"HEAD /*" = "proxy:librebase_todo"
+
+[[site]]
+host = "stage.librebase.xyz"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:librebase_staging"
+"POST /*" = "proxy:librebase_staging"
+"PUT /*" = "proxy:librebase_staging"
+"PATCH /*" = "proxy:librebase_staging"
+"DELETE /*" = "proxy:librebase_staging"
+"OPTIONS /*" = "proxy:librebase_staging"
+"HEAD /*" = "proxy:librebase_staging"
+
+[[site]]
+host = "app-stage.librebase.xyz"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:librebase_staging"
+"POST /*" = "proxy:librebase_staging"
+"PUT /*" = "proxy:librebase_staging"
+"PATCH /*" = "proxy:librebase_staging"
+"DELETE /*" = "proxy:librebase_staging"
+"OPTIONS /*" = "proxy:librebase_staging"
+"HEAD /*" = "proxy:librebase_staging"
 
 [[site]]
 host = "julianmkleber.com"
