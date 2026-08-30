@@ -71,7 +71,7 @@ http_code_nodeport() {
   http_code_url "http://127.0.0.1:${port}${path}"
 }
 
-ok_code() { case "$1" in 2[0-9][0-9]|3[0-9][0-9]) return 0 ;; *) return 1 ;; esac; }
+ok_code() { case "$1" in 2[0-9][0-9]|3[0-9][0-9]|401|403) return 0 ;; *) return 1 ;; esac; }  # 401/403 = auth-required => proxy is up
 
 streak_file() { echo "${HEALTH_STREAK_DIR}/$1.fail-streak"; }
 read_streak() { [[ -f "$1" ]] && tr -dc '0-9' <"$1" 2>/dev/null || echo 0; }
