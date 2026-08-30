@@ -1,4 +1,4 @@
-# Homelab edge routes (beelink-cleanup) — li-native WAN + LAN.
+# Homelab edge routes (k8s-maintainance) — li-native WAN + LAN.
 # Merged with majico-staging.httpd.toml on blackpearl — see scripts/edge-lis-apply.sh.
 # Backends: k3s NodePorts on loopback (kube-proxy).
 # Policy: docs/li-native-edge.md
@@ -66,17 +66,13 @@ peers = ["http://127.0.0.1:30583"]
 policy = "ip_hash"
 peers = ["http://127.0.0.1:30481"]
 
-[upstreams.librebase_todo]
-balance = "round_robin"
-peers = ["http://127.0.0.1:30500"]
-
-[upstreams.librebase_staging]
-balance = "round_robin"
-peers = ["http://192.168.10.32:3006"]
-
 [upstreams.lip_registry]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30422"]
+
+[upstreams.lip_static]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30423"]
 
 [upstreams.dependency_track]
 balance = "round_robin"
@@ -101,6 +97,40 @@ peers = ["http://127.0.0.1:30584"]
 [upstreams.portfolio]
 balance = "round_robin"
 peers = ["http://127.0.0.1:30585", "http://192.168.10.26:30585"]
+
+[upstreams.unitedhealth_demo]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30588"]
+
+[upstreams.supabase_kong]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30480"]
+
+[upstreams.api_staging]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30589"]
+
+[upstreams.li_mail_gateway]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30586"]
+
+[upstreams.li_auth]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30600"]
+
+# Title-Case Content-Length shim (li-httpd case-sensitive CL parse vs Node lowercase).
+# Shim: 31601 → NodePort 30601; 31602 → NodePort 30602 (build/titlecase-shim.py).
+[upstreams.klaut_operator_admin]
+balance = "round_robin"
+peers = ["http://127.0.0.1:31601"]
+
+[upstreams.klaut_mail]
+balance = "round_robin"
+peers = ["http://127.0.0.1:31602"]
+
+[upstreams.collins]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30590"]
 
 [[site]]
 host = "grafana.homelab.lan"
@@ -241,8 +271,10 @@ listen = ":80"
 "PATCH /v1/*" = "proxy:lip_registry"
 "DELETE /v1/*" = "proxy:lip_registry"
 "OPTIONS /v1/*" = "proxy:lip_registry"
-"GET /account/*" = "proxy:lip_registry"
-"POST /account/*" = "proxy:lip_registry"
+"GET /account/*" = "proxy:lip_static"
+"POST /account/*" = "proxy:lip_static"
+"GET /*" = "proxy:lip_static"
+"HEAD /*" = "proxy:lip_static"
 
 [[site]]
 host = "deps.klaut.pro"
@@ -303,6 +335,15 @@ listen = ":80"
 "POST /*" = "proxy:ducah_staging"
 
 [[site]]
+host = "ducah.obsevia.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:ducah_staging"
+"POST /*" = "proxy:ducah_staging"
+
+[[site]]
 host = "chat.homelab.lan"
 listen = ":80"
 
@@ -319,6 +360,24 @@ listen = ":80"
 "GET /health" = "static:healthcheck"
 "GET /*" = "proxy:chat_staging"
 "POST /*" = "proxy:chat_staging"
+
+[[site]]
+host = "chat.obsevia.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:chat_staging"
+"POST /*" = "proxy:chat_staging"
+
+[[site]]
+host = "api.obsevia.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:api_staging"
+"POST /*" = "proxy:api_staging"
 
 [[site]]
 host = "dp.homelab.lan"
@@ -366,6 +425,134 @@ listen = ":80"
 "POST /*" = "proxy:portfolio"
 
 [[site]]
+host = "julianmkleber.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:portfolio"
+"POST /*" = "proxy:portfolio"
+"HEAD /*" = "proxy:portfolio"
+
+[[site]]
+host = "www.julianmkleber.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:portfolio"
+"POST /*" = "proxy:portfolio"
+"HEAD /*" = "proxy:portfolio"
+
+[[site]]
+host = "unitedhealth.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:unitedhealth_demo"
+"POST /*" = "proxy:unitedhealth_demo"
+
+[[site]]
+host = "unitedhealth.obsevia.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:unitedhealth_demo"
+"POST /*" = "proxy:unitedhealth_demo"
+
+[[site]]
+host = "supabase.obsevia.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:supabase_kong"
+"POST /*" = "proxy:supabase_kong"
+"PATCH /*" = "proxy:supabase_kong"
+"DELETE /*" = "proxy:supabase_kong"
+"OPTIONS /*" = "proxy:supabase_kong"
+
+[[site]]
+host = "collins.d3bu7.com"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:collins"
+"HEAD /*" = "proxy:collins"
+
+# li-mail gateway — JMAP + admin API (NodePort 30586 on blackpearl).
+[[site]]
+host = "mail.lilangverse.xyz"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /healthz" = "proxy:li_mail_gateway"
+"GET /.well-known/jmap" = "proxy:li_mail_gateway"
+"GET /jmap/*" = "proxy:li_mail_gateway"
+"POST /jmap/*" = "proxy:li_mail_gateway"
+"GET /webmail/*" = "proxy:li_mail_gateway"
+"POST /webmail/*" = "proxy:li_mail_gateway"
+"GET /caldav/*" = "proxy:li_mail_gateway"
+"POST /caldav/*" = "proxy:li_mail_gateway"
+"GET /carddav/*" = "proxy:li_mail_gateway"
+"POST /carddav/*" = "proxy:li_mail_gateway"
+"GET /.well-known/caldav" = "proxy:li_mail_gateway"
+"GET /v1/mail/*" = "proxy:li_mail_gateway"
+"POST /v1/mail/*" = "proxy:li_mail_gateway"
+
+# li-auth OIDC issuer — LAN-only (auth.mail.homelab.lan). NodePort 30600.
+[[site]]
+host = "auth.mail.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /healthz" = "proxy:li_auth"
+"GET /.well-known/openid-configuration" = "proxy:li_auth"
+"GET /jwks.json" = "proxy:li_auth"
+"GET /.well-known/jwks.json" = "proxy:li_auth"
+"GET /oauth/*" = "proxy:li_auth"
+"POST /oauth/*" = "proxy:li_auth"
+"GET /authorize" = "proxy:li_auth"
+"POST /authorize" = "proxy:li_auth"
+"GET /token" = "proxy:li_auth"
+"POST /token" = "proxy:li_auth"
+
+# Operator Admin — LAN-only (admin.mail.homelab.lan). NodePort 30601. No Fritz WAN.
+[[site]]
+host = "admin.mail.homelab.lan"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:klaut_operator_admin"
+"POST /*" = "proxy:klaut_operator_admin"
+"HEAD /*" = "proxy:klaut_operator_admin"
+
+# Klaut Mail webmail — WAN mail.klaut.pro. NodePort 30602.
+[[site]]
+host = "mail.klaut.pro"
+listen = ":80"
+
+[site.routes]
+"GET /health" = "static:healthcheck"
+"GET /*" = "proxy:klaut_mail"
+"POST /*" = "proxy:klaut_mail"
+"HEAD /*" = "proxy:klaut_mail"
+
+[upstreams.librebase_staging]
+balance = "round_robin"
+peers = ["http://192.168.10.32:3006"]
+
+[upstreams.librebase_todo]
+balance = "round_robin"
+peers = ["http://127.0.0.1:30500"]
+
+[[site]]
 host = "todo.librebase.xyz"
 listen = ":80"
 
@@ -406,23 +593,3 @@ listen = ":80"
 "DELETE /*" = "proxy:librebase_staging"
 "OPTIONS /*" = "proxy:librebase_staging"
 "HEAD /*" = "proxy:librebase_staging"
-
-[[site]]
-host = "julianmkleber.com"
-listen = ":80"
-
-[site.routes]
-"GET /health" = "static:healthcheck"
-"GET /*" = "proxy:portfolio"
-"POST /*" = "proxy:portfolio"
-"HEAD /*" = "proxy:portfolio"
-
-[[site]]
-host = "www.julianmkleber.com"
-listen = ":80"
-
-[site.routes]
-"GET /health" = "static:healthcheck"
-"GET /*" = "proxy:portfolio"
-"POST /*" = "proxy:portfolio"
-"HEAD /*" = "proxy:portfolio"
