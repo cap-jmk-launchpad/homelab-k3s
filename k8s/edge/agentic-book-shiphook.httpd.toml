@@ -7,8 +7,9 @@ balance = "round_robin"
 peers = ["http://127.0.0.1:3141"]
 
 [[site]]
-host = "shiphook.agentic-book.org"   # <-- your Shiphook vhost (DNS / Fritz forward → 192.168.10.33:80)
+host = "shiphook.obsevia.d3bu7.com"   # <-- your Shiphook vhost (DNS / Fritz forward → 192.168.10.33:80)
 listen = ":80"
 
 [site.routes]
+"GET /health" = "static:healthcheck"
 "POST /deploy/agentic-book" = "proxy:shiphook_agentic_book"

@@ -10,6 +10,7 @@ host = "shiphook.obsevia.d3bu7.com"
 listen = ":80"
 
 [site.routes]
+"GET /health" = "static:healthcheck"
 "POST /deploy/staging/qroma" = "proxy:shiphook_obsevia"
 "POST /deploy/staging/ducah" = "proxy:shiphook_obsevia"
 "POST /deploy/staging/dp" = "proxy:shiphook_obsevia"

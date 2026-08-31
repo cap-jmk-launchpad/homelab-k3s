@@ -11,8 +11,8 @@
 set -euo pipefail
 
 export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
-NS="${AGENTIC_BOOK_NS:-agentic-book-supabase}"
-DEPLOY="${AGENTIC_BOOK_DEPLOY:-agentic-book-web}"
+NS="${AGENTIC_BOOK_NS:-agentic-book}"
+DEPLOY="${AGENTIC_BOOK_DEPLOY:-agentic-app}"
 REPO_PATH="${SHIPHOOK_REPO_PATH:-$(pwd)}"
 REGISTRY="${AGENTIC_BOOK_REGISTRY:-ghcr.io/agentic-book-org}"
 IMAGE_NAME="${AGENTIC_BOOK_IMAGE_NAME:-agentic-book-web}"
@@ -39,14 +39,11 @@ if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
     --docker-password="$GHCR_TOKEN" \
     --docker-email="${GHCR_EMAIL:-deploy@agentic-book.org}" \
     --dry-run=client -o yaml | kubectl -n "$NS" apply -f -
-  kubectl -n "$NS" patch "deployment/${DEPLOY}" -p \
-    '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"ghcr-regcred"}]}}}' \
-    --type=merge
 else
   echo ">> warn: GHCR_USERNAME/GHCR_TOKEN unset — assuming public image or existing pull secret"
 fi
 
-kubectl -n "$NS" set image "deployment/${DEPLOY}" "${DEPLOY}=${IMAGE}"
+kubectl -n "$NS" set image "deployment/${DEPLOY}" "app=${IMAGE}"
 kubectl -n "$NS" rollout status "deployment/${DEPLOY}" --timeout=180s
 
 echo "[done] ok=true agentic-book-web ${IMAGE}"
