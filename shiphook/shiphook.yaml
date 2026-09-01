@@ -1,0 +1,37 @@
+port: 3141
+apps:
+- name: majico-staging
+  host: majico.d3bu7.com
+  path: /deploy/staging
+  repoPath: /home/s4il0r/staging/majico-deploy
+  runScript: bash scripts/staging/shiphook-deploy.sh
+  runTimeoutMs: 1800000
+  secret: 16357f014a81282a8d2a05861ade91291a04a2c70a9c595648d41c3fb6262c3a
+- name: qroma-staging
+  host: shiphook.obsevia.d3bu7.com
+  path: /deploy/staging/qroma
+  repoPath: /home/s4il0r/staging/homelab-k3s
+  runScript: bash scripts/obsevia-shiphook-deploy.sh qroma
+  runTimeoutMs: 1800000
+  secret: 16357f014a81282a8d2a05861ade91291a04a2c70a9c595648d41c3fb6262c3a
+- name: ducah-staging
+  host: shiphook.obsevia.d3bu7.com
+  path: /deploy/staging/ducah
+  repoPath: /home/s4il0r/staging/homelab-k3s
+  runScript: bash scripts/obsevia-shiphook-deploy.sh ducah
+  runTimeoutMs: 1800000
+  secret: 16357f014a81282a8d2a05861ade91291a04a2c70a9c595648d41c3fb6262c3a
+- name: dp-staging
+  host: shiphook.obsevia.d3bu7.com
+  path: /deploy/staging/dp
+  repoPath: /home/s4il0r/staging/homelab-k3s
+  runScript: bash scripts/obsevia-shiphook-deploy.sh dp
+  runTimeoutMs: 1800000
+  secret: 16357f014a81282a8d2a05861ade91291a04a2c70a9c595648d41c3fb6262c3a
+- name: agentic-book
+  host: shiphook.agentic-book.org
+  path: /deploy/agentic-book
+  repoPath: /home/s4il0r/staging/agentic-book
+  runScript: bash /home/s4il0r/staging/homelab-k3s/scripts/agentic-book-shiphook-deploy.sh
+  runTimeoutMs: 1800000
+  secret: 16357f014a81282a8d2a05861ade91291a04a2c70a9c595648d41c3fb6262c3a
