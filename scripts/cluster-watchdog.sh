@@ -725,6 +725,78 @@ check_shiphook() {
   write_streak "$streakf" 0
 }
 
+
+# --- agentic-book auth flow (Supabase/Next.js PKCE) probe ---
+# Catches the regression "browser client stores PKCE code_verifier in
+# localStorage, server route expects it in a cookie" (symptom: /auth/callback
+# -> 307 /account?error=PKCE code verifier not found in storage).
+# Also catches a misconfigured auth server or broken edge.
+#
+# Probes:
+#   1. GET https://agentic-book.org/                        expect 200
+#   2. GET https://agentic-book.org/account                 expect 200 or 307
+#   3. GET https://supabase.agentic-book.org/auth/v1/versions  expect 401 (auth-required = up)
+#
+# On streak>=2 log the exact failure + restart agentic-app deployment if the
+# app itself is down (bad-image class, not an edge issue).
+AGBook_Auth_HEAL_THRESHOLD="${AGBook_Auth_HEAL_THRESHOLD:-2}"
+AGBook_APP_HOST="https://agentic-book.org"
+AGBook_AUTH_HOST="https://supabase.agentic-book.org"
+check_agentic_book_auth() {
+    local streakf
+    streakf=$(streak_file agentic-book-auth)
+    local reasons=""
+    local c_home c_account c_versions
+    c_home=$(curl -s -o /dev/null -w '%{http_code}' --resolve agentic-book.org:443:127.0.0.1 --connect-timeout 5 --max-time 10 "${AGBook_APP_HOST}/" 2>/dev/null) || c_home="000"
+    c_account=$(curl -s -o /dev/null -w '%{http_code}' --resolve agentic-book.org:443:127.0.0.1 --connect-timeout 5 --max-time 10 "${AGBook_APP_HOST}/account" 2>/dev/null) || c_account="000"
+    c_versions=$(curl -s -o /dev/null -w '%{http_code}' --resolve supabase.agentic-book.org:443:127.0.0.1 --connect-timeout 5 --max-time 10 "${AGBook_AUTH_HOST}/auth/v1/versions" 2>/dev/null) || c_versions="000"
+
+    # app home — non-2xx/3xx is suspect (4xx/5xx/000)
+    if [[ "$c_home" == "000" ]] || { [ "$c_home" -ge 400 ] 2>/dev/null && [ "$c_home" -lt 500 ] || [ "$c_home" -ge 500 ] 2>/dev/null; }; then
+        case "$c_home" in
+          000|4*|5*) reasons+="app:/=${c_home} ";;
+        esac
+    fi
+    # /account — only 000 or 5xx is bad (200 ok, 30x redirect ok)
+    if [[ "$c_account" == "000" ]] || { [ "$c_account" -ge 500 ] 2>/dev/null; }; then
+        case "$c_account" in
+          000|5*) reasons+="app:/account=${c_account} ";;
+        esac
+    fi
+    # supabase auth /auth/v1/versions — 401 (auth-required) is "up"
+    if [[ "$c_versions" == "000" ]]; then
+        reasons+="supabase:/auth/v1/versions=${c_versions}"
+    elif { [ "$c_versions" -ge 500 ] 2>/dev/null; } && [ "$c_versions" != "401" ]; then
+        reasons+="supabase:/auth/v1/versions=${c_versions} "
+    fi
+
+    log "agentic-book-auth: /=${c_home} /account=${c_account} auth/versions=${c_versions}${reasons:+  reasons=[${reasons}]}"
+    if [[ -z "$reasons" ]]; then
+        write_streak "$streakf" 0
+        return 0
+    fi
+
+    local streak
+    streak=$(read_streak "$streakf")
+    streak=$((streak + 1))
+    write_streak "$streakf" "$streak"
+    log "agentic-book-auth: DEGRADED streak=${streak}/${AGBook_Auth_HEAL_THRESHOLD} reasons=[${reasons}]"
+    [[ "$streak" -lt "$AGBook_Auth_HEAL_THRESHOLD" ]] && return 0
+
+    # Only heal if the APP itself is down (not the Supabase endpoint — that's an
+    # infra issue the operator must fix, not an image issue).
+    case "$c_home" in
+      000|5*)
+        log "agentic-book-auth: threshold reached - restarting agentic-app (app is down: /=${c_home})"
+        mut kubectl -n agentic-book rollout restart deployment/agentic-app 2>/dev/null
+        sleep 5
+        c_home_after=$(curl -s -o /dev/null -w '%{http_code}' --resolve agentic-book.org:443:127.0.0.1 --max-time 5 "${AGBook_APP_HOST}/" 2>/dev/null) || c_home_after="000"
+        log "agentic-book-auth: after-heal /=${c_home_after}"
+        ;;
+    esac
+    write_streak "$streakf" 0
+}
+
 usage() { cat <<EOF
 Usage: $0 [--once | --check-only | --dry-run | --help]
   --once         run all phases once and exit (default for the systemd timer)
@@ -761,6 +833,7 @@ log "=== cluster-watchdog run start (check_only=${CHECK_ONLY}) ==="
 heal_edge
 check_certs_and_edge
 check_shiphook
+check_agentic_book_auth
 keep_portfolio_up
 keep_librebase_staging_up
 check_services
