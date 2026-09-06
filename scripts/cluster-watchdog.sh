@@ -742,6 +742,103 @@ check_shiphook() {
 AGBook_Auth_HEAL_THRESHOLD="${AGBook_Auth_HEAL_THRESHOLD:-2}"
 AGBook_APP_HOST="https://agentic-book.org"
 AGBook_AUTH_HOST="https://supabase.agentic-book.org"
+# --- check_nginx_upstreams: nginx 127.0.0.1:PORT upstreams must resolve ---
+# Regression class (seen 2026-09-06, agentic-book.org 502): a per-app nginx
+# conf references a STALE NodePort (or a renamed/deleted Service) while the
+# live Service exposes a different port. nginx then 502s despite the app
+# being healthy — and a pod restart does NOT fix it.
+#
+# For every "server 127.0.0.1:PORT" in the live nginx edge config, verify:
+#   (a) TCP connect to 127.0.0.1:PORT succeeds, OR
+#   (b) PORT matches a k8s Service nodePort that currently has endpoints.
+# On streak>=2: CRIT log with the exact remediation (fix the upstream line
+# in k8s/edge/<file>.conf, or fix the Service). Never rewrites nginx conf
+# automatically — too risky. Never restarts pods for this class (useless).
+NGINX_UPSTREAM_HEAL_THRESHOLD="${NGINX_UPSTREAM_HEAL_THRESHOLD:-2}"
+check_nginx_upstreams() {
+    local streakf
+    streakf=$(streak_file nginx-upstreams)
+    local reasons=""
+    local ports
+    ports=$(sudo nginx -T -c /etc/nginx/gitlab-edge/nginx.conf 2>/dev/null \
+        | grep -oE "server 127\.0\.0\.1:[0-9]+" | grep -oE "[0-9]+$" | sort -nu)
+    if [[ -z "$ports" ]]; then
+        log "nginx-upstreams: WARN could not parse nginx -T (skipping)"
+        return 0
+    fi
+    # live NodePorts with endpoints: "nodePort endpoints-count"
+    local live_nps
+    live_nps=$("$K" get svc -A -o json 2>/dev/null | python3 -c "
+import json,sys
+try:
+  d=json.load(sys.stdin)
+except Exception:
+  sys.exit(0)
+for it in d.get('items',[]):
+  for p in (it.get('spec',{}).get('ports',[]) or []):
+    np=p.get('nodePort')
+    if np: print(np)
+" 2>/dev/null | sort -nu)
+    local eps
+    eps=$("$K" get endpoints -A -o json 2>/dev/null | python3 -c "
+import json,sys
+try:
+  d=json.load(sys.stdin)
+except Exception:
+  sys.exit(0)
+names=set()
+for it in d.get('items',[]):
+  addrs=[a for s in (it.get('subsets',[]) or []) for a in (s.get('addresses',[]) or [])]
+  if addrs:
+    names.add(it['metadata']['namespace']+'/'+it['metadata']['name'])
+print(' '.join(sorted(names)))
+" 2>/dev/null)
+    local p ok svc_hit
+    for p in $ports; do
+        ok=0
+        if (echo >/dev/tcp/127.0.0.1/"$p") 2>/dev/null; then
+            ok=1
+        else
+            # TCP refused — acceptable ONLY if a Service owns this nodePort AND has endpoints
+            svc_hit=$("$K" get svc -A -o json 2>/dev/null | python3 -c "
+import json,sys
+try:
+  d=json.load(sys.stdin)
+except Exception:
+  sys.exit(0)
+for it in d.get('items',[]):
+  for q in (it.get('spec',{}).get('ports',[]) or []):
+    if str(q.get('nodePort'))=='$p':
+      print(it['metadata']['namespace']+'/'+it['metadata']['name'])
+      sys.exit(0)
+" 2>/dev/null)
+            if [[ -n "$svc_hit" ]] && [[ " $eps " == *" $svc_hit "* ]]; then
+                ok=1
+            elif [[ -n "$svc_hit" ]]; then
+                reasons+="port ${p}: reachable Service ${svc_hit} has NO endpoints (app down) "
+            else
+                # which vhost references it?
+                local refs
+                refs=$(sudo nginx -T -c /etc/nginx/gitlab-edge/nginx.conf 2>/dev/null | grep -B60 "server 127.0.0.1:${p};" | grep -oE "server_name [^;]+" | tr '\n' ' ' | head -c 120)
+                reasons+="port ${p}: DEAD (no listener, no k8s NodePort) refs=[${refs}] "
+            fi
+        fi
+    done
+    if [[ -z "$reasons" ]]; then
+        write_streak "$streakf" 0
+        log "nginx-upstreams: OK ($(echo "$ports" | wc -w) upstreams resolve)"
+        return 0
+    fi
+    local streak
+    streak=$(read_streak "$streakf")
+    streak=$((streak + 1))
+    write_streak "$streakf" "$streak"
+    log "nginx-upstreams: DEGRADED streak=${streak}/${NGINX_UPSTREAM_HEAL_THRESHOLD} ${reasons}"
+    [[ "$streak" -lt "$NGINX_UPSTREAM_HEAL_THRESHOLD" ]] && return 0
+    log "nginx-upstreams: threshold reached - NO auto-heal (fix k8s/edge/<file>.conf upstream or the Service nodePort, then edge-nginx-apply.sh). See reasons above."
+    write_streak "$streakf" 0
+}
+
 check_agentic_book_auth() {
     local streakf
     streakf=$(streak_file agentic-book-auth)
@@ -783,15 +880,23 @@ check_agentic_book_auth() {
     log "agentic-book-auth: DEGRADED streak=${streak}/${AGBook_Auth_HEAL_THRESHOLD} reasons=[${reasons}]"
     [[ "$streak" -lt "$AGBook_Auth_HEAL_THRESHOLD" ]] && return 0
 
-    # Only heal if the APP itself is down (not the Supabase endpoint — that's an
-    # infra issue the operator must fix, not an image issue).
+    # Only restart when the APP itself is down (Service has no endpoints).
+    # If endpoints exist but :443 fails, it is an EDGE misroute (e.g. stale
+    # upstream port in k8s/edge/*.conf) — restarting the pod cannot fix that,
+    # so log the precise remediation instead (see also check_nginx_upstreams).
     case "$c_home" in
       000|5*)
-        log "agentic-book-auth: threshold reached - restarting agentic-app (app is down: /=${c_home})"
-        mut kubectl -n agentic-book rollout restart deployment/agentic-app 2>/dev/null
-        sleep 5
-        c_home_after=$(curl -s -o /dev/null -w '%{http_code}' --resolve agentic-book.org:443:127.0.0.1 --max-time 5 "${AGBook_APP_HOST}/" 2>/dev/null) || c_home_after="000"
-        log "agentic-book-auth: after-heal /=${c_home_after}"
+        local ep_ready
+        ep_ready=$("$K" -n agentic-book get endpoints agentic-svc -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null)
+        if [[ -z "$ep_ready" ]]; then
+          log "agentic-book-auth: threshold reached - restarting agentic-app (no Service endpoints, app is down: /=${c_home})"
+          mut kubectl -n agentic-book rollout restart deployment/agentic-app 2>/dev/null
+          sleep 5
+          c_home_after=$(curl -s -o /dev/null -w '%{http_code}' --resolve agentic-book.org:443:127.0.0.1 --max-time 5 "${AGBook_APP_HOST}/" 2>/dev/null) || c_home_after="000"
+          log "agentic-book-auth: after-heal /=${c_home_after}"
+        else
+          log "agentic-book-auth: threshold reached - NOT restarting (endpoints healthy [${ep_ready}] but :443=${c_home}: EDGE misroute suspected, check nginx upstream vs Service nodePort)"
+        fi
         ;;
     esac
     write_streak "$streakf" 0
@@ -834,6 +939,7 @@ heal_edge
 check_certs_and_edge
 check_shiphook
 check_agentic_book_auth
+check_nginx_upstreams
 keep_portfolio_up
 keep_librebase_staging_up
 check_services

@@ -117,6 +117,13 @@ install -m 644 "${EDGE_DIR}/nginx-todo-librebase-xyz.conf" /etc/nginx/gitlab-edg
 if ! grep -q 'nginx-todo-librebase-xyz.conf' "$NGINX_CONF_DST"; then
   sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-todo-librebase-xyz.conf;' "$NGINX_CONF_DST"
 fi
+# Agentic-book web vhost (agentic-book.org + www) -> agentic-svc NodePort 30620.
+# Installed unconditionally: the per-app file is the single source of truth
+# (the legacy inline block was removed from nginx-gitlab-edge.conf).
+install -m 644 "${EDGE_DIR}/nginx-agentic-book-web.conf" /etc/nginx/gitlab-edge/nginx-agentic-book-web.conf
+if ! grep -q 'nginx-agentic-book-web.conf' "$NGINX_CONF_DST"; then
+  sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-agentic-book-web.conf;' "$NGINX_CONF_DST"
+fi
 # Librebase staging vhosts (stage.librebase.xyz landing + app-stage.librebase.xyz app/MCP)
 if [[ -f "${EDGE_DIR}/nginx-librebase-staging.conf" ]]; then
   install -m 644 "${EDGE_DIR}/nginx-librebase-staging.conf" /etc/nginx/gitlab-edge/nginx-librebase-staging.conf
