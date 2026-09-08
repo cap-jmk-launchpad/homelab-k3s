@@ -94,3 +94,73 @@ curl -sS -m 60 -X POST "https://shiphook.obsevia.d3bu7.com/deploy/agentic-book?f
   -H "X-Shiphook-Secret: $TOKEN" -H "Authorization: Bearer $TOKEN" -d '{}' | tail -3
 # expect: [done] ok=true agentic-book-web ghcr.io/agentic-book-org/agentic-book-web:main-<sha>
 ```
+## Troubleshooting: `/auth/callback` 502s (incident 2026-09-06/07)
+
+Two stacked edge bugs produced Bad Gateway on the Google sign-in callback.
+Neither was the app, the cert, or the Supabase config — both lived in
+`k8s/edge/`. Documented here so the next 502 on this route is diagnosed
+in minutes, not hours.
+
+### Bug 1 — stale upstream port (immediate 502, `connect() failed (111)`)
+
+`k8s/edge/nginx-agentic-book-web.conf` pointed `upstream agentic_book_web`
+at `127.0.0.1:30608`, citing a Service `agentic-book-web` in namespace
+`agentic-book-supabase` that does not exist. The live Service is
+`agentic-svc` in namespace `agentic-book`, NodePort **30620** (healthy
+endpoints, direct 200). nginx → dead port = instant 502.
+
+Contributors to the drift:
+- the deploy script never installed this per-app file (no `install` line),
+  so `/etc` held a stale copy;
+- a legacy inline `:443` block for the same `server_name` in
+  `nginx-gitlab-edge.conf` (proxy → `upstream agentic_book` → `:30620`)
+  shadowed the broken per-app file, so traffic worked *by accident*.
+
+Fix (commit `f91cfc0`): upstream `30608 → 30620`; removed the legacy inline
+blocks + unused upstream; added the per-app include (single source of truth);
+added the missing `install` line to `scripts/edge-nginx-apply.sh`.
+
+### Bug 2 — upstream response headers too big (502 *after* login succeeds)
+
+With Bug 1 fixed, a fresh Google login reached the app, the PKCE exchange
+succeeded — and nginx still 502d. Error log:
+`upstream sent too big header while reading response header from upstream,
+upstream: http://127.0.0.1:30620/auth/callback`.
+A successful `exchangeCodeForSession` answers with several large `Set-Cookie`
+headers (access + refresh JWTs), overflowing nginx's default 4k/8k
+`proxy_buffer_size`.
+
+Fix (commit `becdb76`): `proxy_buffer_size 32k; proxy_buffers 8 32k;
+proxy_busy_buffers_size 64k;` on `location /` of
+`k8s/edge/nginx-agentic-book-web.conf`. See the WHY comment inline there.
+Do not lower these without re-testing a real Google sign-in.
+
+### Watchdog coverage (no silent regressions)
+
+- `check_nginx_upstreams()` (`scripts/cluster-watchdog.sh`): every
+  `server 127.0.0.1:PORT` in live `nginx -T` must TCP-connect or match a
+  k8s NodePort with endpoints. Catches Bug-1-class drift (stale port /
+  renamed Service). Streak≥2 → CRIT with remediation; never auto-rewrites
+  nginx, never restarts pods for this class.
+- `check_nginx_errorlog()`: tails `gitlab-edge-error.log` for response-path
+  fatals (`too big header`, `prematurely closed`) — the Bug-2 signature.
+  `connect() failed` is deliberately excluded (owned by the check above).
+  Alert-only, never heals.
+- `check_agentic_book_auth()`: probes `/`, `/account`, and Supabase
+  `/auth/v1/versions`; restarts `agentic-app` only when the Service has
+  zero endpoints, otherwise logs `EDGE misroute suspected`.
+
+### Verify after any edge change here
+
+```bash
+# from blackpearl
+curl -s -o /dev/null -w "/: %{http_code} verify=%{ssl_verify_result}\n" \
+  --resolve "agentic-book.org:443:127.0.0.1" "https://agentic-book.org/"
+curl -s -o /dev/null -w "/auth/callback: %{http_code} verify=%{ssl_verify_result}\n" \
+  --resolve "agentic-book.org:443:127.0.0.1" \
+  "https://agentic-book.org/auth/callback?code=probe&next=/account"
+# expect: 200, and 307 to /account?error= (app alive; the probe code is fake)
+# a REAL login must be tested with a fresh Google click (codes are single-use)
+sudo journalctl -u nginx-gitlab-edge --since "10 min ago" --no-pager \
+  | grep -iE "emerg|too big header" || echo "edge clean"
+```
