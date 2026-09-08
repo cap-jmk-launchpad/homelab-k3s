@@ -755,6 +755,47 @@ AGBook_AUTH_HOST="https://supabase.agentic-book.org"
 # in k8s/edge/<file>.conf, or fix the Service). Never rewrites nginx conf
 # automatically — too risky. Never restarts pods for this class (useless).
 NGINX_UPSTREAM_HEAL_THRESHOLD="${NGINX_UPSTREAM_HEAL_THRESHOLD:-2}"
+# --- check_nginx_errorlog: alert on fatal proxy signatures ---
+# Catches (seen 2026-09-06, agentic-book.org /auth/callback):
+#   "upstream sent too big header while reading response header from upstream"
+# which nginx answers as 502 even though app+cert+routing are all healthy.
+# Fix is per-vhost proxy_buffer_size/proxy_buffers (NOT a restart).
+# This check only ALERTS (streak>=2 -> CRIT log with the exact remediation);
+# it never restarts anything.
+NGINX_ERRLOG_HEAL_THRESHOLD="${NGINX_ERRLOG_HEAL_THRESHOLD:-2}"
+NGINX_ERRLOG_FILE="${NGINX_ERRLOG_FILE:-/var/log/nginx/gitlab-edge-error.log}"
+check_nginx_errorlog() {
+    local streakf
+    streakf=$(streak_file nginx-errorlog)
+    [[ -r "$NGINX_ERRLOG_FILE" ]] || { log "nginx-errorlog: SKIP ($NGINX_ERRLOG_FILE unreadable)"; return 0; }
+    # entries from the last 12 minutes (covers 2 watchdog cycles + margin)
+    local since
+    since=$(date -d "12 minutes ago" "+%Y/%m/%d %H:%M" 2>/dev/null || date -v-12M "+%Y/%m/%d %H:%M" 2>/dev/null)
+    local hits
+    # NOTE: "connect() failed (111)" is owned by check_nginx_upstreams (precise
+    # per-port attribution) and is deliberately NOT matched here — the dead
+    # upstreams it reports (gitlab_pages, retired apps) would otherwise spam
+    # this check every cycle. This watch is for response-path fatals nothing
+    # else catches: "too big header" (needs bigger proxy_buffers on that
+    # vhost) and "prematurely closed" (app crashing mid-response).
+    hits=$(awk -v since="$since" '$1" "$2 >= since' "$NGINX_ERRLOG_FILE" 2>/dev/null \
+        | grep -E "upstream sent too big header|upstream prematurely closed" \
+        | grep -oE 'server: [^,]+, request: "[A-Z]+ [^ ]+' | sort | uniq -c | head -8)
+    if [[ -z "$hits" ]]; then
+        write_streak "$streakf" 0
+        log "nginx-errorlog: OK (no fatal proxy signatures in window)"
+        return 0
+    fi
+    local streak
+    streak=$(read_streak "$streakf")
+    streak=$((streak + 1))
+    write_streak "$streakf" "$streak"
+    log "nginx-errorlog: DEGRADED streak=${streak}/${NGINX_ERRLOG_HEAL_THRESHOLD} :: ${hits}"
+    [[ "$streak" -lt "$NGINX_ERRLOG_HEAL_THRESHOLD" ]] && return 0
+    log "nginx-errorlog: threshold reached - NO auto-heal. Remediation: 'too big header' -> raise proxy_buffer_size/proxy_buffers on that vhost in k8s/edge/*.conf; 'connect() failed' -> see check_nginx_upstreams."
+    write_streak "$streakf" 0
+}
+
 check_nginx_upstreams() {
     local streakf
     streakf=$(streak_file nginx-upstreams)
@@ -940,6 +981,7 @@ check_certs_and_edge
 check_shiphook
 check_agentic_book_auth
 check_nginx_upstreams
+check_nginx_errorlog
 keep_portfolio_up
 keep_librebase_staging_up
 check_services
