@@ -686,6 +686,18 @@ check_shiphook() {
 
   local streak; streak=$(read_streak "$streakf"); streak=$((streak + 1)); write_streak "$streakf" "$streak"
   log "shiphook: DEGRADED streak=${streak}/${SHIPHOOK_HEAL_THRESHOLD} ${reason}(direct=${direct_code} edge=${edge_code})"
+
+  # A failing edge probe while the direct probe is healthy means the EDGE is
+  # stale, not the service. Restarting shiphook cannot fix a stale edge and only
+  # opens a window where a real deploy gets a 502 from nginx (this fired every
+  # ~20 minutes: 71 restarts in 24h). Leave the service up and let the
+  # certs-edge check re-apply the edge config, which is what actually heals it.
+  if [[ "$unit_ok" -eq 1 && "$direct_ok" -eq 1 ]]; then
+    log "shiphook: service healthy (direct=${direct_code}); edge stale (${edge_code}) — not restarting the service"
+    write_streak "$streakf" 0
+    return 0
+  fi
+
   if [[ "$streak" -lt "$SHIPHOOK_HEAL_THRESHOLD" ]]; then return 0; fi
 
   log "shiphook: threshold reached — healing (restore config if needed + restart)"
