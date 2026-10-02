@@ -4,19 +4,33 @@ metadata:
   name: agentic-book-supabase-backup-scripts
   namespace: agentic-book-supabase
 data:
+  # Backups go to the EXTERNAL drives, not to a node-local PVC. On 2026-10-01 the
+  # node `engine` was reimaged and its /var/lib/rancher/k3s/storage was wiped,
+  # which took the database AND the old node-local backup PVC with it. External
+  # drives survive a node reinstall.
   backup.sh: |
     #!/bin/sh
     set -eu
     TS="${TS:-$(date -u +%Y%m%dT%H%M%SZ)}"
-    OUT="/backups/${TS}"
-    mkdir -p "$OUT"
     export PGPASSWORD="${POSTGRES_PASSWORD}"
-    pg_dump -h db -U postgres -d postgres -Fc -f "${OUT}/postgres.dump"
-    pg_dump -h db -U postgres -d postgres --schema-only -f "${OUT}/schema.sql"
-    echo "backup_complete ts=${TS}" > "${OUT}/README.txt"
-    ls -la "$OUT"
+    dsts="/backups-external/agentic-book-supabase /backups-research/agentic-book-supabase"
+    for base in $dsts; do
+      OUT="${base}/${TS}"
+      mkdir -p "$OUT"
+      echo "== dumping to ${OUT} =="
+      pg_dump -h db -U postgres -d postgres -Fc -f "${OUT}/postgres.dump"
+      pg_dump -h db -U postgres -d postgres --schema-only -f "${OUT}/schema.sql"
+      # Prove the dump is readable, not just present.
+      pg_restore -l "${OUT}/postgres.dump" > "${OUT}/dump.toc" 2>/dev/null || {
+        echo "ERROR: dump unreadable at ${OUT}" >&2; exit 1; }
+      echo "backup_complete ts=${TS} host=$(hostname) bytes=$(wc -c < "${OUT}/postgres.dump")" > "${OUT}/README.txt"
+      ls -la "$OUT"
+    done
   prune-backups.sh: |
     #!/bin/sh
     set -eu
     RETENTION_DAYS="${RETENTION_DAYS:-30}"
-    find /backups -mindepth 1 -maxdepth 1 -type d -mtime +"${RETENTION_DAYS}" -print -exec rm -rf {} +
+    for root in /backups-external/agentic-book-supabase /backups-research/agentic-book-supabase; do
+      [ -d "$root" ] || continue
+      find "$root" -mindepth 1 -maxdepth 1 -type d -mtime +"${RETENTION_DAYS}" -print -exec rm -rf {} +
+    done
