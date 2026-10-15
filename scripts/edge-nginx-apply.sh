@@ -126,11 +126,22 @@ if ! grep -q 'nginx-agentic-book-web.conf' "$NGINX_CONF_DST"; then
 fi
 # Librebase staging vhosts (stage.librebase.xyz landing + app-stage.librebase.xyz app/MCP)
 if [[ -f "${EDGE_DIR}/nginx-librebase-staging.conf" ]]; then
-  install -m 644 "${EDGE_DIR}/nginx-librebase-staging.conf" /etc/nginx/gitlab-edge/nginx-librebase-staging.conf
-  if ! grep -q 'nginx-librebase-staging.conf' "$NGINX_CONF_DST"; then
-    sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-librebase-staging.conf;' "$NGINX_CONF_DST"
+  stage_conf="${EDGE_DIR}/nginx-librebase-staging.conf"
+  # 192.168.10.32 answers ping while ssh and :3006 are refused. Do not
+  # replace the live vhost with that upstream until the port accepts.
+  if grep -q 'server 192.168.10.32:3006;' "$stage_conf"; then
+    if ! timeout 2 bash -c 'echo >/dev/tcp/192.168.10.32/3006' 2>/dev/null; then
+      echo "edge-nginx-apply: keep live librebase staging; 192.168.10.32:3006 refused" >&2
+      stage_conf=""
+    fi
   fi
-  echo "edge-nginx-apply: included librebase staging vhosts (stage + app-stage)"
+  if [[ -n "$stage_conf" ]]; then
+    install -m 644 "$stage_conf" /etc/nginx/gitlab-edge/nginx-librebase-staging.conf
+    if ! grep -q 'nginx-librebase-staging.conf' "$NGINX_CONF_DST"; then
+      sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-librebase-staging.conf;' "$NGINX_CONF_DST"
+    fi
+    echo "edge-nginx-apply: included librebase staging vhosts (stage + app-stage)"
+  fi
 else
   echo "edge-nginx-apply: WARN missing ${EDGE_DIR}/nginx-librebase-staging.conf" >&2
 fi
