@@ -50,6 +50,9 @@ if [[ "$obsevia_certs_ready" -eq 1 ]]; then
   fi
   # nginx-gitlab-edge.conf includes this path; install the snippet (do not rely on sed-inline alone).
   install -m 644 "$OBSEVIA_SNIPPET" /etc/nginx/gitlab-edge/nginx-obsevia-demos.conf
+  if [[ -f "${EDGE_DIR}/nginx-obsevia-main.conf" ]]; then
+    install -m 644 "${EDGE_DIR}/nginx-obsevia-main.conf" /etc/nginx/gitlab-edge/nginx-obsevia-main.conf
+  fi
   if [[ -f "${EDGE_DIR}/nginx-obsevia-demo-supabase-api-locations.conf" ]]; then
     install -m 644 "${EDGE_DIR}/nginx-obsevia-demo-supabase-api-locations.conf" /etc/nginx/gitlab-edge/nginx-obsevia-demo-supabase-api-locations.conf
   fi
