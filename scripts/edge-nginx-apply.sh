@@ -43,16 +43,28 @@ if [[ -f "$OBSEVIA_SNIPPET" ]]; then
   done
 fi
 if [[ "$obsevia_certs_ready" -eq 1 ]]; then
+  health_count="$(grep -c 'location = /health' "$OBSEVIA_SNIPPET" || true)"
+  if [[ "${health_count}" -lt 7 ]]; then
+    echo "edge-nginx-apply: REFUSE nginx-obsevia-demos.conf (only ${health_count} /health locations; need >= 7)" >&2
+    exit 1
+  fi
+  # nginx-gitlab-edge.conf includes this path; install the snippet (do not rely on sed-inline alone).
+  install -m 644 "$OBSEVIA_SNIPPET" /etc/nginx/gitlab-edge/nginx-obsevia-demos.conf
   if [[ -f "${EDGE_DIR}/nginx-obsevia-demo-supabase-api-locations.conf" ]]; then
     install -m 644 "${EDGE_DIR}/nginx-obsevia-demo-supabase-api-locations.conf" /etc/nginx/gitlab-edge/nginx-obsevia-demo-supabase-api-locations.conf
   fi
-  sed "/__OBSEVIA_DEMOS_INCLUDE__/r ${OBSEVIA_SNIPPET}" "$NGINX_CONF_DST" \
-    | sed '/__OBSEVIA_DEMOS_INCLUDE__/d' >"${NGINX_CONF_DST}.merged"
-  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  # Legacy marker support (older templates inlined the snippet here).
+  if grep -q '__OBSEVIA_DEMOS_INCLUDE__' "$NGINX_CONF_DST"; then
+    sed "/__OBSEVIA_DEMOS_INCLUDE__/r ${OBSEVIA_SNIPPET}" "$NGINX_CONF_DST" \
+      | sed '/__OBSEVIA_DEMOS_INCLUDE__/d' >"${NGINX_CONF_DST}.merged"
+    mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  fi
   echo "edge-nginx-apply: included obsevia demo HTTPS vhosts"
 else
-  sed '/__OBSEVIA_DEMOS_INCLUDE__/d' "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
-  mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  if grep -q '__OBSEVIA_DEMOS_INCLUDE__' "$NGINX_CONF_DST"; then
+    sed '/__OBSEVIA_DEMOS_INCLUDE__/d' "$NGINX_CONF_DST" >"${NGINX_CONF_DST}.merged"
+    mv "${NGINX_CONF_DST}.merged" "$NGINX_CONF_DST"
+  fi
   echo "edge-nginx-apply: obsevia demo HTTPS vhosts skipped (no LE certs under /etc/letsencrypt/live/*.obsevia.com)"
 fi
 COLLINS_SNIPPET="${EDGE_DIR}/nginx-collins.conf"
