@@ -604,8 +604,20 @@ check_certs_and_edge() {
       fi
       if [[ -n "$cert_dir" ]]; then
         local cert_name; cert_name=$(basename "$cert_dir")
-        log "certs-edge: ${host} attempt certbot renew --cert-name ${cert_name}"
-        mut sudo certbot renew --cert-name "$cert_name" --no-self-upgrade 2>/dev/null || log "certs-edge: certbot renew for ${cert_name} failed/skipped"
+        # Public DNS that does not land on this edge (for example chat/api on the
+        # VPS) must not be renewed here. Failed HTTP-01 attempts pause the
+        # Let's Encrypt account and then block certs that do belong on this host.
+        local pub_ip=""
+        pub_ip=$(getent ahostsv4 "$host" 2>/dev/null | awk '{print $1; exit}')
+        case "$pub_ip" in
+          ""|77.23.124.82|192.168.10.*|127.0.0.1)
+            log "certs-edge: ${host} attempt certbot renew --cert-name ${cert_name}"
+            mut sudo certbot renew --cert-name "$cert_name" --no-self-upgrade 2>/dev/null || log "certs-edge: certbot renew for ${cert_name} failed/skipped"
+            ;;
+          *)
+            log "certs-edge: ${host} public DNS ${pub_ip} is not this edge — skip certbot renew ${cert_name}"
+            ;;
+        esac
         mut bash "$EDGE_NGINX_APPLY" --no-reload 2>/dev/null || true
         mut systemctl reload nginx-gitlab-edge.service 2>/dev/null || true
       else

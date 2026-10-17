@@ -171,6 +171,14 @@ if [[ -f "$HTTP_FRONT" ]]; then
 else
   echo "edge-nginx-apply: WARN missing $HTTP_FRONT" >&2
 fi
+LILANG_WWW="${EDGE_DIR}/nginx-lilangverse-www.conf"
+if [[ -f "$LILANG_WWW" ]]; then
+  install -m 644 "$LILANG_WWW" /etc/nginx/gitlab-edge/nginx-lilangverse-www.conf
+  if ! grep -q 'nginx-lilangverse-www.conf' "$NGINX_CONF_DST"; then
+    sed -i '/include       \/etc\/nginx\/mime.types;/a\    include /etc/nginx/gitlab-edge/nginx-lilangverse-www.conf;' "$NGINX_CONF_DST"
+  fi
+  echo "edge-nginx-apply: included www.lilangverse.xyz redirect"
+fi
 
 nginx -t -c "$NGINX_CONF_DST"
 
