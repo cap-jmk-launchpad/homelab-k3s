@@ -48,6 +48,13 @@ if [[ "$obsevia_certs_ready" -eq 1 ]]; then
     echo "edge-nginx-apply: REFUSE nginx-obsevia-demos.conf (only ${health_count} /health locations; need >= 7)" >&2
     exit 1
   fi
+  # Guard: if the LE cert for medreich exists, the snippet must include its vhost
+  # (cluster-watchdog used to re-apply a stale staging tree and wipe it — obsevia-kubernetes#6).
+  if { [[ -e /etc/letsencrypt/live/medreich.obsevia.com/fullchain.pem ]] || [[ -L /etc/letsencrypt/live/medreich.obsevia.com/fullchain.pem ]]; } \
+    && ! grep -q 'server_name[[:space:]]\+medreich\.obsevia\.com' "$OBSEVIA_SNIPPET"; then
+    echo "edge-nginx-apply: REFUSE nginx-obsevia-demos.conf (medreich cert present but server_name medreich.obsevia.com missing)" >&2
+    exit 1
+  fi
   # nginx-gitlab-edge.conf includes this path; install the snippet (do not rely on sed-inline alone).
   install -m 644 "$OBSEVIA_SNIPPET" /etc/nginx/gitlab-edge/nginx-obsevia-demos.conf
   if [[ -f "${EDGE_DIR}/nginx-obsevia-main.conf" ]]; then
