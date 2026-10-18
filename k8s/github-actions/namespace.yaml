@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: github-actions
+  labels:
+    app.kubernetes.io/name: github-actions
+    homelab.cap-jmk-launchpad/role: ci-runners

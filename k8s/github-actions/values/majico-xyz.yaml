@@ -1,0 +1,24 @@
+githubConfigUrl: https://github.com/majico-xyz
+githubConfigSecret: majico-xyz-arc
+runnerScaleSetName: majico-homelab
+minRunners: 0
+maxRunners: 3
+runnerGroup: homelab-k8s
+runnerLabels:
+  - self-hosted
+  - majico-staging
+  - linux
+template:
+  spec:
+    nodeSelector:
+      kubernetes.io/hostname: engine
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: "4"
+            memory: 8Gi

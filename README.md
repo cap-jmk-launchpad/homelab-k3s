@@ -118,6 +118,7 @@ Master inventory (products + NodePorts + WAN): **[docs/klaut-pro-products.md](do
 | klaut.pro products & inventory | [docs/klaut-pro-products.md](docs/klaut-pro-products.md) |
 | Supabase | [docs/supabase-launchpad.md](docs/supabase-launchpad.md) |
 | GitLab CE | [docs/gitlab-homelab.md](docs/gitlab-homelab.md) |
+| GitHub Actions (Majico / Librebase / Obsevia) | [docs/github-actions-homelab-runners.md](docs/github-actions-homelab-runners.md) |
 | OWASP Dependency-Track | [docs/dependency-track-homelab.md](docs/dependency-track-homelab.md) |
 | CWE mirror | [docs/cwe-homelab.md](docs/cwe-homelab.md) |
 | SearXNG | [docs/search-klaut-pro.md](docs/search-klaut-pro.md) |
