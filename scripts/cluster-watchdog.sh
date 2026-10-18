@@ -30,7 +30,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${REPO_ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 # When installed to /usr/local/bin, SCRIPT_DIR/.. is /usr/local (no repo). Fall back to known checkouts.
 if [[ ! -f "${REPO_ROOT}/scripts/edge-lis-apply.sh" ]]; then
-  for _cand in /home/s4il0r/staging/homelab-k3s /home/s4il0r/homelab-k3s; do
+  # Prefer the clean main checkout; staging is often stale/dirty (obsevia-kubernetes#6).
+  for _cand in /home/s4il0r/homelab-k3s /home/s4il0r/staging/homelab-k3s; do
     if [[ -f "${_cand}/scripts/edge-lis-apply.sh" ]]; then REPO_ROOT="$_cand"; break; fi
   done
 fi
