@@ -2,6 +2,12 @@
 
 GitHub-hosted runners cannot reach Fritz-LAN staging (`majico.d3bu7.com`, `stage.librebase.xyz`, Obsevia demo namespaces on k3s). **ARC runner scale sets** on homelab k3s provide org-level listeners with product-specific labels.
 
+## Placement policy (required)
+
+- **Only** ephemeral runner pods on homelab **k3s**, pinned to node **`engine`** (`nodeSelector` in Helm values).
+- **Do not** install GitHub Actions runners on laptops (MacBook), Cursor private-worker hosts, or other dev machines — disk and RAM stay on the cluster.
+- Apply from **blackpearl** / remote apply script with cluster kubeconfig; not from a full local Mac workspace unless it only proxies `kubectl` to the cluster.
+
 ## For humans
 
 1. Install secrets: `LAUNCHPAD_ENV=../.env ./scripts/k8s-github-actions-secret.sh`

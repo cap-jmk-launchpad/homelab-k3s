@@ -1,6 +1,6 @@
 # GitHub Actions runners on homelab k3s
 
-Ephemeral **Actions Runner Controller (ARC)** scale sets on the **engine** node, one per product org. Workflows opt in with `runs-on` labels (see [docs/github-actions-homelab-runners.md](../../docs/github-actions-homelab-runners.md)).
+Ephemeral **Actions Runner Controller (ARC)** scale sets on the **engine** node only — never on MacBook or other laptops. One scale set per product org. Workflows opt in with `runs-on` labels (see [docs/github-actions-homelab-runners.md](../../docs/github-actions-homelab-runners.md)).
 
 | Org | `githubConfigUrl` | Workflow labels |
 | --- | --- | --- |

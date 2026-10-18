@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Install ARC controller + org runner scale sets for Majico, Librebase, Obsevia.
+# Runners schedule only on k8s node "engine" — do not register github-actions runners on MacBook/laptops.
 #
 # Usage:
 #   ./scripts/k8s-github-actions-apply.sh
