@@ -27,7 +27,7 @@ When you change CI/CD or need kubectl/Playwright against homelab:
 
 ### Agent notification
 
-- **GitHub:** tracking issue on `cap-jmk-launchpad/homelab-k3s` (label `homelab-runners`) — link from product issues when CI behavior changes.
+- **GitHub:** [homelab-k3s#9](https://github.com/cap-jmk-launchpad/homelab-k3s/issues/9) — subscribe for runner deploy/outage updates; link from product issues when CI behavior changes.
 - **Direct message:** ping the operator on Slack when runners are down and cloud agents queue homelab jobs (optional automation via Cursor subscriptions on that issue).
 
 ### Quick checks (from a machine with kubeconfig)
