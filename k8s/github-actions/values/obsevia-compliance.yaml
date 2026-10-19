@@ -3,7 +3,7 @@ githubConfigSecret: obsevia-compliance-arc
 runnerScaleSetName: home-k3s
 minRunners: 0
 maxRunners: 3
-runnerGroup: homelab-k8s
+runnerGroup: homelab-k3s
 runnerLabels:
   - self-hosted
   - linux
