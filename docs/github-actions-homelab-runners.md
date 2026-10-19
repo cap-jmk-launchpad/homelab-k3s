@@ -12,7 +12,7 @@ GitHub-hosted runners cannot reach Fritz-LAN staging (`majico.d3bu7.com`, `stage
 
 1. Install secrets: `LAUNCHPAD_ENV=../.env ./scripts/k8s-github-actions-secret.sh`
 2. Apply: `./scripts/k8s-github-actions-apply.sh`
-3. In each GitHub org, confirm runners under **Settings → Actions → Runners** (group `homelab-k8s`).
+3. In each GitHub org, confirm runners under **Settings → Actions → Runners** (scale set **`home-k3s`**, group `homelab-k3s`).
 4. Enable repo/org variables documented per product (e.g. `MAJICO_SELF_HOSTED_RUNNER=true`).
 
 Manifests: [k8s/github-actions/](../k8s/github-actions/).
