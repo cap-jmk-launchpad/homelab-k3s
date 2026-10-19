@@ -35,4 +35,6 @@ kubectl get pods -n arc-systems
 
 GitHub → org **Settings → Actions → Runners** should list scale set **`home-k3s`** (runner group `homelab-k3s`) for each org.
 
-Controller namespace: `arc-systems`. Runner pods: `github-actions`.
+Controller namespace: `arc-systems`. One scale-set namespace per org: `gha-<org>` (e.g. `gha-majico-xyz`).
+
+Enable all repos in an org: `./scripts/k8s-github-actions-org-enable.sh` then use `runs-on: home-k3s` in workflows.

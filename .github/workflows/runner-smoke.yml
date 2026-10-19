@@ -1,0 +1,21 @@
+# Verifies org scale set home-k3s (homelab k3s ARC on engine).
+name: Homelab runner smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 6 * * 1"
+
+jobs:
+  smoke:
+    runs-on: home-k3s
+    timeout-minutes: 10
+    steps:
+      - name: Runner identity
+        run: |
+          echo "runner=$RUNNER_NAME os=$(uname -s) arch=$(uname -m)"
+          command -v kubectl >/dev/null && kubectl version --client=true || true
+      - name: Fritz-LAN reachability (optional)
+        run: |
+          curl -fsSL --max-time 15 -o /dev/null -w "majico.d3bu7.com %{http_code}\n" https://majico.d3bu7.com/ || true
+          curl -fsSL --max-time 15 -o /dev/null -w "stage.librebase.xyz %{http_code}\n" https://stage.librebase.xyz/ || true

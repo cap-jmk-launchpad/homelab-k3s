@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Install ARC controller + org runner scale sets (scale set name: home-k3s).
-# Runners schedule only on k8s node "engine" — do not register github-actions runners on MacBook/laptops.
+# One Helm release per org in namespace gha-<org> (same runnerScaleSetName is OK across namespaces).
+# Runners schedule only on k8s node "engine".
 #
 # Usage:
 #   export KUBECONFIG=$HOME/.kube/config-homelab
+#   ./scripts/k8s-github-actions-secret.sh
 #   ./scripts/k8s-github-actions-apply.sh
-#   GITHUB_ACTIONS_REMOTE=1 STAGING_HOST=blackpearl ./scripts/k8s-github-actions-apply.sh
 #
 set -euo pipefail
 
@@ -22,19 +23,18 @@ STAGING_KEY="${STAGING_KEY:-$ROOT/../blackpearl}"
 REMOTE_DIR="${GITHUB_ACTIONS_REMOTE_DIR:-$HOME/homelab-k3s}"
 
 CONTROLLER_NS="${ARC_CONTROLLER_NAMESPACE:-arc-systems}"
-RUNNERS_NS="${GITHUB_ACTIONS_NAMESPACE:-github-actions}"
 CONTROLLER_CHART="oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller"
 SCALE_SET_CHART="oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set"
 CONTROLLER_RELEASE="${ARC_CONTROLLER_RELEASE:-arc}"
 
-# helm release | values file | k8s secret name
+# helm release | k8s namespace | values file | secret name
 SCALE_SETS=(
-  "arc-cap-jmk-launchpad|cap-jmk-launchpad.yaml|cap-jmk-launchpad-arc"
-  "arc-majico|majico-xyz.yaml|majico-xyz-arc"
-  "arc-librebase|librebase-official.yaml|librebase-official-arc"
-  "arc-obsevia|obsevia-compliance.yaml|obsevia-compliance-arc"
-  "arc-sailblack|sailblack.yaml|sailblack-arc"
-  "arc-taktwerk|taktwerk.yaml|taktwerk-arc"
+  "arc-cap-jmk-launchpad|gha-cap-jmk-launchpad|cap-jmk-launchpad.yaml|cap-jmk-launchpad-arc"
+  "arc-majico|gha-majico-xyz|majico-xyz.yaml|majico-xyz-arc"
+  "arc-librebase|gha-librebase-official|librebase-official.yaml|librebase-official-arc"
+  "arc-obsevia|gha-obsevia-compliance|obsevia-compliance.yaml|obsevia-compliance-arc"
+  "arc-sailblack|gha-sailblack|sailblack.yaml|sailblack-arc"
+  "arc-taktwerk|gha-taktwerk|taktwerk.yaml|taktwerk-arc"
 )
 
 require_helm() {
@@ -45,8 +45,9 @@ require_helm() {
 }
 
 require_secret() {
-  kubectl get secret "$1" -n "$RUNNERS_NS" >/dev/null 2>&1 || {
-    echo "ERROR: missing secret $1 in $RUNNERS_NS — run scripts/k8s-github-actions-secret.sh" >&2
+  local ns="$1" secret="$2"
+  kubectl get secret "$secret" -n "$ns" >/dev/null 2>&1 || {
+    echo "ERROR: missing secret $secret in $ns — run scripts/k8s-github-actions-secret.sh" >&2
     exit 1
   }
 }
@@ -85,23 +86,29 @@ helm upgrade --install "$CONTROLLER_RELEASE" "$CONTROLLER_CHART" \
   --timeout 10m
 
 install_scale_set() {
-  local release="$1"
-  local values="$2"
-  local secret="$3"
-  require_secret "$secret"
+  local release="$1" ns="$2" values="$3" secret="$4"
+  require_secret "$ns" "$secret"
   helm upgrade --install "$release" "$SCALE_SET_CHART" \
-    --namespace "$RUNNERS_NS" \
+    --namespace "$ns" \
     --create-namespace \
     -f "$ROOT/k8s/github-actions/values/$values" \
     --wait \
     --timeout 10m
 }
 
+installed=0
+skipped=0
 for entry in "${SCALE_SETS[@]}"; do
-  IFS='|' read -r release values secret <<<"$entry"
-  install_scale_set "$release" "$values" "$secret"
+  IFS='|' read -r release ns values secret <<<"$entry"
+  if ! kubectl get secret "$secret" -n "$ns" >/dev/null 2>&1; then
+    echo "WARN: skip $release — no secret $secret in $ns" >&2
+    skipped=$((skipped + 1))
+    continue
+  fi
+  install_scale_set "$release" "$ns" "$values" "$secret"
+  installed=$((installed + 1))
 done
 
 echo "ARC controller: namespace $CONTROLLER_NS release $CONTROLLER_RELEASE"
-echo "Scale sets: namespace $RUNNERS_NS (runnerScaleSetName home-k3s, runner group homelab-k3s)"
-kubectl get autoscalingrunnersets -n "$RUNNERS_NS" 2>/dev/null || kubectl get pods -n "$RUNNERS_NS"
+echo "Scale sets installed: $installed (skipped $skipped — add tokens via k8s-github-actions-secret.sh)"
+kubectl get autoscalingrunnersets -A 2>/dev/null || true
