@@ -2,11 +2,14 @@
 
 Ephemeral **Actions Runner Controller (ARC)** scale sets on the **engine** node only — never on MacBook or other laptops. One scale set per product org. Workflows opt in with `runs-on` labels (see [docs/github-actions-homelab-runners.md](../../docs/github-actions-homelab-runners.md)).
 
-| Org | `githubConfigUrl` | Workflow labels |
+| Org | `githubConfigUrl` | Workflow `runs-on` |
 | --- | --- | --- |
-| Majico | `https://github.com/majico-xyz` | `self-hosted`, `majico-staging`, `linux` |
-| Librebase | `https://github.com/librebase-official` | `self-hosted`, `librebase-homelab`, `linux` |
-| Obsevia | `https://github.com/obsevia-compliance` | `self-hosted`, `obsevia-homelab`, `linux` |
+| cap-jmk-launchpad | `https://github.com/cap-jmk-launchpad` | `home-k3s` (also `self-hosted`, `linux`) |
+| Majico | `https://github.com/majico-xyz` | `home-k3s` (+ `majico-staging` where wired) |
+| Librebase | `https://github.com/librebase-official` | `home-k3s` (+ `librebase-homelab` where wired) |
+| Obsevia | `https://github.com/obsevia-compliance` | `home-k3s` (+ `obsevia-homelab` where wired) |
+| sailblack | `https://github.com/sailblack` | `home-k3s` |
+| taktwerk | `https://github.com/taktwerk` | `home-k3s` |
 
 ## Bootstrap
 
@@ -30,6 +33,6 @@ kubectl get pods -n github-actions
 kubectl get pods -n arc-systems
 ```
 
-GitHub → org **Settings → Actions → Runners** should list scale sets `majico-homelab`, `librebase-homelab`, `obsevia-homelab`.
+GitHub → org **Settings → Actions → Runners** should list scale set **`home-k3s`** (runner group `homelab-k3s`) for each org.
 
 Controller namespace: `arc-systems`. Runner pods: `github-actions`.

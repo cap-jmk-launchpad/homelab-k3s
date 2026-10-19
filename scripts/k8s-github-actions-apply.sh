@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Install ARC controller + org runner scale sets for Majico, Librebase, Obsevia.
+# Install ARC controller + org runner scale sets (scale set name: home-k3s).
 # Runners schedule only on k8s node "engine" — do not register github-actions runners on MacBook/laptops.
 #
 # Usage:
+#   export KUBECONFIG=$HOME/.kube/config-homelab
 #   ./scripts/k8s-github-actions-apply.sh
 #   GITHUB_ACTIONS_REMOTE=1 STAGING_HOST=blackpearl ./scripts/k8s-github-actions-apply.sh
 #
@@ -25,6 +26,16 @@ RUNNERS_NS="${GITHUB_ACTIONS_NAMESPACE:-github-actions}"
 CONTROLLER_CHART="oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller"
 SCALE_SET_CHART="oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set"
 CONTROLLER_RELEASE="${ARC_CONTROLLER_RELEASE:-arc}"
+
+# helm release | values file | k8s secret name
+SCALE_SETS=(
+  "arc-cap-jmk-launchpad|cap-jmk-launchpad.yaml|cap-jmk-launchpad-arc"
+  "arc-majico|majico-xyz.yaml|majico-xyz-arc"
+  "arc-librebase|librebase-official.yaml|librebase-official-arc"
+  "arc-obsevia|obsevia-compliance.yaml|obsevia-compliance-arc"
+  "arc-sailblack|sailblack.yaml|sailblack-arc"
+  "arc-taktwerk|taktwerk.yaml|taktwerk-arc"
+)
 
 require_helm() {
   command -v helm >/dev/null 2>&1 || {
@@ -81,15 +92,16 @@ install_scale_set() {
   helm upgrade --install "$release" "$SCALE_SET_CHART" \
     --namespace "$RUNNERS_NS" \
     --create-namespace \
-    -f "$values" \
+    -f "$ROOT/k8s/github-actions/values/$values" \
     --wait \
     --timeout 10m
 }
 
-install_scale_set arc-majico "$ROOT/k8s/github-actions/values/majico-xyz.yaml" majico-xyz-arc
-install_scale_set arc-librebase "$ROOT/k8s/github-actions/values/librebase-official.yaml" librebase-official-arc
-install_scale_set arc-obsevia "$ROOT/k8s/github-actions/values/obsevia-compliance.yaml" obsevia-compliance-arc
+for entry in "${SCALE_SETS[@]}"; do
+  IFS='|' read -r release values secret <<<"$entry"
+  install_scale_set "$release" "$values" "$secret"
+done
 
 echo "ARC controller: namespace $CONTROLLER_NS release $CONTROLLER_RELEASE"
-echo "Scale sets: namespace $RUNNERS_NS (majico-homelab, librebase-homelab, obsevia-homelab)"
+echo "Scale sets: namespace $RUNNERS_NS (runnerScaleSetName home-k3s, runner group homelab-k3s)"
 kubectl get autoscalingrunnersets -n "$RUNNERS_NS" 2>/dev/null || kubectl get pods -n "$RUNNERS_NS"

@@ -1,0 +1,24 @@
+githubConfigUrl: https://github.com/cap-jmk-launchpad
+githubConfigSecret: cap-jmk-launchpad-arc
+runnerScaleSetName: home-k3s
+minRunners: 0
+maxRunners: 3
+runnerGroup: homelab-k3s
+runnerLabels:
+  - self-hosted
+  - linux
+  - home-k3s
+template:
+  spec:
+    nodeSelector:
+      kubernetes.io/hostname: engine
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: "4"
+            memory: 8Gi

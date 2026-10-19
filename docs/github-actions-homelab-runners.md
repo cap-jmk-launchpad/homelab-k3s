@@ -40,7 +40,7 @@ When you change CI/CD or need kubectl/Playwright against homelab:
 
 ```bash
 kubectl get autoscalingrunnersets -n github-actions
-kubectl get pods -n github-actions -l actions.github.com/scale-set-name=majico-homelab
+kubectl get pods -n github-actions -l actions.github.com/scale-set-name=home-k3s
 ```
 
 From a registered runner pod (or future debug job):
@@ -56,9 +56,12 @@ Store in Vault or `launchpad/.env` (never commit):
 
 | Env var | Secret name in k8s |
 | --- | --- |
+| `GITHUB_ACTIONS_RUNNER_TOKEN_CAP_JMK_LAUNCHPAD` (or `GITHUB_ACTIONS_RUNNER_TOKEN_LAUNCHPAD`) | `cap-jmk-launchpad-arc` |
 | `GITHUB_ACTIONS_RUNNER_TOKEN_MAJICO` | `majico-xyz-arc` |
 | `GITHUB_ACTIONS_RUNNER_TOKEN_LIBREBASE` | `librebase-official-arc` |
 | `GITHUB_ACTIONS_RUNNER_TOKEN_OBSEVIA` | `obsevia-compliance-arc` |
+| `GITHUB_ACTIONS_RUNNER_TOKEN_SAILBLACK` | `sailblack-arc` |
+| `GITHUB_ACTIONS_RUNNER_TOKEN_TAKTWERK` | `taktwerk-arc` |
 
 Org admin PAT or GitHub App installation token with permission to register org runners.
 

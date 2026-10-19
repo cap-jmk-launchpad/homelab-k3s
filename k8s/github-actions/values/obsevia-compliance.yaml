@@ -1,13 +1,14 @@
 githubConfigUrl: https://github.com/obsevia-compliance
 githubConfigSecret: obsevia-compliance-arc
-runnerScaleSetName: obsevia-homelab
+runnerScaleSetName: home-k3s
 minRunners: 0
 maxRunners: 3
 runnerGroup: homelab-k8s
 runnerLabels:
   - self-hosted
-  - obsevia-homelab
   - linux
+  - home-k3s
+  - obsevia-homelab
 template:
   spec:
     nodeSelector:

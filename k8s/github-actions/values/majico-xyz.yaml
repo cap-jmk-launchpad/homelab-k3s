@@ -1,13 +1,14 @@
 githubConfigUrl: https://github.com/majico-xyz
 githubConfigSecret: majico-xyz-arc
-runnerScaleSetName: majico-homelab
+runnerScaleSetName: home-k3s
 minRunners: 0
 maxRunners: 3
 runnerGroup: homelab-k8s
 runnerLabels:
   - self-hosted
-  - majico-staging
   - linux
+  - home-k3s
+  - majico-staging
 template:
   spec:
     nodeSelector:

@@ -1,13 +1,14 @@
 githubConfigUrl: https://github.com/librebase-official
 githubConfigSecret: librebase-official-arc
-runnerScaleSetName: librebase-homelab
+runnerScaleSetName: home-k3s
 minRunners: 0
 maxRunners: 3
 runnerGroup: homelab-k8s
 runnerLabels:
   - self-hosted
-  - librebase-homelab
   - linux
+  - home-k3s
+  - librebase-homelab
 template:
   spec:
     nodeSelector:
