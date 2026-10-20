@@ -121,11 +121,44 @@ If registration fails after GitLab was reinstalled, delete PVC `gitlab-runner-co
 
 ## Backup
 
+### In-cluster (engine NVMe PVC)
+
+CronJobs in namespace **`gitlab`** (manifests live in `li-langverse/lis` — `deploy/k8s/gitlab/ha/backup/`):
+
+| Job | Schedule (UTC) | Purpose |
+|-----|----------------|---------|
+| `gitlab-backup-db-hourly` | `0 * * * *` | `pg_dump` → `/backups/hourly/` (keep 24) |
+| `gitlab-backup-full-daily` | `0 3 * * *` | Omnibus `gitlab-backup create` → `/backups/full/` |
+| `gitlab-backup-secrets` | `17 3 * * *` | `gitlab-secrets.json`, `gitlab.rb`, SSH host keys → `/backups/secrets/` |
+| `gitlab-backup-prune` | `30 4 * * *` | Retention on PVC (hourly/daily/weekly + Omnibus tars) |
+
+PVC **`gitlab-backup-storage`** is hostPath **`/srv/homelab/nvme/gitlab-backups`** on **`engine`** only.
+
+On-demand full backup from your laptop:
+
 ```bash
 ./scripts/k8s-gitlab-backup.sh
 ```
 
-Runs `gitlab-backup create` inside the Omnibus pod; artifacts live on PVC **`gitlab-data`**. Copy tarballs off-cluster for disaster recovery.
+### Offsite (Hetzner Object Storage)
+
+Same security model as **`majico-backup`** on `hz-majico-prod`: bundle latest daily full tar + latest hourly DB dump + `latest-gitlab-secrets.json` / `latest-gitlab.rb`, **`sha256sum`** verify, **age** encrypt (public key only on server), **rclone** upload, remote byte-size check, **30-day** remote retention.
+
+| Step | When (UTC) | Where |
+|------|------------|--------|
+| Local backup jobs | see table above | k8s CronJobs |
+| `gitlab-backup-offsite.timer` | **05:15** (+ up to 10m jitter) | `engine` systemd |
+
+Install or refresh on **engine** (copies `s3.env` + `age.pub` from majico — never commit secrets):
+
+```bash
+cd launchpad/homelab-k3s
+chmod +x scripts/install-engine-gitlab-backup-offsite.sh scripts/engine-gitlab-backup-offsite.sh
+./scripts/install-engine-gitlab-backup-offsite.sh
+sudo /usr/local/sbin/engine-gitlab-backup-offsite.sh   # on engine — smoke test
+```
+
+Credentials: **`/etc/homelab-backup/`** (`s3.env` mode `600`, `age.pub` mode `644`). Remote prefix: **`$S3_BUCKET/gitlab/gitlab-*.tar.age`**.
 
 ## Conflict with Supabase
 
