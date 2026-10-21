@@ -8,9 +8,15 @@ set -a
 # shellcheck disable=SC1090
 source "$LAUNCHPAD_ENV"
 set +a
-export VAULT_ADDR="${VAULT_ADDR:-https://vault.klaut.pro}"
 export VAULT_TOKEN="${VAULT_TOKEN:-${VAULT_ROOT_TOKEN:-}}"
 unset VAULT_NAMESPACE
+if [[ -z "${VAULT_ADDR:-}" ]] || [[ "${VAULT_ADDR}" == https://vault.klaut.pro* ]]; then
+  if vault status -address=http://127.0.0.1:30485 -format=json >/dev/null 2>&1; then
+    export VAULT_ADDR=http://127.0.0.1:30485
+  else
+    export VAULT_ADDR="${VAULT_ADDR:-https://vault.klaut.pro}"
+  fi
+fi
 if ! vault status -format=json | jq -e ".sealed == false" >/dev/null; then
   echo "Vault is sealed; unseal first (see docs/vault-homelab.md)." >&2
   exit 1
