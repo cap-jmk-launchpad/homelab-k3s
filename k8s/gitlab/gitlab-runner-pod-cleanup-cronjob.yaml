@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gitlab-runner-pod-cleanup
+  namespace: gitlab
+  labels:
+    app: gitlab-runner-pod-cleanup
+    li-langverse.io/component: gitlab-hygiene
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 300
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app: gitlab-runner-pod-cleanup
+        spec:
+          serviceAccountName: gitlab-runner
+          restartPolicy: Never
+          containers:
+            - name: sweep
+              image: rancher/k3s:v1.35.5-k3s1
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh", "-ec"]
+              args:
+                - |
+                  # Delete finished/failed/stale gitlab-runner job pods.
+                  # Only touches runner job pods (name prefix runner-, excluding
+                  # the live runner deployment pod); never deletes Running jobs.
+                  kubectl -n gitlab get pods --no-headers 2>/dev/null \
+                    | grep '^runner-' \
+                    | while read -r name ready status rest; do
+                        case "${name}" in gitlab-runner-*) continue ;; esac
+                        case "${status}" in
+                          Running) continue ;;
+                        esac
+                        echo "delete ${name} status=${status}"
+                        kubectl -n gitlab delete pod "${name}" --force --grace-period=0 --wait=false || true
+                      done
+                  echo "sweep done"

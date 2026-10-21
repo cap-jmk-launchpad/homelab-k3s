@@ -1,0 +1,77 @@
+# RBAC for unified engine-disk-maintenance CronJob (every 6h).
+# Supersedes engine-worker-disk-cleanup for scheduling; that CronJob is suspended.
+# apply: kubectl apply -f rbac-engine-disk-maintenance.yaml -f cronjob-engine-disk-maintenance.yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: engine-disk-maintenance
+  namespace: li-swarm
+  labels:
+    app: engine-disk-maintenance
+    li-langverse.io/component: engine-hygiene
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: engine-disk-maintenance
+  labels:
+    app: engine-disk-maintenance
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: engine-disk-maintenance
+  labels:
+    app: engine-disk-maintenance
+subjects:
+  - kind: ServiceAccount
+    name: engine-disk-maintenance
+    namespace: li-swarm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: engine-disk-maintenance
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: engine-disk-maintenance
+  namespace: li-swarm
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "persistentvolumeclaims"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "create"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: engine-disk-maintenance
+  namespace: li-swarm
+subjects:
+  - kind: ServiceAccount
+    name: engine-disk-maintenance
+    namespace: li-swarm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: engine-disk-maintenance

@@ -1,0 +1,157 @@
+# Superseded by cronjob-engine-disk-maintenance.yaml (every 6h). Kept for break-glass re-enable.
+# Cleans evicted aimd / world-studio-aimd-demo pods (>24h) and stale demo-recorder scratch
+# on PVC li-world-studio-aimd-demo-workspace. Hero frame dirs are age-pruned (KEEP_DAYS, default 7).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: engine-worker-disk-cleanup
+  namespace: li-swarm
+  labels:
+    app: engine-worker-disk-cleanup
+    li-langverse.io/component: engine-hygiene
+spec:
+  schedule: "0 */6 * * *"
+  timeZone: UTC
+  suspend: true
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  startingDeadlineSeconds: 3600
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 86400
+      backoffLimit: 0
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            app: engine-worker-disk-cleanup
+        spec:
+          serviceAccountName: engine-worker-disk-cleanup
+          restartPolicy: Never
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          tolerations:
+            - key: node.kubernetes.io/disk-pressure
+              operator: Exists
+              effect: NoSchedule
+          initContainers:
+            - name: cluster-hygiene
+              image: rancher/k3s:v1.35.5-k3s1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: EVICTED_MIN_AGE_HOURS
+                  value: "24"
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  set -euo pipefail
+                  ns=li-swarm
+                  cutoff=$(( $(date -u +%s) - EVICTED_MIN_AGE_HOURS * 3600 ))
+                  echo "cluster hygiene: ns=${ns} evicted older than ${EVICTED_MIN_AGE_HOURS}h"
+
+                  if active=$(kubectl get job aimd-pvc-cleanup -n "${ns}" -o jsonpath='{.status.active}' 2>/dev/null || true); then
+                    if [ -n "${active}" ] && [ "${active}" != "0" ]; then
+                      echo "manual aimd-pvc-cleanup active — skip pod deletes"
+                    else
+                      while IFS= read -r name; do
+                        [ -n "${name}" ] || continue
+                        case "${name}" in
+                          li-world-studio-aimd-demo-*|aimd-*) ;;
+                          *) continue ;;
+                        esac
+                        reason=$(kubectl get pod "${name}" -n "${ns}" -o jsonpath='{.status.reason}' 2>/dev/null || true)
+                        phase=$(kubectl get pod "${name}" -n "${ns}" -o jsonpath='{.status.phase}' 2>/dev/null || true)
+                        if [ "${reason}" != "Evicted" ] && [ "${phase}" != "Failed" ]; then
+                          continue
+                        fi
+                        ts=$(kubectl get pod "${name}" -n "${ns}" -o jsonpath='{.metadata.creationTimestamp}')
+                        created=$(date -u -d "${ts}" +%s)
+                        if [ "${created}" -gt "${cutoff}" ]; then
+                          continue
+                        fi
+                        echo "delete pod/${name} (reason=${reason})"
+                        kubectl delete pod -n "${ns}" "${name}" --wait=false
+                      done < <(kubectl get pods -n "${ns}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+                    fi
+                  fi
+
+                  if kubectl get pods -n "${ns}" --field-selector=status.phase=Running -o name 2>/dev/null |
+                     grep -Eq 'aimd|world-studio-aimd'; then
+                    echo 1 > /run/engine-worker-disk-cleanup/skip-scratch
+                    echo "AIMD work Running — PVC scratch rm will be skipped"
+                  else
+                    echo 0 > /run/engine-worker-disk-cleanup/skip-scratch
+                  fi
+              volumeMounts:
+                - name: run-state
+                  mountPath: /run/engine-worker-disk-cleanup
+          containers:
+            - name: pvc-scratch
+              image: busybox:1.36
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: KEEP_DAYS
+                  value: "7"
+                - name: DEMO_REC_BASE
+                  value: /workspace/studio/build/demo-recorder
+              command:
+                - sh
+                - -ec
+                - |
+                  set -eu
+                  BASE="${DEMO_REC_BASE}"
+                  KEEP="${KEEP_DAYS}"
+                  SKIP_SCRATCH=0
+                  if [ -f /run/engine-worker-disk-cleanup/skip-scratch ]; then
+                    SKIP_SCRATCH=$(cat /run/engine-worker-disk-cleanup/skip-scratch)
+                  fi
+
+                  echo "=== df before ==="
+                  df -h /workspace || df -h /
+                  du -sh "${BASE}"/* 2>/dev/null | sort -hr | head -15 || true
+
+                  prune_all() {
+                    d="$1"
+                    [ -d "$d" ] || return 0
+                    echo "rm scratch: ${d}/*"
+                    rm -rf "${d:?}"/*
+                  }
+
+                  prune_old_files() {
+                    d="$1"
+                    [ -d "$d" ] || return 0
+                    echo "prune files in ${d} older than ${KEEP} days"
+                    find "$d" -type f -mtime "+${KEEP}" -print -delete 2>/dev/null || true
+                  }
+
+                  if [ "${SKIP_SCRATCH}" = "0" ]; then
+                    prune_all "${BASE}/workspace-tour/frames"
+                    prune_all "${BASE}/aimd-hero-dual/frames"
+                    prune_all "${BASE}/aimd-dual-segments"
+                    prune_all "${BASE}/aimd-dual-composite/frames"
+                  else
+                    echo "skip scratch dirs (AIMD Running or manual cleanup)"
+                  fi
+
+                  prune_old_files "${BASE}/aimd-hero/frames"
+                  prune_old_files "${BASE}/aimd-hero-reactor/frames"
+
+                  find "${BASE}" -name '*.log' -type f -size +10485760 -mtime "+${KEEP}" -print -delete 2>/dev/null || true
+
+                  echo "=== df after ==="
+                  df -h /workspace || df -h /
+                  du -sh "${BASE}"/* 2>/dev/null | sort -hr | head -15 || true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /workspace
+                - name: run-state
+                  mountPath: /run/engine-worker-disk-cleanup
+                  readOnly: true
+          volumes:
+            - name: workspace
+              persistentVolumeClaim:
+                claimName: li-world-studio-aimd-demo-workspace
+            - name: run-state
+              emptyDir: {}

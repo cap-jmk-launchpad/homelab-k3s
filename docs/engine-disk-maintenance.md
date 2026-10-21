@@ -6,7 +6,7 @@ Automated relief for **engine** node disk pressure: Released local-path PVs, sta
 
 | Resource | Schedule | Status |
 |----------|----------|--------|
-| **CronJob** `engine-disk-maintenance` | `0 */6 * * *` UTC | **active** |
+| **CronJob** `engine-disk-maintenance` | `0 */6 * * *` UTC | apply via `scripts/setup-engine-cron-hygiene.sh` |
 | CronJob `engine-worker-disk-cleanup` | `0 */6 * * *` UTC | **suspended** (superseded) |
 
 ## What each run does
@@ -24,12 +24,12 @@ Break-glass one-shots (unchanged):
 
 ## Apply
 
-```powershell
-$env:KUBECONFIG = "$env:USERPROFILE\.kube\config-homelab"
-kubectl apply -f li-cursor-agents/deploy/k8s/engine/rbac-engine-disk-maintenance.yaml
-kubectl apply -f li-cursor-agents/deploy/k8s/engine/cronjob-engine-disk-maintenance.yaml
-kubectl apply -f li-cursor-agents/deploy/k8s/engine/cronjob-engine-worker-disk-cleanup.yaml
+```bash
+export KUBECONFIG=$HOME/.kube/config-homelab
+./scripts/setup-engine-cron-hygiene.sh
 ```
+
+Manifests: `k8s/engine-hygiene/` (engine containerd `crictl rmi --prune`, stale pods, Released PVs) and `k8s/gitlab/` (backup prune, runner pod cleanup). Complements **cluster-watchdog** `prune_images` on blackpearl (SSH `k3s ctr` every 6h).
 
 ## Manual run
 

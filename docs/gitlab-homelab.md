@@ -123,7 +123,7 @@ If registration fails after GitLab was reinstalled, delete PVC `gitlab-runner-co
 
 ### In-cluster (engine NVMe PVC)
 
-CronJobs in namespace **`gitlab`** (manifests live in `li-langverse/lis` — `deploy/k8s/gitlab/ha/backup/`):
+CronJobs in namespace **`gitlab`** — backup create jobs in `li-langverse/lis` (`deploy/k8s/gitlab/ha/backup/`); **prune + runner pod cleanup** in this repo (`k8s/gitlab/`, applied by `./scripts/setup-engine-cron-hygiene.sh`):
 
 | Job | Schedule (UTC) | Purpose |
 |-----|----------------|---------|

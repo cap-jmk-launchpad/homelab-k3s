@@ -1,0 +1,71 @@
+# Daily GitLab backup retention on engine (KEEP_HOURLY=24, KEEP_FULL_DAILY=7).
+# Prunes gitlab-backup-storage PVC (NVMe) + Omnibus tars in gitlab-data via exec.
+# Apply: ./scripts/setup-engine-cron-hygiene.sh
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gitlab-backup-prune
+  namespace: gitlab
+  labels:
+    app: gitlab-backup-prune
+spec:
+  schedule: "30 4 * * *"
+  timeZone: UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          tolerations:
+            - key: node.kubernetes.io/disk-pressure
+              operator: Exists
+              effect: NoSchedule
+          serviceAccountName: gitlab-backup
+          containers:
+            - name: prune
+              image: rancher/k3s:v1.35.5-k3s1
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  set -eu
+                  NS=gitlab
+                  KEEP_HOURLY="${KEEP_HOURLY:-24}"
+                  KEEP_FULL_DAILY="${KEEP_FULL_DAILY:-7}"
+                  prune_dir() {
+                    dir="$1"; pat="$2"; keep="$3"
+                    [ -d "$dir" ] || return 0
+                    ls -1t "$dir"/$pat 2>/dev/null | awk -v k="$keep" 'NR>k {print}' | while read -r f; do
+                      echo "delete $f"; rm -f "$f"
+                    done
+                  }
+                  echo "prune PVC mount /backups"
+                  prune_dir /backups 'gitlab-db-*.dump' "$KEEP_HOURLY"
+                  prune_dir /backups 'gitlab-full-*.tar' "$KEEP_FULL_DAILY"
+                  POD=$(kubectl get pod -n "$NS" -l app=gitlab -o jsonpath='{.items[0].metadata.name}')
+                  kubectl exec -n "$NS" "$POD" -- sh -c "
+                    ls -1t /var/opt/gitlab/backups/*_gitlab_backup.tar 2>/dev/null |
+                      awk -v k=$KEEP_FULL_DAILY 'NR>k {print}' |
+                      while read f; do echo delete \$f; rm -f \$f; done
+                  "
+              env:
+                - name: KEEP_HOURLY
+                  value: "24"
+                - name: KEEP_FULL_DAILY
+                  value: "7"
+              volumeMounts:
+                - name: backup-data
+                  mountPath: /backups
+          volumes:
+            - name: backup-data
+              persistentVolumeClaim:
+                claimName: gitlab-backup-storage

@@ -1,0 +1,236 @@
+# Unified engine disk maintenance — every 6h UTC.
+# Steps: Released PVs, stale pods, containerd prune, AIMD scratch, idle deploy scale-down.
+# apply: bash scripts/apply-engine-disk-maintenance-k8s.sh
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: engine-disk-maintenance
+  namespace: li-swarm
+  labels:
+    app: engine-disk-maintenance
+    li-langverse.io/component: engine-hygiene
+spec:
+  schedule: "0 */6 * * *"
+  timeZone: UTC
+  suspend: false
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  startingDeadlineSeconds: 3600
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 86400
+      backoffLimit: 0
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app: engine-disk-maintenance
+        spec:
+          serviceAccountName: engine-disk-maintenance
+          restartPolicy: Never
+          nodeSelector:
+            kubernetes.io/hostname: engine
+          tolerations:
+            - key: node.kubernetes.io/disk-pressure
+              operator: Exists
+              effect: NoSchedule
+          initContainers:
+            - name: cluster-hygiene
+              image: rancher/k3s:v1.35.5-k3s1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: NS
+                  value: li-swarm
+                - name: ENGINE_NODE
+                  value: engine
+                - name: EVICTED_MIN_AGE_HOURS
+                  value: "24"
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  set -eu
+                  ns="${NS}"
+                  node="${ENGINE_NODE}"
+                  cutoff=$(( $(date -u +%s) - EVICTED_MIN_AGE_HOURS * 3600 ))
+                  : > /run/engine-disk-maintenance/orphan-paths
+
+                  echo "=== step 1: Released local-path PVs on ${node} ==="
+                  kubectl get pv -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,SC:.spec.storageClassName --no-headers 2>/dev/null |
+                  while read -r pv phase sc; do
+                    [ "${phase}" = "Released" ] || continue
+                    [ "${sc}" = "local-path" ] || [ -z "${sc}" ] || continue
+                    host=$(kubectl get pv "${pv}" -o go-template='{{range .spec.nodeAffinity.required.nodeSelectorTerms}}{{range .matchExpressions}}{{if eq .key "kubernetes.io/hostname"}}{{range .values}}{{.}}{{end}}{{end}}{{end}}' 2>/dev/null || true)
+                    [ "${host}" = "${node}" ] || continue
+                    path=$(kubectl get pv "${pv}" -o jsonpath='{.spec.local.path}{.spec.hostPath.path}' 2>/dev/null || true)
+                    echo "delete pv/${pv} path=${path:-unknown}"
+                    kubectl delete pv "${pv}" --wait=false || true
+                    [ -n "${path}" ] && echo "${path}" >> /run/engine-disk-maintenance/orphan-paths
+                  done
+
+                  echo "=== step 2: Failed/Succeeded/Evicted pods on ${node} ==="
+                  for phase in Failed Succeeded; do
+                    kubectl get pods -A --field-selector="spec.nodeName=${node},status.phase=${phase}" -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name --no-headers 2>/dev/null |
+                    while read -r pns pname; do
+                      [ -n "${pname}" ] || continue
+                      echo "delete pod/${pname} ns=${pns} phase=${phase}"
+                      kubectl delete pod -n "${pns}" "${pname}" --wait=false || true
+                    done
+                  done
+                  kubectl get pods -A --field-selector="spec.nodeName=${node}" -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name,REASON:.status.reason,PHASE:.status.phase,TS:.metadata.creationTimestamp --no-headers 2>/dev/null |
+                  while read -r pns pname reason phase ts; do
+                    [ -n "${pname}" ] || continue
+                    if [ "${reason}" != "Evicted" ] && [ "${phase}" != "Failed" ]; then continue; fi
+                    created=$(date -u -d "${ts}" +%s 2>/dev/null || echo 0)
+                    [ "${created}" -le "${cutoff}" ] || continue
+                    echo "delete pod/${pname} ns=${pns} reason=${reason}"
+                    kubectl delete pod -n "${pns}" "${pname}" --wait=false || true
+                  done
+
+                  echo "=== step 5: scale idle goal deployments to 0 ==="
+                  for d in li-ph-sci-gap-close-phase2 li-ph-sci-electrochemistry li-ph-sci-simulation-gap-close \
+                    li-proof-explorer li-world-studio-gui-demo-recorder li-world-studio-typography-fx-animation \
+                    li-world-studio-aimd-demo li-world-studio-gui-product-visual li-physics-codegen-matrix \
+                    li-container-separate-repos li-libernetes-control li-libernetes-licontainers \
+                    li-libernetes-livm li-libernetes-platform li-ph-br-0-lib-browser li-pure-li-https \
+                    li-benchmark-nightly-green; do
+                    kubectl -n "${ns}" get deploy "${d}" >/dev/null 2>&1 || continue
+                    prot=$(kubectl -n "${ns}" get deploy "${d}" -o jsonpath='{.metadata.annotations.li-langverse\.io/goal-protect-from-headroom}' 2>/dev/null || true)
+                    if [ "${prot}" = "1" ] || [ "${prot}" = "true" ]; then
+                      echo "skip headroom-protected deploy/${d}"
+                      continue
+                    fi
+                    cur=$(kubectl -n "${ns}" get deploy "${d}" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo 0)
+                    [ "${cur}" = "0" ] && continue
+                    echo "scale deploy/${d} replicas=0 (was ${cur})"
+                    kubectl -n "${ns}" scale "deploy/${d}" --replicas=0 || true
+                  done
+                  fp_rep=$(kubectl -n "${ns}" get deploy li-ph-sci-full-parity -o jsonpath='{.spec.replicas}' 2>/dev/null || echo 0)
+                  fp_run=$(kubectl -n "${ns}" get pods -l app=li-ph-sci-full-parity --field-selector=status.phase=Running -o name 2>/dev/null | wc -l | tr -d ' ')
+                  if [ "${fp_rep:-0}" -gt 0 ] || [ "${fp_run:-0}" -gt 0 ]; then
+                    echo "li-ph-sci-full-parity active (rep=${fp_rep} run=${fp_run}) — not scaled"
+                  fi
+
+                  if kubectl -n "${ns}" get pods --field-selector=status.phase=Running -o name 2>/dev/null |
+                     grep -Eq 'aimd|world-studio-aimd'; then
+                    echo 1 > /run/engine-disk-maintenance/skip-scratch
+                    echo "AIMD Running — skip aggressive scratch"
+                  else
+                    echo 0 > /run/engine-disk-maintenance/skip-scratch
+                  fi
+
+                  echo "=== step 4: AIMD PVC scratch cleanup (Job) ==="
+                  skip=$(cat /run/engine-disk-maintenance/skip-scratch)
+                  if [ "${skip}" = "0" ] && kubectl -n "${ns}" get pvc li-world-studio-aimd-demo-workspace >/dev/null 2>&1; then
+                    ts=$(date -u +%Y%m%d%H%M%S)
+                    kubectl -n "${ns}" apply -f - <<EOF
+                  apiVersion: batch/v1
+                  kind: Job
+                  metadata:
+                    name: aimd-pvc-cleanup-${ts}
+                    namespace: ${ns}
+                  spec:
+                    backoffLimit: 0
+                    ttlSecondsAfterFinished: 600
+                    template:
+                      spec:
+                        restartPolicy: Never
+                        nodeSelector:
+                          kubernetes.io/hostname: engine
+                        tolerations:
+                          - key: node.kubernetes.io/disk-pressure
+                            operator: Exists
+                            effect: NoSchedule
+                        containers:
+                          - name: c
+                            image: busybox:1.36
+                            command:
+                              - sh
+                              - -c
+                              - |
+                                rm -rf /w/studio/build/demo-recorder/aimd-hero-dual/frames/*
+                                rm -rf /w/studio/build/demo-recorder/aimd-dual-composite/frames/*
+                                rm -rf /w/studio/build/demo-recorder/aimd-dual-segments/*
+                                du -sh /w/studio/build/demo-recorder/* 2>/dev/null | sort -hr | head -10
+                                df -h /w
+                            volumeMounts:
+                              - name: w
+                                mountPath: /w
+                        volumes:
+                          - name: w
+                            persistentVolumeClaim:
+                              claimName: li-world-studio-aimd-demo-workspace
+                  EOF
+                    kubectl -n "${ns}" wait --for=condition=complete "job/aimd-pvc-cleanup-${ts}" --timeout=600s || true
+                  elif [ "${skip}" != "0" ]; then
+                    echo "skip aimd job (AIMD Running)"
+                  else
+                    echo "skip aimd job (PVC li-world-studio-aimd-demo-workspace not found)"
+                  fi
+              volumeMounts:
+                - name: run-state
+                  mountPath: /run/engine-disk-maintenance
+            - name: host-prune
+              image: busybox:1.36
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -lc
+                - |
+                  set -eu
+                  echo "=== step 3: containerd prune + orphan storage dirs ==="
+                  echo "before:"; df -h /host-rancher /host-kubelet 2>/dev/null || df -h /
+                  if [ -x /k3s-bin/crictl ]; then
+                    /k3s-bin/crictl --runtime-endpoint unix:///run/k3s/containerd/containerd.sock rmi --prune || true
+                  else
+                    echo "crictl not found at /k3s-bin/crictl — skip image prune"
+                  fi
+                  if [ -f /run/engine-disk-maintenance/orphan-paths ]; then
+                    while IFS= read -r op; do
+                      [ -n "${op}" ] || continue
+                      [ -d "${op}" ] || continue
+                      echo "rm orphan path ${op}"
+                      rm -rf "${op}" || true
+                    done < /run/engine-disk-maintenance/orphan-paths
+                  fi
+                  echo "after:"; df -h /host-rancher /host-kubelet 2>/dev/null || df -h /
+              volumeMounts:
+                - name: k3s-bin
+                  mountPath: /k3s-bin
+                  readOnly: true
+                - name: containerd-sock
+                  mountPath: /run/k3s/containerd/containerd.sock
+                - name: rancher
+                  mountPath: /host-rancher
+                  readOnly: true
+                - name: kubelet
+                  mountPath: /host-kubelet
+                  readOnly: true
+                - name: run-state
+                  mountPath: /run/engine-disk-maintenance
+                  readOnly: true
+          containers:
+            - name: done
+              image: busybox:1.36
+              imagePullPolicy: IfNotPresent
+              command: ["sh", "-c", "echo engine-disk-maintenance complete"]
+          volumes:
+            - name: run-state
+              emptyDir: {}
+            - name: k3s-bin
+              hostPath:
+                path: /var/lib/rancher/k3s/data/current/bin
+                type: Directory
+            - name: rancher
+              hostPath:
+                path: /var/lib/rancher
+                type: Directory
+            - name: kubelet
+              hostPath:
+                path: /var/lib/kubelet
+                type: Directory
+            - name: containerd-sock
+              hostPath:
+                path: /run/k3s/containerd/containerd.sock
+                type: Socket
