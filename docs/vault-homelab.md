@@ -102,6 +102,17 @@ curl -sS -H 'Host: vault.klaut.pro' http://127.0.0.1/healthz -w '\n%{http_code}\
 
 KV v2 mount `secret/` — same layout as HCP docs: `saas/{slug}/{env}/`, `tenants/{id}/` for vault-api.
 
+### Grok / shared agent creds
+
+| Path | Purpose |
+|------|---------|
+| `secret/grokbot/azure` | Azure OpenAI (`AZURE_GPT_4_1_MINI_*`, `LLM_PROVIDER=azure`) for Grok and other agents across repos |
+
+Refresh from Obsevia staging K8s: `scripts/store-grokbot-azure-vault.sh` (on blackpearl).  
+Load into a shell: `eval "$(bash scripts/print-grokbot-azure-env.sh)"`.
+
+Hetzner Vault (`vault.sail.black`) uses the same KV path; run `/usr/local/sbin/vault-put-grokbot-azure.sh` on `hz-majico-prod` when `VAULT_ADMIN_TOKEN` is available.
+
 Seed from a product `.env`:
 
 ```bash
