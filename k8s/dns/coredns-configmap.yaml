@@ -23,7 +23,7 @@ data:
         answer "homelab.lan 300 IN A 192.168.10.33"
         fallthrough
       }
-      forward . /etc/resolv.conf
+      forward . 1.1.1.1 8.8.8.8
       cache 30
     }
   homelab.hosts: |
